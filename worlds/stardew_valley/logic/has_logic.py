@@ -1,5 +1,6 @@
 from .base_logic import BaseLogic
-from ..stardew_rule import StardewRule, And, Or, Has, Count, true_, false_
+from ..stardew_rule import StardewRule, And, Or, Has, true_, false_
+from ..stardew_rule.count import Count, create_special_count
 
 
 class HasLogicMixin(BaseLogic[None]):
@@ -22,6 +23,10 @@ class HasLogicMixin(BaseLogic[None]):
 
     def has_n(self, *items: str, count: int):
         return self.count(count, *(self.has(item) for item in items))
+
+    @staticmethod
+    def special_count(count: int, *rules: StardewRule) -> StardewRule:
+        return create_special_count(rules, count)
 
     @staticmethod
     def count(count: int, *rules: StardewRule) -> StardewRule:
