@@ -304,6 +304,20 @@ class SpecialCount(BaseStardewRule):
             center_rule = nx.center(exploration)[0]
             center_value = center_rule(state)
 
+            if center_value:
+                min_points += self.rules[center_rule].get(center_rule, 0)
+                if min_points >= target_points:
+                    return True
+
+                leftovers.update(self.rules[center_rule])
+                leftovers.pop(center_rule, None)
+            else:
+                # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
+                points = self.weight[center_rule]
+                max_points -= points
+                if max_points < target_points:
+                    return False
+
             short_circuited_nodes = [center_rule]
             # TODO would it be more efficient if all nodes were already connected? No need to bfs
             for _, short_circuited_rule in nx.generic_bfs_edges(exploration,
@@ -311,26 +325,23 @@ class SpecialCount(BaseStardewRule):
                                                                 neighbors=lambda x: (v
                                                                                      for u, v, d in exploration.out_edges(x, data=True)
                                                                                      if d["propagation"] == center_value)):
-                short_circuited_nodes.append(short_circuited_rule)
 
-            if center_value:
-                for rule in short_circuited_nodes:
-                    min_points += self.rules[rule].get(rule, 0)
-                    leftovers.update(self.rules[rule])
-                    leftovers.pop(rule, None)
-            else:
-                # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
-                points = sum(self.weight[rule] for rule in short_circuited_nodes)
-                max_points -= points
+                if center_value:
+                    min_points += self.rules[short_circuited_rule].get(short_circuited_rule, 0)
+                    if min_points >= target_points:
+                        return True
 
-            if min_points >= target_points:
-                return True
-            elif max_points < target_points:
-                return False
+                    leftovers.update(self.rules[short_circuited_rule])
+                    leftovers.pop(short_circuited_rule, None)
+                else:
+                    # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
+                    points = self.weight[short_circuited_rule]
+                    max_points -= points
+                    if max_points < target_points:
+                        return False
 
-            for rule in short_circuited_nodes:
-                evaluated[rule] = center_value
-            exploration.remove_nodes_from(short_circuited_nodes)
+                evaluated[short_circuited_rule] = center_value
+                exploration.remove_nodes_from(short_circuited_nodes)
 
         for rule, value in leftovers.items():
             if self.call_evaluate_while_simplifying_cached(rule, state):
