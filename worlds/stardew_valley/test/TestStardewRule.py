@@ -2,9 +2,8 @@ import unittest
 from typing import cast
 from unittest.mock import MagicMock, Mock
 
-from .. import StardewRule
-from ..stardew_rule import Received, And, Or, HasProgressionPercent, false_, true_
-from ..stardew_rule.count import Count
+from ..stardew_rule import StardewRule, Received, And, Or, HasProgressionPercent, false_, true_, Reach
+from ..stardew_rule.count import Count, create_special_count
 
 
 class TestSimplification(unittest.TestCase):
@@ -304,3 +303,50 @@ class TestCount(unittest.TestCase):
         rule = Count([cast(StardewRule, Mock()) for i in range(5)], 2)
 
         self.assertEqual(rule.evaluate, rule.evaluate_without_shortcircuit)
+
+
+class TestSuperCount(unittest.TestCase):
+
+    def test_can_count_independent_rules(self):
+        collection_state = MagicMock()
+        special_count = create_special_count([Received("Potato", 1, 1), Received("Carrot", 1, 1), Received("Broccoli", 1, 1)], 1)
+
+        collection_state.has = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+
+        collection_state.has = Mock(return_value=True)
+        self.assertTrue(special_count(collection_state))
+
+    def test_can_count_dependent_rules(self):
+        collection_state = Mock()
+        special_count = create_special_count([
+            Received("Potato", 1, 1),
+            Received("Potato", 1, 2),
+            Received("Potato", 1, 3),
+        ], 2)
+
+        collection_state.has = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+        self.assertEqual(collection_state.has.call_count, 1)
+
+        collection_state.has = Mock(return_value=True)
+        self.assertTrue(special_count(collection_state))
+        self.assertEqual(collection_state.has.call_count, 1)
+
+    def test_can_count_dependent_and_rules(self):
+        collection_state = Mock()
+        special_count = create_special_count([
+            Received("Potato", 1, 1) & Reach("Potato Field", "Location", 1),
+            Received("Potato", 1, 2),
+            Received("Potato", 1, 3) & Reach("Potato Field", "Location", 1),
+        ], 2)
+
+        collection_state.has = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+        self.assertEqual(collection_state.has.call_count, 1)
+
+        collection_state.has = Mock(return_value=True)
+        collection_state.can_reach = Mock(return_value=True)
+        self.assertTrue(special_count(collection_state))
+        self.assertEqual(collection_state.has.call_count, 3)  # 2 in the graph loop, 1 in the leftovers
+        self.assertEqual(collection_state.can_reach.call_count, 1)
