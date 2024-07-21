@@ -341,7 +341,10 @@ class SpecialCount(BaseStardewRule):
                         return False
 
                 evaluated[short_circuited_rule] = center_value
-                exploration.remove_nodes_from(short_circuited_nodes)
+                short_circuited_nodes.append(short_circuited_rule)
+
+            # Need to do it after the loop to avoid modifying the graph while iterating over it.
+            exploration.remove_nodes_from(short_circuited_nodes)
 
         for rule, value in leftovers.items():
             if self.call_evaluate_while_simplifying_cached(rule, state):
