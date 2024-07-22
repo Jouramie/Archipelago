@@ -350,3 +350,22 @@ class TestSuperCount(unittest.TestCase):
         self.assertTrue(special_count(collection_state))
         self.assertEqual(3, collection_state.has.call_count)  # 2 in the graph loop, 1 in the leftovers
         self.assertEqual(1, collection_state.can_reach.call_count)
+
+    def test_can_count_disconnected_rules(self):
+        collection_state = Mock()
+        special_count = create_special_count([
+            Received("Carrot", 1, 2),
+            Reach("Carrot Field", "Location", 1) & Reach("Potato Field", "Location", 1),
+            Reach("Carrot Field", "Location", 1),
+            Received("Potato", 1, 2),
+            Received("Potato", 1, 3) & Reach("Potato Field", "Location", 1),
+        ], 3)
+
+        collection_state.has = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+        self.assertEqual(2, collection_state.has.call_count)
+
+        collection_state.has = Mock(return_value=True)
+        collection_state.can_reach = Mock(side_effect=lambda x, y, z: x == "Carrot Field" and y == "Location" and z == 1)
+        self.assertTrue(special_count(collection_state))
+        self.assertEqual(3, collection_state.has.call_count)  # 2 in the graph loop, 1 in the leftovers
