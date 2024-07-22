@@ -147,7 +147,6 @@ class SpecialCount(BaseStardewRule):
     def evaluate_with_shortcircuit(self, state: CollectionState) -> bool:
         target_points = self.count
 
-        evaluated: List[bool] = []
         leftovers: List[Tuple[StardewRule, int]] = []
         min_points = 0
         max_points = self.total
@@ -171,7 +170,6 @@ class SpecialCount(BaseStardewRule):
                     return False
 
             leftovers.extend(data["leftovers"][weight_index])
-            evaluated.append(evaluation)
 
         return self.evaluate_leftovers(state, min_points, max_points, leftovers)
 
