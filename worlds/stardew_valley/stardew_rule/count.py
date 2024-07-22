@@ -105,7 +105,7 @@ class CombinableCanShortCircuitLink(CombinableStardewRule, CanShortCircuitLink):
         return isinstance(other, CombinableCanShortCircuitLink) and self.delegate == other.delegate
 
     def __hash__(self):
-        return hash(self.delegate)
+        return self.delegate.__hash__()
 
 
 class AndCanShortCircuitLink(And, CanShortCircuitLink):
@@ -359,9 +359,9 @@ class SpecialCount(BaseStardewRule):
             center_rule = root
             evaluation = center_rule(state)
 
-            root, short_circuited_nodes = [(v, d["short_circuit"])
-                                           for u, v, d in tree.out_edges(center_rule, data=True)
-                                           if d["propagation"] == evaluation or d["propagation"] == EVALUATION_END_SENTINEL][0]
+            root, short_circuited_nodes = next((v, d["short_circuit"])
+                                               for v, d in tree[center_rule].items()
+                                               if d["propagation"] == evaluation or d["propagation"] == EVALUATION_END_SENTINEL)
 
             for short_circuited_rule in short_circuited_nodes:
                 if evaluation:
