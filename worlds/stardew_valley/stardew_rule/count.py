@@ -41,9 +41,15 @@ def create_evaluation_tree(short_circuit_graph: nx.DiGraph, weights: Dict[CanSho
     false_surviving_graph = nx.DiGraph(short_circuit_graph)
     false_surviving_graph.remove_nodes_from(false_short_circuited_nodes)
     false_weight = sum(weights[rule] for rule in false_short_circuited_nodes)
+    # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
+    false_leftovers = []
     false_evaluation_tree, false_evaluation_root = create_evaluation_tree(false_surviving_graph, weights, rules)
     evaluation_tree.update(false_evaluation_tree)
-    evaluation_tree.add_edge(center_rule, false_evaluation_root, short_circuit=false_short_circuited_nodes, weight=(false_weight, None), propagation=False)
+    evaluation_tree.add_edge(center_rule,
+                             false_evaluation_root,
+                             short_circuit=false_short_circuited_nodes,
+                             weight=(false_weight, None),
+                             leftovers=(false_leftovers, []))
 
     true_short_circuited_nodes = [center_rule]
     for _, short_circuited_node in nx.generic_bfs_edges(short_circuit_graph,
@@ -56,15 +62,25 @@ def create_evaluation_tree(short_circuit_graph: nx.DiGraph, weights: Dict[CanSho
     true_surviving_graph = nx.DiGraph(short_circuit_graph)
     true_surviving_graph.remove_nodes_from(true_short_circuited_nodes)
     true_weight = sum(rules[rule].get(rule, 0) for rule in true_short_circuited_nodes)
+    true_leftovers = sorted([(leftover, weight)
+                             for short_circuited in true_short_circuited_nodes
+                             for leftover, weight in rules[short_circuited].items()
+                             if leftover != short_circuited],
+                            key=lambda x: x[1])
     true_evaluation_tree, true_evaluation_root = create_evaluation_tree(true_surviving_graph, weights, rules)
     evaluation_tree.update(true_evaluation_tree)
-    evaluation_tree.add_edge(center_rule, true_evaluation_root, short_circuit=true_short_circuited_nodes, weight=(None, true_weight), propagation=True)
+    evaluation_tree.add_edge(center_rule,
+                             true_evaluation_root,
+                             short_circuit=true_short_circuited_nodes,
+                             weight=(None, true_weight),
+                             leftovers=([], true_leftovers))
 
     if true_evaluation_root == false_evaluation_root == EVALUATION_END_SENTINEL:
-        evaluation_tree.add_edge(center_rule, EVALUATION_END_SENTINEL,
+        evaluation_tree.add_edge(center_rule,
+                                 EVALUATION_END_SENTINEL,
                                  short_circuit=[center_rule],
                                  weight=(false_weight, true_weight),
-                                 propagation=EVALUATION_END_SENTINEL)
+                                 leftovers=(false_leftovers, true_leftovers))
 
     return evaluation_tree, center_rule
 
@@ -130,45 +146,40 @@ class SpecialCount(BaseStardewRule):
 
     def evaluate_with_shortcircuit(self, state: CollectionState) -> bool:
         target_points = self.count
-        rules = self.rules
 
-        evaluated = []
-        leftovers = []
+        evaluated: List[bool] = []
+        leftovers: List[Tuple[StardewRule, int]] = []
         min_points = 0
         max_points = self.total
 
         # Do a first pass without evaluating all the rules completely, just the short-circuit part.
-        tree, root = self.evaluation_tree
-        while root != EVALUATION_END_SENTINEL:
-            center_rule = root
-            evaluation = center_rule(state)
+        tree, current_rule = self.evaluation_tree
+        while current_rule != EVALUATION_END_SENTINEL:
+            evaluation = current_rule(state)
             weight_index = 1 if evaluation else 0
 
-            root, data = self.__find_next_node(tree, center_rule, weight_index)
+            current_rule, data = self.__find_next_node(tree, current_rule, weight_index)
             points = data["weight"][weight_index]
 
             if evaluation:
                 min_points += points
                 if min_points >= target_points:
                     return True
-
-                for short_circuited_rule in data["short_circuit"]:
-                    leftovers.append(rules[short_circuited_rule])
             else:
-                # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
                 max_points -= points
                 if max_points < target_points:
                     return False
 
+            leftovers.extend(data["leftovers"][weight_index])
             evaluated.append(evaluation)
 
-        return self.evaluate_leftovers(state, min_points, max_points, evaluated, leftovers)
+        return self.evaluate_leftovers(state, min_points, max_points, leftovers)
 
-    def evaluate_leftovers(self, state: CollectionState,
+    def evaluate_leftovers(self,
+                           state: CollectionState,
                            min_points: int,
                            max_points: int,
-                           evaluated: List[bool],
-                           leftovers: List[Counter[StardewRule]]) -> bool:
+                           leftovers: List[Tuple[StardewRule, int]]) -> bool:
         """
         Do a second pass to evaluate the rules that were not short-circuited.
         """
@@ -176,26 +187,19 @@ class SpecialCount(BaseStardewRule):
         target_points = self.count
         tree, root = self.evaluation_tree
 
-        i = 0
-        for rules_group in leftovers:
-            for rule, points in rules_group.items():
-                if rule == root:
-                    continue
+        for rule, points in leftovers:
+            if rule == root:
+                continue
 
-                evaluation = self.call_evaluate_while_simplifying_cached(rule, state)
-                if evaluation:
-                    min_points += points
-                    if min_points >= target_points:
-                        return True
-                else:
-                    max_points -= points
-                    if max_points < target_points:
-                        return False
-
-            root_evaluation = evaluated[i]
-            weight_index = 1 if root_evaluation else 0
-            root, data = self.__find_next_node(tree, root, weight_index)
-            i += 1
+            evaluation = self.call_evaluate_while_simplifying_cached(rule, state)
+            if evaluation:
+                min_points += points
+                if min_points >= target_points:
+                    return True
+            else:
+                max_points -= points
+                if max_points < target_points:
+                    return False
 
         assert min_points == max_points
         return False
