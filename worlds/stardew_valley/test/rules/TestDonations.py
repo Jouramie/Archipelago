@@ -56,12 +56,12 @@ class TestDonationLogicMilestones(SVTestBase):
         self.collect_all_except(railroad_item)
 
         for donation in locations_by_tag[LocationTags.MUSEUM_MILESTONES]:
-            self.assertFalse(self.world.logic.region.can_reach_location(donation.name)(self.multiworld.state))
+            self.assert_reach_location_false(self.multiworld.get_location(donation.name, self.player), self.multiworld.state)
 
         self.multiworld.state.collect(self.create_item(railroad_item))
 
         for donation in locations_by_tag[LocationTags.MUSEUM_MILESTONES]:
-            self.assertTrue(self.world.logic.region.can_reach_location(donation.name)(self.multiworld.state))
+            self.assert_reach_location_true(self.multiworld.get_location(donation.name, self.player), self.multiworld.state)
 
 
 def swap_museum_and_bathhouse(multiworld, player):

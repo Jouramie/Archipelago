@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 from functools import cached_property
-from typing import List, Callable, Optional, Dict, Tuple, Collection, Union, cast
+from typing import List, Callable, Optional, Dict, Tuple, Collection, Union, cast, Iterable
 
 import networkx as nx
 
@@ -16,9 +16,17 @@ from .protocol import StardewRule
 # TODO make sure it's faster with slots
 @dataclass(frozen=True)
 class Node:
-    true_edge: Edge
-    false_edge: Edge
+    true_edge: Optional[Edge]
+    false_edge: Optional[Edge]
     rule: BaseStardewRule
+
+    @staticmethod
+    def leaf(rule: BaseStardewRule):
+        return Node(None, None, rule)
+
+    @cached_property
+    def is_leaf(self):
+        return self.true_edge is self.false_edge is None
 
 
 @dataclass(frozen=True)
@@ -32,37 +40,35 @@ class Edge:
     node: Node
 
     def __str__(self):
-        return f"{{{self.points} + {self.leftovers}}}"
+        return f"{{{self.points} + {self.leftovers} = {self.points + sum(x[1] for x in self.leftovers)}{' LEAF' if self.node.is_leaf else ''}}}"
 
     def __repr__(self):
         return self.__str__()
 
 
-EVALUATION_END_SENTINEL = Node(None, None, None)
-
-
 def create_evaluation_tree(full_rule_graph: nx.DiGraph,
                            weights: Dict[CanShortCircuitLink, int],
                            rules: Dict[Optional[CanShortCircuitLink], Counter],
+                           count: int,
+                           current_state: Tuple[int, int],
+                           starting_leftovers: List[Tuple[StardewRule, int]],
                            _simplification_state: AssumptionState = AssumptionState()) -> Node:
     """ Precalculate the evaluation tree based on the possible results of each rule (recursively).
     Going from the root to one leaf should evaluate all the rules, as long as the leftovers are evaluated afterward.
 
     :returns: The root node.
     """
+    if current_state[0] >= count:
+        return Node.leaf(true_)
+    if current_state[1] < count:
+        return Node.leaf(false_)
     if not full_rule_graph:
-        return EVALUATION_END_SENTINEL
+        assert current_state[0] + sum(points for _, points in starting_leftovers) == current_state[1], "Looks like we lost some leftovers."
+        return Node.leaf(Count.from_leftovers(starting_leftovers, count - current_state[0]))
 
     components = list(nx.weakly_connected_components(full_rule_graph))
     main_component = max(components, key=lambda x: sum(weights[i] for i in x))
     components.remove(main_component)
-
-    # Rules that do not have short-circuit-able part are added to the leftovers directly.
-    if None in rules:
-        starting_leftovers = [(rule, points) for rule, points in rules.get(None, Counter()).items()]
-        rules = {k: v for k, v in rules.items() if k is not None}
-    else:
-        starting_leftovers = []
 
     main_rule_graph: nx.DiGraph = full_rule_graph.subgraph(main_component)
 
@@ -96,12 +102,13 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
                 continue
 
             false_leftovers.append((simplified, weight))
-    false_leftovers = sorted(false_leftovers, key=lambda x: x[1])
+    false_state = (current_state[0], current_state[1] - false_weight)
 
     # TODO knowing current amount of points from the assumption taken up to this point,
     #  we could literally calculate the result of the rule if we meet the count. We already calculate every state possible anyways.
     #  When creating the leaf, put leftovers in legacy count in rules, or a literal.
-    false_evaluation_tree = create_evaluation_tree(false_surviving_graph, weights, rules, false_simplification_state)
+    #  Assert min + len(leftovers) == max
+    false_evaluation_tree = create_evaluation_tree(false_surviving_graph, weights, rules, count, false_state, false_leftovers, false_simplification_state)
     false_edge = Edge(false_weight, false_leftovers, false_evaluation_tree)
 
     # TRUE branch
@@ -128,9 +135,9 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
                 continue
 
             true_leftovers.append((simplified, weight))
-    true_leftovers = sorted(true_leftovers, key=lambda x: x[1])
+    true_state = (current_state[0] + true_weight, current_state[1])
 
-    true_evaluation_tree = create_evaluation_tree(true_surviving_graph, weights, rules, true_simplification_state)
+    true_evaluation_tree = create_evaluation_tree(true_surviving_graph, weights, rules, count, true_state, true_leftovers, true_simplification_state)
     true_edge = Edge(true_weight, true_leftovers, true_evaluation_tree)
 
     return Node(true_edge, false_edge, center_rule)
@@ -177,7 +184,9 @@ def create_special_count(rules: Collection[StardewRule], count: int) -> Union[Sp
         final_graph.add_edge(v, u, propagation=True)
 
     weights = {rule: sum(counter.values()) for rule, counter in grouped_by_component.items()}
-    evaluation_tree = create_evaluation_tree(final_graph, weights, grouped_by_component)
+    starting_state = (0, sum(weights.values()))
+    starting_leftovers = [(rule, points) for rule, points in grouped_by_component.get(None, {}).items()]
+    evaluation_tree = create_evaluation_tree(final_graph, weights, grouped_by_component, count, starting_state, starting_leftovers)
 
     return SpecialCount(grouped_by_component, evaluation_tree, count)
 
@@ -208,7 +217,7 @@ class SpecialCount(BaseStardewRule):
 
         # Do a first pass without evaluating all the rules completely, just the short-circuit part.
         current_node = self.evaluation_tree
-        while current_node != EVALUATION_END_SENTINEL:
+        while not current_node.is_leaf:
             evaluation = current_node.rule(state)
 
             if evaluation:
@@ -226,32 +235,7 @@ class SpecialCount(BaseStardewRule):
             leftovers.extend(edge.leftovers)
             current_node = edge.node
 
-        return self.evaluate_leftovers(state, min_points, max_points, leftovers)
-
-    def evaluate_leftovers(self,
-                           state: CollectionState,
-                           min_points: int,
-                           max_points: int,
-                           leftovers: List[Tuple[StardewRule, int]]) -> bool:
-        """
-        Do a second pass to evaluate the rules that were not short-circuited.
-        """
-
-        target_points = self.count
-
-        for rule, points in sorted(leftovers, key=lambda x: x[1], reverse=True):
-            evaluation = rule(state)
-            if evaluation:
-                min_points += points
-                if min_points >= target_points:
-                    return True
-            else:
-                max_points -= points
-                if max_points < target_points:
-                    return False
-
-        assert min_points == max_points, "Seems like some rules were not evaluated correctly."
-        return False
+        return current_node.rule(state)
 
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
@@ -286,6 +270,12 @@ class Count(BaseStardewRule):
         else:
             self.rules = rules
             self.evaluate = self.evaluate_without_shortcircuit
+
+    @staticmethod
+    def from_leftovers(leftovers: Iterable[Tuple[StardewRule, int]], count: int):
+        # FIXME this is really suboptimal... We should remove the counter anyways
+        rules = [rule for rule, value in leftovers for _ in range(value)]
+        return Count(rules, count)
 
     def __call__(self, state: CollectionState) -> bool:
         return self.evaluate(state)
