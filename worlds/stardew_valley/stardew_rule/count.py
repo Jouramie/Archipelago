@@ -247,15 +247,14 @@ class Count(BaseStardewRule):
         self.count = count
         if _rules_and_points is not None:
             self.rules_and_points = _rules_and_points
-        self.rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
+        else:
+            self.rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
         self.total = sum(point for _, point in self.rules_and_points)
         self.rules = [rule for rule, _ in self.rules_and_points]
 
     @staticmethod
     def from_leftovers(leftovers: List[Tuple[StardewRule, int]], count: int):
-        # FIXME this is really suboptimal... I should remove the other implementation anyways
-        rules = [rule for rule, value in leftovers for _ in range(value)]
-        return Count(rules, count, _rules_and_points=leftovers)
+        return Count([], count, _rules_and_points=leftovers)
 
     def __call__(self, state: CollectionState) -> bool:
         min_points = 0
