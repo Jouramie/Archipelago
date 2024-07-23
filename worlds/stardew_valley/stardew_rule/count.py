@@ -58,7 +58,12 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
     components.remove(main_component)
 
     # Rules that do not have short-circuit-able part are added to the leftovers directly.
-    starting_leftovers = [(rule, points) for rule, points in rules.get(None, Counter()).items()]
+    if None in rules:
+        starting_leftovers = [(rule, points) for rule, points in rules.get(None, Counter()).items()]
+        rules = {k: v for k, v in rules.items() if k is not None}
+    else:
+        starting_leftovers = []
+
     main_rule_graph: nx.DiGraph = full_rule_graph.subgraph(main_component)
 
     # TODO handle weights ? -> Keep all nodes with equal links so center see the other rules. Add weight on equal link depending on point.
