@@ -187,18 +187,14 @@ class SpecialCount(BaseStardewRule):
     rules: Dict[CanShortCircuitLink, Counter]
     evaluation_tree: Node
 
-    weight: Dict[CanShortCircuitLink, int]
     total: int
-    simplify_rule_mapping: Dict[StardewRule, StardewRule]
 
     def __init__(self, rules: Dict[CanShortCircuitLink, Counter], evaluation_tree: Node, count: int):
         self.count = count
         self.rules = rules
         self.evaluation_tree = evaluation_tree
 
-        self.weight = {rule: sum(counter.values()) for rule, counter in rules.items()}
         self.total = sum(sum(counter.values()) for _, counter in rules.items())
-        self.simplify_rule_mapping = {}
 
     def __call__(self, state: CollectionState) -> bool:
         return self.evaluate_with_shortcircuit(state)
@@ -256,15 +252,6 @@ class SpecialCount(BaseStardewRule):
 
         assert min_points == max_points, "Seems like some rules were not evaluated correctly."
         return False
-
-    def call_evaluate_while_simplifying_cached(self, rule: StardewRule, state: CollectionState) -> bool:
-        try:
-            # A mapping table with the original rule is used here because two rules could resolve to the same rule.
-            #  This would require to change the counter to merge both rules, and quickly become complicated.
-            return self.simplify_rule_mapping[rule](state)
-        except KeyError:
-            self.simplify_rule_mapping[rule], value = rule.evaluate_while_simplifying(state)
-            return value
 
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
