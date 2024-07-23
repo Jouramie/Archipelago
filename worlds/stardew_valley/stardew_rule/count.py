@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 from functools import cached_property
-from typing import List, Callable, Optional, Dict, Tuple, Collection, Union, cast, Iterable
+from typing import List, Callable, Optional, Dict, Tuple, Collection, Union, cast
 
 import networkx as nx
 
@@ -104,10 +104,6 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
             false_leftovers.append((simplified, weight))
     false_state = (current_state[0], current_state[1] - false_weight)
 
-    # TODO knowing current amount of points from the assumption taken up to this point,
-    #  we could literally calculate the result of the rule if we meet the count. We already calculate every state possible anyways.
-    #  When creating the leaf, put leftovers in legacy count in rules, or a literal.
-    #  Assert min + len(leftovers) == max
     false_evaluation_tree = create_evaluation_tree(false_surviving_graph, weights, rules, count, false_state, false_leftovers, false_simplification_state)
     false_edge = Edge(false_weight, false_leftovers, false_evaluation_tree)
 
@@ -251,20 +247,22 @@ class SpecialCount(BaseStardewRule):
 class Count(BaseStardewRule):
     count: int
     rules: List[StardewRule]
-    counter: Counter[StardewRule]
+    rules_and_points: List[Tuple[StardewRule, int]]
     evaluate: Callable[[CollectionState], bool]
 
     total: Optional[int]
     rule_mapping: Optional[Dict[StardewRule, StardewRule]]
 
-    def __init__(self, rules: List[StardewRule], count: int):
+    def __init__(self, rules: List[StardewRule], count: int, _rules_and_points: Optional[List[Tuple[StardewRule, int]]] = None):
         self.count = count
-        self.counter = Counter(rules)
+        if _rules_and_points is not None:
+            self.rules_and_points = _rules_and_points
+        self.rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
 
-        if len(self.counter) / len(rules) < .66:
+        if len(self.rules_and_points) / len(rules) < .66:
             # Checking if it's worth using the count operation with shortcircuit or not. Value should be fine-tuned when Count has more usage.
-            self.total = sum(self.counter.values())
-            self.rules = sorted(self.counter.keys(), key=lambda x: self.counter[x], reverse=True)
+            self.total = sum(point for _, point in self.rules_and_points)
+            self.rules = [rule for rule, _ in self.rules_and_points]
             self.rule_mapping = {}
             self.evaluate = self.evaluate_with_shortcircuit
         else:
@@ -272,10 +270,10 @@ class Count(BaseStardewRule):
             self.evaluate = self.evaluate_without_shortcircuit
 
     @staticmethod
-    def from_leftovers(leftovers: Iterable[Tuple[StardewRule, int]], count: int):
-        # FIXME this is really suboptimal... We should remove the counter anyways
+    def from_leftovers(leftovers: List[Tuple[StardewRule, int]], count: int):
+        # FIXME this is really suboptimal... I should remove the other implementation anyways
         rules = [rule for rule, value in leftovers for _ in range(value)]
-        return Count(rules, count)
+        return Count(rules, count, _rules_and_points=leftovers)
 
     def __call__(self, state: CollectionState) -> bool:
         return self.evaluate(state)
@@ -298,14 +296,13 @@ class Count(BaseStardewRule):
         c = 0
         t = self.total
 
-        for rule in self.rules:
-            evaluation_value = self.call_evaluate_while_simplifying_cached(rule, state)
-            rule_value = self.counter[rule]
+        for rule, point in self.rules_and_points:
+            evaluation_value = rule(state)
 
             if evaluation_value:
-                c += rule_value
+                c += point
             else:
-                t -= rule_value
+                t -= point
 
             if c >= self.count:
                 return True
