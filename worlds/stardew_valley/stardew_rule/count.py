@@ -59,8 +59,14 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
     """ Precalculate the evaluation tree based on the possible results of each rule (recursively).
     Going from the root to one leaf should evaluate all the rules, as long as the leftovers are evaluated afterward.
 
+    TODO New algo to create evaluation tree
+    Find the node that can short-circuit the most rules. Sum true short-circuit rules and false short-circuit rules.
+    If decomposable (And and Or), add to killed nodes and
+
+
     :returns: The root node.
     """
+
     if current_state[0] >= count:
         return Node.leaf(true_)
     if current_state[1] < count:
@@ -145,6 +151,23 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
 
 
 def create_special_count(rules: Collection[StardewRule], count: int) -> Union[SpecialCount, Count]:
+    """
+    TODO New algorithm to link rules together
+    Put all rules in a graph
+    Put all rules in a queue
+    For each rule A in the queue
+      For each rule B in the graph where there is no link with A
+        Calculate common part -> { A fully included in B, B fully included in A, A and B are disjoint, A and B intersect as C }
+        Add link between A and B
+        If C is not empty
+          Add link between A and C
+          Add link between B and C
+          Push C in queue
+    Prune disjoint links
+    Prune non final decomposable rules
+    Transitive reduction
+    """
+
     short_circuit_links = cast(Collection[CanShortCircuit], rules)
 
     grouped_by_component = {}
@@ -152,7 +175,7 @@ def create_special_count(rules: Collection[StardewRule], count: int) -> Union[Sp
         grouped_by_component.setdefault(rule.short_circuit_able_component, Counter()).update((rule,))
 
     link_results = {}
-    short_circuit_able_keys = list(grouped_by_component.keys())
+    short_circuit_able_keys: List[CanShortCircuit] = list(grouped_by_component.keys())
     for i, ri in enumerate(short_circuit_able_keys):
         if ri is None:
             continue
