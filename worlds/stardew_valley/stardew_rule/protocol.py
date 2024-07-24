@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Protocol, Tuple, runtime_checkable
+from typing import Protocol, runtime_checkable, Tuple
 
 from BaseClasses import CollectionState
 
@@ -21,6 +21,7 @@ class StardewRule(Protocol):
     def __or__(self, other: StardewRule):
         ...
 
+    # TODO move this to some kind of internal place
     @abstractmethod
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         ...
