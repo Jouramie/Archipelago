@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import itertools
 import functools
 import logging
 import random
@@ -12,7 +11,7 @@ from collections import Counter, deque
 from collections.abc import Collection, MutableSequence
 from enum import IntEnum, IntFlag
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set, Tuple, \
-                   TypedDict, Union, Type, ClassVar
+    TypedDict, Union, Type, ClassVar
 
 import NetUtils
 import Options
@@ -36,6 +35,7 @@ class Group(TypedDict, total=False):
 
 class ThreadBarrierProxy:
     """Passes through getattr while passthrough is True"""
+
     def __init__(self, obj: object) -> None:
         self.passthrough = True
         self.obj = obj
@@ -97,9 +97,9 @@ class MultiWorld():
         location_cache: Dict[int, Dict[str, Location]]
 
         def __init__(self, players: int):
-            self.region_cache = {player: {} for player in range(1, players+1)}
-            self.entrance_cache = {player: {} for player in range(1, players+1)}
-            self.location_cache = {player: {} for player in range(1, players+1)}
+            self.region_cache = {player: {} for player in range(1, players + 1)}
+            self.entrance_cache = {player: {} for player in range(1, players + 1)}
+            self.location_cache = {player: {} for player in range(1, players + 1)}
 
         def __iadd__(self, other: Iterable[Region]):
             self.extend(other)
@@ -159,6 +159,7 @@ class MultiWorld():
         for player in range(1, players + 1):
             def set_player_attr(attr, val):
                 self.__dict__.setdefault(attr, {})[player] = val
+
             set_player_attr('plando_items', [])
             set_player_attr('plando_texts', {})
             set_player_attr('plando_connections', [])
@@ -166,7 +167,7 @@ class MultiWorld():
             set_player_attr('completion_condition', lambda state: True)
         self.worlds = {}
         self.per_slot_randoms = Utils.DeprecateDict("Using per_slot_randoms is now deprecated. Please use the "
-                                                      "world's random object instead (usually self.random)")
+                                                    "world's random object instead (usually self.random)")
         self.plando_options = PlandoOptions.none
 
     def get_all_ids(self) -> Tuple[int, ...]:
@@ -540,7 +541,7 @@ class MultiWorld():
         def location_relevant(location: Location):
             """Determine if this location is relevant to sweep."""
             if location.progress_type != LocationProgressType.EXCLUDED \
-               and (location.player in players["locations"] or location.advancement):
+                    and (location.player in players["locations"] or location.advancement):
                 return True
             return False
 
@@ -701,7 +702,10 @@ class CollectionState():
 
     def has_all(self, items: Iterable[str], player: int) -> bool:
         """Returns True if each item name of items is in state at least once."""
-        return all(self.prog_items[player][item] for item in items)
+        for item in items:
+            if not self.has(item, player):
+                return False
+        return True
 
     def has_any(self, items: Iterable[str], player: int) -> bool:
         """Returns True if at least one item name of items is in state at least once."""
@@ -727,7 +731,7 @@ class CollectionState():
             if found >= count:
                 return True
         return False
-    
+
     def has_from_list_unique(self, items: Iterable[str], player: int, count: int) -> bool:
         """Returns True if the state contains at least `count` items matching any of the item names from a list.
         Ignores duplicates of the same item."""
@@ -742,7 +746,7 @@ class CollectionState():
     def count_from_list(self, items: Iterable[str], player: int) -> int:
         """Returns the cumulative count of items from a list present in state."""
         return sum(self.prog_items[player][item_name] for item_name in items)
-    
+
     def count_from_list_unique(self, items: Iterable[str], player: int) -> int:
         """Returns the cumulative count of items from a list present in state. Ignores duplicates of the same item."""
         return sum(self.prog_items[player][item_name] > 0 for item_name in items)
@@ -889,7 +893,7 @@ class Region:
         def __delitem__(self, index: int) -> None:
             location: Location = self._list.__getitem__(index)
             self._list.__delitem__(index)
-            del(self.region_manager.location_cache[location.player][location.name])
+            del (self.region_manager.location_cache[location.player][location.name])
 
         def insert(self, index: int, value: Location) -> None:
             assert value.name not in self.region_manager.location_cache[value.player], \
@@ -901,7 +905,7 @@ class Region:
         def __delitem__(self, index: int) -> None:
             entrance: Entrance = self._list.__getitem__(index)
             self._list.__delitem__(index)
-            del(self.region_manager.entrance_cache[entrance.player][entrance.name])
+            del (self.region_manager.entrance_cache[entrance.player][entrance.name])
 
         def insert(self, index: int, value: Entrance) -> None:
             assert value.name not in self.region_manager.entrance_cache[value.player], \
