@@ -8,7 +8,7 @@ from typing import List, Callable, Optional, Dict, Tuple, Collection, Union, cas
 import networkx as nx
 
 from BaseClasses import CollectionState
-from .base import BaseStardewRule, CanShortCircuitLink, ShortCircuitPropagation, AssumptionState
+from .base import BaseStardewRule, CanShortCircuit, ShortCircuitPropagation, AssumptionState
 from .literal import false_, true_
 from .protocol import StardewRule
 
@@ -50,8 +50,8 @@ class Edge:
 
 
 def create_evaluation_tree(full_rule_graph: nx.DiGraph,
-                           weights: Dict[CanShortCircuitLink, int],
-                           rules: Dict[Optional[CanShortCircuitLink], Counter],
+                           weights: Dict[CanShortCircuit, int],
+                           rules: Dict[Optional[CanShortCircuit], Counter],
                            count: int,
                            current_state: Tuple[int, int],
                            starting_leftovers: List[Tuple[StardewRule, int]],
@@ -145,7 +145,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
 
 
 def create_special_count(rules: Collection[StardewRule], count: int) -> Union[SpecialCount, Count]:
-    short_circuit_links = cast(Collection[CanShortCircuitLink], rules)
+    short_circuit_links = cast(Collection[CanShortCircuit], rules)
 
     grouped_by_component = {}
     for rule in short_circuit_links:
@@ -199,7 +199,7 @@ class SpecialCount(BaseStardewRule):
 
     total: int
 
-    def __init__(self, rules: Dict[CanShortCircuitLink, Counter], evaluation_tree: Node, count: int):
+    def __init__(self, rules: Dict[CanShortCircuit, Counter], evaluation_tree: Node, count: int):
         self.count = count
         self.rules_and_points = sorted([(rule, value) for counter in rules.values() for rule, value in counter.items()], key=lambda x: x[1], reverse=True)
         self.evaluation_tree = evaluation_tree
