@@ -2,8 +2,8 @@ import unittest
 from typing import cast
 from unittest.mock import MagicMock, Mock
 
-from ..stardew_rule import StardewRule, Received, And, Or, HasProgressionPercent, false_, true_, Reach, AssumptionState
-from ..stardew_rule.count import Count, create_special_count
+from worlds.stardew_valley.stardew_rule import StardewRule, Received, And, Or, HasProgressionPercent, false_, true_, Reach, AssumptionState
+from worlds.stardew_valley.stardew_rule.count import Count, create_special_count
 
 
 class TestSimplification(unittest.TestCase):
