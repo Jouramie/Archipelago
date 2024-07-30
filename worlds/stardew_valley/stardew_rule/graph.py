@@ -143,7 +143,15 @@ def _recursive_to_rule_map(
     propagation: which result are propagated between rules. Short circuit goes from the starting node to the ending node.
     scores: the percentage of the rule that will be resolved when this rule is evaluated.
     """
-    raise NotImplementedError(f"Rule {rule} is not supported.")
+    if rule_map is None:
+        rule_map = nx.DiGraph()
+    elif rule in rule_map.nodes:
+        rule_map.nodes[rule]["score"] += score
+        return rule_map
+
+    rule_map.add_node(rule, priority=1, score=score)
+
+    return rule_map
 
 
 @_recursive_to_rule_map.register
@@ -250,7 +258,7 @@ def _(
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=2, score=score)
+    rule_map.add_node(rule, priority=4, score=score)
 
     return rule_map
 
@@ -268,8 +276,8 @@ def _(
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
-    # Reach can trigger cache refresh, which takes time... So, it's better to avoid it, hence the priority at 1.
-    rule_map.add_node(rule, priority=1, score=score)
+    # Reach can trigger cache refresh, which takes time... So, it's better to avoid it, hence the priority at 2.
+    rule_map.add_node(rule, priority=2, score=score)
 
     return rule_map
 

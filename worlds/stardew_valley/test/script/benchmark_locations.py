@@ -16,7 +16,6 @@ import typing
 from BaseClasses import CollectionState, Location
 from Utils import init_logging
 from worlds.stardew_valley import test
-from worlds.stardew_valley.stardew_rule import to_optimized
 from worlds.stardew_valley.stardew_rule.rule_explain import explain
 
 
@@ -35,7 +34,7 @@ def run_locations_benchmark():
 
         def location_test(self, test_location: Location, state: CollectionState, state_name: str) -> float:
             rule = test_location.access_rule
-            rule = to_optimized(rule)
+            # rule = to_optimized(rule)
             with TimeIt(f"{test_location.game} {self.rule_iterations} "
                         f"runs of {test_location}.access_rule({state_name})", logger) as t:
                 for _ in range(self.rule_iterations):
@@ -70,7 +69,7 @@ def run_locations_benchmark():
                 if location:
                     locations = [multiworld.get_location(location, 1)]
                 else:
-                    locations = sorted(multiworld.get_unfilled_locations())
+                    locations = sorted(multiworld.get_locations(1))
 
                 all_state = multiworld.get_all_state(False)
                 for location in locations:
