@@ -49,7 +49,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
     #  Add node matching exact rule to true_, so weight of that node can be considered.
     #  Build graph by calling simplify_knowing() on each equal node.
     #  Then we could evaluate one state subrule at the time. Prioritize received rule.
-    center_rule = nx.center(main_rule_graph)[0]
+    center_rule: BaseStardewRule = nx.center(main_rule_graph)[0]
 
     # FALSE branch
 
@@ -60,7 +60,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
                                                                              for u, v, d in main_rule_graph.out_edges(x, data=True)
                                                                              if d["propagation"] is False)):
         false_killed_nodes.append(short_circuited_node)
-    false_simplification_state = _simplification_state.add_upper_bounds(center_rule)
+    false_simplification_state = center_rule.add_upper_bounds(_simplification_state)
 
     false_surviving_graph: nx.DiGraph = full_rule_graph.copy()
     false_surviving_graph.remove_nodes_from(false_killed_nodes)
@@ -90,7 +90,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
                                                                              for u, v, d in main_rule_graph.out_edges(x, data=True)
                                                                              if d["propagation"] is True)):
         true_killed_nodes.append(short_circuited_node)
-    true_simplification_state = _simplification_state.add_lower_bounds(center_rule)
+    true_simplification_state = center_rule.add_lower_bounds(_simplification_state)
 
     true_surviving_graph: nx.DiGraph = full_rule_graph.copy()
     true_surviving_graph.remove_nodes_from(true_killed_nodes)

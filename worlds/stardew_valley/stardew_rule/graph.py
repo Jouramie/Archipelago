@@ -8,6 +8,7 @@ from typing import Optional, Tuple, Union, Dict, Hashable, Set, List, cast
 import networkx as nx
 
 from BaseClasses import CollectionState
+from . import LiteralStardewRule
 from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, AssumptionState, BaseStardewRule
 from .protocol import StardewRule
 from .state import Received, Reach, HasProgressionPercent
@@ -59,7 +60,6 @@ class Edge:
 
     def __str__(self, depth: int = 0):
         leftovers_points = sum(x[1] for x in self.leftovers)
-        enter = '\n'
         return (f"{{{'+' if self.points > 0 else ''}{self.points} -> {self.current_state} + {leftovers_points} leftovers"
                 f" {self.node.__str__(depth=depth + 1)}}}")
 
@@ -143,12 +143,12 @@ def _recursive_to_rule_map(
     propagation: which result are propagated between rules. Short circuit goes from the starting node to the ending node.
     scores: the percentage of the rule that will be resolved when this rule is evaluated.
     """
-    logger.warning(f"Rule {rule} is not supported by the rule map. It will be evaluated afterward.")
-    if rule in rule_map.nodes:
-        rule_map.nodes[rule]["score"] += score
-        return rule_map
+    raise NotImplementedError(f"Rule {rule} is not supported.")
 
-    rule_map.add_node(rule, priority=0, score=score)
+
+@_recursive_to_rule_map.register
+def _(rule: LiteralStardewRule, rule_map: nx.DiGraph, score, *_) -> nx.DiGraph:
+    rule_map.add_node(rule, priority=9, score=score)
     return rule_map
 
 
@@ -290,13 +290,14 @@ def _recursive_create_evaluation_tree(root: BaseStardewRule, assumption_state: A
     if rule_map.number_of_nodes() == 1:
         return Node.leaf(root)
 
-    most_significant_rule = max(rule_map.nodes.items(), key=lambda x: (x[1]["priority"], x[1]["score"].total))[0]
+    most_significant_rule: BaseStardewRule = max((node for node in rule_map.nodes.items() if node[1]["priority"] != 0),
+                                                 key=lambda x: (x[1]["score"].total, x[1]["priority"]))[0]
 
-    false_assumption_state = assumption_state.add_upper_bounds(most_significant_rule)
+    false_assumption_state = most_significant_rule.add_upper_bounds(assumption_state)
     false_evaluation_tree = _recursive_create_evaluation_tree(root, false_assumption_state)
     false_edge = Edge.simple_edge(false_evaluation_tree)
 
-    true_assumption_state = assumption_state.add_lower_bounds(most_significant_rule)
+    true_assumption_state = most_significant_rule.add_lower_bounds(assumption_state)
     true_evaluation_tree = _recursive_create_evaluation_tree(root, true_assumption_state)
     true_edge = Edge.simple_edge(true_evaluation_tree)
 
