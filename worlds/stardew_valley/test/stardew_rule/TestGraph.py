@@ -2,7 +2,7 @@ import unittest
 
 import networkx as nx
 
-from ...stardew_rule import Received, Reach, ShortCircuitPropagation, to_rule_map, ShortCircuitScore
+from ...stardew_rule import Received, Reach, ShortCircuitPropagation, to_rule_map, ShortCircuitScore, to_evaluation_tree, Node, false_, true_, Edge
 
 
 class NetworkXAssertMixin(unittest.TestCase):
@@ -104,3 +104,66 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         expected.add_edge(received_two_carrots, received_carrot, propagation=ShortCircuitPropagation.POSITIVE)
 
         self.assert_graph_equals(expected, graph)
+
+
+class TestEvaluationTree(unittest.TestCase):
+
+    def test_given_received_when_convert_to_rule_map_then_single_node_with_high_priority(self):
+        rule = Received("Carrot", 1, 1)
+
+        graph = to_rule_map(rule)
+        evaluation_tree = to_evaluation_tree(graph, rule)
+
+        expected = Node.leaf(rule)
+        self.assertEqual(expected, evaluation_tree)
+
+    def test_given_reach_when_convert_to_rule_map_then_single_node_with_resolvable(self):
+        rule = Reach("Carrot Field", "Location", 1)
+
+        graph = to_rule_map(rule)
+        evaluation_tree = to_evaluation_tree(graph, rule)
+
+        expected = Node.leaf(rule)
+        self.assertEqual(expected, evaluation_tree)
+
+    def test_given_or_of_duplicated_ands_when_convert_to_rule_map_then_ands_are_merged(self):
+        carrot = Received("Carrot", 1, 1)
+        potato = Received("Potato", 1, 1)
+        and_rule = carrot & potato
+        rule = and_rule | and_rule
+
+        graph = to_rule_map(rule)
+        evaluation_tree = to_evaluation_tree(graph, rule)
+
+        self.assertEqual(false_, evaluation_tree.false_edge.node.rule)
+        self.assertEqual(false_, evaluation_tree.true_edge.node.false_edge.node.rule)
+        self.assertEqual(true_, evaluation_tree.true_edge.node.true_edge.node.rule)
+
+    def test_given_and_of_duplicated_ors_when_convert_to_rule_map_then_ors_are_merged(self):
+        carrot = Received("Carrot", 1, 1)
+        potato = Received("Potato", 1, 1)
+        or_rule = carrot | potato
+        rule = or_rule & or_rule
+
+        graph = to_rule_map(rule)
+        evaluation_tree = to_evaluation_tree(graph, rule)
+
+        self.assertEqual(true_, evaluation_tree.true_edge.node.rule)
+        self.assertEqual(true_, evaluation_tree.false_edge.node.true_edge.node.rule)
+        self.assertEqual(false_, evaluation_tree.false_edge.node.false_edge.node.rule)
+
+    def test_given_complex_case_of_or_of_ands_with_received_more_than_once_when_convert_to_rule_map_then_graph_is_correct(self):
+        received_carrot = Received("Carrot", 1, 1)
+        received_two_carrots = Received("Carrot", 1, 2)
+        received_potato = Received("Potato", 1, 1)
+        reach_kitchen = Reach("Kitchen", "Region", 1)
+        kitchen_and_two_carrots = received_two_carrots & reach_kitchen
+        carrot_and_potato = received_carrot & received_potato
+        rule = received_potato | kitchen_and_two_carrots | carrot_and_potato
+
+        graph = to_rule_map(rule)
+        evaluation_tree = to_evaluation_tree(graph, rule)
+
+        carrot_node = Node(Edge.simple_edge(Node.leaf(true_)), Edge.simple_edge(Node.leaf(false_)), received_carrot)
+        potato_node = Node(Edge.simple_edge(Node.leaf(true_)), Edge.simple_edge(carrot_node), received_potato)
+        self.assertEqual(potato_node, evaluation_tree)
