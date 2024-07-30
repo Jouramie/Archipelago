@@ -21,7 +21,7 @@ from .options import StardewValleyOptions, SeasonRandomization, Goal, BundleRand
 from .presets import sv_options_presets
 from .regions import create_regions
 from .rules import set_rules
-from .stardew_rule import True_, StardewRule, HasProgressionPercent, true_
+from .stardew_rule import True_, StardewRule, HasProgressionPercent, true_, to_optimized
 from .strings.ap_names.event_names import Event
 from .strings.entrance_names import Entrance as EntranceName
 from .strings.goal_names import Goal as GoalName
@@ -340,7 +340,7 @@ class StardewValleyWorld(World):
 
         region = self.multiworld.get_region(location_data.region, self.player)
         location = StardewLocation(self.player, location_data.name, None, region)
-        location.access_rule = rule
+        location.access_rule = to_optimized(rule)
         region.locations.append(location)
         location.place_locked_item(StardewItem(item, ItemClassification.progression, None, self.player))
 

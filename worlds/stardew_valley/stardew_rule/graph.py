@@ -11,7 +11,7 @@ from BaseClasses import CollectionState
 from . import LiteralStardewRule
 from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, AssumptionState, BaseStardewRule
 from .protocol import StardewRule
-from .state import Received, Reach, HasProgressionPercent
+from .state import Received, Reach, HasProgressionPercent, TotalReceived
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +233,24 @@ def _(
 
     if combinable_rules is not None:
         combinable_rules.setdefault(rule.combination_key, set()).add(rule)
+
+    return rule_map
+
+
+@_recursive_to_rule_map.register
+def _(
+        rule: TotalReceived,
+        rule_map: nx.DiGraph,
+        score,
+        *_
+) -> nx.DiGraph:
+    if rule_map is None:
+        rule_map = nx.DiGraph()
+    elif rule in rule_map.nodes:
+        rule_map.nodes[rule]["score"] += score
+        return rule_map
+
+    rule_map.add_node(rule, priority=2, score=score)
 
     return rule_map
 
