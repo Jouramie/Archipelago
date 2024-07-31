@@ -68,7 +68,7 @@ class TestHasProgressionPercentSimplification(unittest.TestCase):
 
     def test_given_knowing_lower_bound_when_simplify_knowing_then_simplify_to_true(self):
         rule = HasProgressionPercent(1, 10)
-        simplification_state = AssumptionState().add_combinable_lower_bounds(rule)
+        simplification_state = rule.add_lower_bounds(AssumptionState())
 
         simplified_rule = rule.simplify_knowing(simplification_state)
 
@@ -76,7 +76,7 @@ class TestHasProgressionPercentSimplification(unittest.TestCase):
 
     def test_given_knowing_upper_bound_when_simplify_knowing_then_simplify_to_false(self):
         rule = HasProgressionPercent(1, 10)
-        simplification_state = AssumptionState().add_upper_bounds(rule)
+        simplification_state = rule.add_upper_bounds(AssumptionState())
 
         simplified_rule = rule.simplify_knowing(simplification_state)
 

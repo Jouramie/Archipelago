@@ -340,7 +340,7 @@ class StardewValleyWorld(World):
 
         region = self.multiworld.get_region(location_data.region, self.player)
         location = StardewLocation(self.player, location_data.name, None, region)
-        location.access_rule = to_optimized(rule)
+        location.access_rule = rule
         region.locations.append(location)
         location.place_locked_item(StardewItem(item, ItemClassification.progression, None, self.player))
 
