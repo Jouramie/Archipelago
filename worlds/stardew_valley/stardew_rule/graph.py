@@ -34,8 +34,20 @@ class Node:
 
     @property
     def depth(self):
-        return max(self.true_edge.node.depth if self.true_edge is not None else 0,
-                   self.false_edge.node.depth if self.false_edge is not None else 0) + 1
+        if self.is_leaf:
+            return 0
+        return max(self.true_edge.node.depth, self.false_edge.node.depth) + 1
+
+    def list_leaf_depth(self, _depth=0) -> List[int]:
+        if self.is_leaf:
+            return [_depth]
+
+        return self.true_edge.node.list_leaf_depth(_depth + 1) + self.false_edge.node.list_leaf_depth(_depth + 1)
+
+    @property
+    def average_leaf_depth(self):
+        leafs = self.list_leaf_depth()
+        return sum(leafs) / len(leafs)
 
     def __str__(self, depth=0):
         if self.is_leaf:
@@ -125,6 +137,9 @@ class ShortCircuitScore:
         # A score of more than 1 is overkill, it's better to evaluate a more balanced rule.
         return min(self.true, 1) + min(self.false, 1)
 
+    def is_significant(self):
+        return self.true >= 0.1 or self.false >= 0.1
+
 
 def to_rule_map(rule: StardewRule) -> nx.DiGraph:
     """Converts a rule to a graph representation.
@@ -142,7 +157,7 @@ def to_rule_map(rule: StardewRule) -> nx.DiGraph:
 def _recursive_to_rule_map(
         rule: StardewRule,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
         root: bool = False
 ) -> nx.DiGraph:
@@ -172,7 +187,7 @@ def _(rule: LiteralStardewRule, rule_map: nx.DiGraph, score, *_) -> nx.DiGraph:
 def _(
         rule: And,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
         root: bool = False
 ) -> nx.DiGraph:
@@ -182,8 +197,12 @@ def _(
         rule_map.add_node(rule, priority=0, score=score, root=root)
 
     subrules = rule.original_rules
-    # TODO should we really use min, not the true/false values?
+    # I checked empirically that using min here reduce the average depth of the tree, which should on average reduce the evaluation time.
     propagated_score = ShortCircuitScore(score.min / len(subrules), score.false)
+
+    if not propagated_score.is_significant():
+        return rule_map
+
     for subrule in subrules:
         # TODO simplify subrule while adding in state, with the assumption that other subrules did not short-circuit
         _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules)
@@ -196,7 +215,7 @@ def _(
 def _(
         rule: Or,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
         root: bool = False
 ) -> nx.DiGraph:
@@ -207,6 +226,10 @@ def _(
 
     subrules = rule.original_rules
     propagated_score = ShortCircuitScore(score.true, score.min / len(subrules))
+
+    if not propagated_score.is_significant():
+        return rule_map
+
     for subrule in subrules:
         _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules)
         rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.POSITIVE)
@@ -218,7 +241,7 @@ def _(
 def _(
         rule: Count,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
         root: bool = False
 ) -> nx.DiGraph:
@@ -235,6 +258,10 @@ def _(
         true_ratio = points / goal_to_true
         false_ratio = points / goal_to_false
         rule_propagated_score = ShortCircuitScore(score.true * true_ratio, score.false * false_ratio)
+
+        if not rule_propagated_score.is_significant():
+            continue
+
         _recursive_to_rule_map(subrule, rule_map, rule_propagated_score, combinable_rules)
         # TODO do we really use propagation?
         rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NONE)
@@ -246,7 +273,7 @@ def _(
 def _(
         rule: Received,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
         *_
 ) -> nx.DiGraph:
@@ -266,7 +293,7 @@ def _(
 def _(
         rule: HasProgressionPercent,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
         *_
 ) -> nx.DiGraph:
@@ -286,7 +313,7 @@ def _(
 def _(
         rule: TotalReceived,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         *_
 ) -> nx.DiGraph:
     if rule_map is None:
@@ -304,7 +331,7 @@ def _(
 def _(
         rule: Reach,
         rule_map: nx.DiGraph,
-        score,
+        score: ShortCircuitScore,
         *_
 ) -> nx.DiGraph:
     if rule_map is None:
@@ -354,8 +381,8 @@ def _recursive_create_evaluation_tree(root: BaseStardewRule, assumption_state: A
         return Node.leaf(root)
     root = cast(BaseStardewRule, root)
 
-    most_significant_rule: BaseStardewRule = max((node for node in rule_map.nodes.items() if node[1]["priority"] != 0),
-                                                 key=lambda x: (x[1]["score"].total, x[1]["priority"]))[0]
+    most_significant_rule, attrs = max((node for node in rule_map.nodes.items() if node[1]["priority"] != 0),
+                                       key=lambda x: (x[1]["score"].total, x[1]["priority"]))
 
     false_assumption_state = most_significant_rule.add_upper_bounds(assumption_state)
     false_evaluation_tree = _recursive_create_evaluation_tree(root, false_assumption_state)

@@ -148,5 +148,7 @@ class HasProgressionPercent(CombinableStardewRule):
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
 
+    # TODO override simplify knowing to count the number of progression items in the player's inventory
+
     def __repr__(self):
         return f"Received {self.percent}% progression items"

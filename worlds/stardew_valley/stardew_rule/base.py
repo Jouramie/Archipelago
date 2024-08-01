@@ -235,7 +235,14 @@ class CombinableStardewRule(BaseStardewRule, ABC):
         # Self has a lower value, so self evaluating to False mean that other will be False was well.
         return ShortCircuitPropagation.NEGATIVE
 
+    def simplify(self) -> StardewRule:
+        if self.value == 0:
+            return true_
+        return self
+
     def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
+        if self.value == 0:
+            return true_
         try:
             (lower_bound, upper_bound) = assumption_state.combinable_values[self.combination_key]
             if self.value <= lower_bound:

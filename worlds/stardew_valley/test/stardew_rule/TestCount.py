@@ -137,7 +137,8 @@ class TestSuperCount(unittest.TestCase):
             Received("Carrot", 1, 1)
         ], 2)
 
-        self.assertEqual(5, special_count.evaluation_tree.depth)
+        self.assertEqual(4, special_count.evaluation_tree.depth)
+        self.assertLessEqual(special_count.evaluation_tree.average_leaf_depth, 3)
 
         collection_state.has = Mock(return_value=False)
         self.assertFalse(special_count(collection_state))

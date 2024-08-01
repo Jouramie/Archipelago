@@ -24,10 +24,6 @@ class HasLogicMixin(BaseLogic[None]):
         return self.count(count, *(self.has(item) for item in items))
 
     @staticmethod
-    def special_count(count: int, *rules: StardewRule) -> StardewRule:
-        return Count(rules, count)
-
-    @staticmethod
     def count(count: int, *rules: StardewRule) -> StardewRule:
         assert rules, "Can't create a Count conditions without rules"
         assert len(rules) >= count, "Count need at least as many rules as the count"
