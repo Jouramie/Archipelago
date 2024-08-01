@@ -8,7 +8,8 @@ from typing import Optional, Tuple, Union, Dict, Hashable, Set, List, cast, Coll
 import networkx as nx
 
 from BaseClasses import CollectionState
-from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, AssumptionState, BaseStardewRule
+from .assumption import AssumptionState
+from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, BaseStardewRule
 from .count import Count
 from .literal import LiteralStardewRule
 from .protocol import StardewRule

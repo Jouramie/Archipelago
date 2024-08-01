@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
-from typing import ClassVar, Tuple, Dict, Hashable, Iterable
+from typing import ClassVar, Tuple, Dict, Hashable, Iterable, Optional
 
 
 @dataclass(frozen=True)
 class AssumptionState:
     UNKNOWN_BOUNDS: ClassVar[Tuple[int, int]] = (0, sys.maxsize)
+    combinable_values: Dict[Hashable, Tuple[int, int]] = field(default_factory=dict)
     """Lower bound is inclusive, upper bound is exclusive.
     """
-    combinable_values: Dict[Hashable, Tuple[int, int]] = field(default_factory=dict)
     spots: Dict[Hashable, bool] = field(default_factory=dict)
 
     def add_combinable_lower_bounds(self, lower_bounds: Iterable[Tuple[Hashable, int]]) -> AssumptionState:
@@ -41,11 +41,14 @@ class AssumptionState:
 
         return AssumptionState(self.combinable_values | new_bounds, self.spots)
 
-    def set_spot_available(self, spot: Hashable) -> AssumptionState:
-        return AssumptionState(self.combinable_values, {**self.spots, spot: True})
+    def get_spot_state(self, resolution_hint: str, spot: str) -> Optional[bool]:
+        return self.spots.get((resolution_hint, spot))
 
-    def set_spot_unavailable(self, spot: Hashable) -> AssumptionState:
-        return AssumptionState(self.combinable_values, {**self.spots, spot: False})
+    def set_spot_available(self, resolution_hint: str, spot: str) -> AssumptionState:
+        return AssumptionState(self.combinable_values, {**self.spots, (resolution_hint, spot): True})
+
+    def set_spot_unavailable(self, resolution_hint: str, spot: str) -> AssumptionState:
+        return AssumptionState(self.combinable_values, {**self.spots, (resolution_hint, spot): False})
 
     def __str__(self):
         return (f"{{{', '.join(f'{key}: {self.str_bound(*bound)}' for key, bound in self.combinable_values.items())}}}|"

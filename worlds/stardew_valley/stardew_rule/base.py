@@ -445,7 +445,6 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
     def simplify(self) -> StardewRule:
         # Duplicated will be eliminated by the rule creation process.
         simplified_rules = []
-        assumption_state = AssumptionState()
         for rule in self.current_rules:
             if rule is self.complement:
                 return self.complement
