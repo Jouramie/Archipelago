@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
-from typing import ClassVar, Tuple, Dict, Hashable, Iterable, Optional
+from typing import ClassVar, Hashable, Iterable
 
 
 @dataclass(frozen=True)
 class AssumptionState:
-    UNKNOWN_BOUNDS: ClassVar[Tuple[int, int]] = (0, sys.maxsize)
-    combinable_values: Dict[Hashable, Tuple[int, int]] = field(default_factory=dict)
+    UNKNOWN_BOUNDS: ClassVar[tuple[int, int]] = (0, sys.maxsize)
+    combinable_values: dict[Hashable, tuple[int, int]] = field(default_factory=dict)
     """Lower bound is inclusive, upper bound is exclusive.
     """
-    spots: Dict[Hashable, bool] = field(default_factory=dict)
+    spots: dict[Hashable, bool] = field(default_factory=dict)
 
-    def add_combinable_lower_bounds(self, lower_bounds: Iterable[Tuple[Hashable, int]]) -> AssumptionState:
+    def add_combinable_lower_bounds(self, lower_bounds: Iterable[tuple[Hashable, int]]) -> AssumptionState:
         new_bounds = {}
 
         for key, value in lower_bounds:
@@ -27,7 +27,7 @@ class AssumptionState:
 
         return AssumptionState(self.combinable_values | new_bounds, self.spots)
 
-    def add_combinable_upper_bounds(self, upper_bounds: Iterable[Tuple[Hashable, int]]) -> AssumptionState:
+    def add_combinable_upper_bounds(self, upper_bounds: Iterable[tuple[Hashable, int]]) -> AssumptionState:
         new_bounds = {}
 
         for key, value in upper_bounds:
@@ -41,7 +41,7 @@ class AssumptionState:
 
         return AssumptionState(self.combinable_values | new_bounds, self.spots)
 
-    def get_spot_state(self, resolution_hint: str, spot: str) -> Optional[bool]:
+    def get_spot_state(self, resolution_hint: str, spot: str) -> bool | None:
         return self.spots.get((resolution_hint, spot))
 
     def set_spot_available(self, resolution_hint: str, spot: str) -> AssumptionState:
