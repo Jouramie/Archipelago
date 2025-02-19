@@ -73,7 +73,7 @@ class ToolLogic(BaseLogic[Union[ToolLogicMixin, HasLogicMixin, ReceivedLogicMixi
         return self.has_tool(tool, material) & self.logic.region.can_reach(region)
 
     @cache_self1
-    def has_fishing_rod(self, level: int) -> StardewRule:
+    def has_fishing_rod(self, level: int = 1) -> StardewRule:
         assert 1 <= level <= 4, "Fishing rod 0 isn't real, it can't hurt you. Training is 1, Bamboo is 2, Fiberglass is 3 and Iridium is 4."
 
         if self.options.tool_progression & ToolProgression.option_progressive:
@@ -98,7 +98,7 @@ class ToolLogic(BaseLogic[Union[ToolLogicMixin, HasLogicMixin, ReceivedLogicMixi
         return season_rule & region_rule
 
     @cache_self1
-    def can_water(self, level: int) -> StardewRule:
+    def can_water(self, level: int = 0) -> StardewRule:
         tool_rule = self.logic.tool.has_tool(Tool.watering_can, ToolMaterial.tiers[level])
         spell_rule = self.logic.received(MagicSpell.water) & self.logic.magic.can_use_altar() & self.logic.received(ModSkillLevel.magic_level, level)
         return tool_rule | spell_rule

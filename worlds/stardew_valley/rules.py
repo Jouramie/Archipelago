@@ -370,7 +370,7 @@ def set_island_entrances_rules(logic: StardewLogic, multiworld, player, world_op
         Entrance.island_south_to_southeast: logic.received("Island Resort"),
         Entrance.use_island_resort: logic.received("Island Resort"),
         Entrance.island_west_to_qi_walnut_room: logic.received("Qi Walnut Room"),
-        Entrance.island_north_to_volcano: logic.tool.can_water(0) | logic.received("Volcano Bridge") | logic.mod.magic.can_blink(),
+        Entrance.island_north_to_volcano: logic.tool.can_water() | logic.received("Volcano Bridge") | logic.mod.magic.can_blink(),
         Entrance.volcano_to_secret_beach: logic.tool.can_water(2),
         Entrance.climb_to_volcano_5: logic.ability.can_mine_perfectly() & logic.tool.can_water(1),
         Entrance.talk_to_volcano_dwarf: logic.wallet.can_speak_dwarf(),
@@ -458,7 +458,7 @@ def set_walnut_puzzle_rules(logic: StardewLogic, multiworld, player, world_optio
     MultiWorldRules.add_rule(multiworld.get_location("Purple Flowers Island Survey", player), logic.walnut.can_start_field_office)
     MultiWorldRules.add_rule(multiworld.get_location("Purple Starfish Island Survey", player), logic.walnut.can_start_field_office)
     MultiWorldRules.add_rule(multiworld.get_location("Protruding Tree Walnut", player), logic.combat.has_slingshot)
-    MultiWorldRules.add_rule(multiworld.get_location("Starfish Tide Pool", player), logic.tool.has_fishing_rod(1))
+    MultiWorldRules.add_rule(multiworld.get_location("Starfish Tide Pool", player), logic.tool.has_fishing_rod())
     MultiWorldRules.add_rule(multiworld.get_location("Mermaid Song", player), logic.has(Furniture.flute_block))
 
 
@@ -486,7 +486,7 @@ def set_walnut_repeatable_rules(logic, multiworld, player, world_options):
     if WalnutsanityOptionName.repeatables not in world_options.walnutsanity:
         return
     for i in range(1, 6):
-        MultiWorldRules.set_rule(multiworld.get_location(f"Fishing Walnut {i}", player), logic.tool.has_fishing_rod(1))
+        MultiWorldRules.set_rule(multiworld.get_location(f"Fishing Walnut {i}", player), logic.tool.has_fishing_rod())
         MultiWorldRules.set_rule(multiworld.get_location(f"Harvesting Walnut {i}", player), logic.skill.can_get_farming_xp)
         MultiWorldRules.set_rule(multiworld.get_location(f"Mussel Node Walnut {i}", player), logic.tool.has_tool(Tool.pickaxe))
         MultiWorldRules.set_rule(multiworld.get_location(f"Volcano Rocks Walnut {i}", player), logic.tool.has_tool(Tool.pickaxe))

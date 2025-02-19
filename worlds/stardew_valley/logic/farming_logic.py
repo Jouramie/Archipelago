@@ -33,7 +33,7 @@ class FarmingLogic(BaseLogic[Union[HasLogicMixin, ReceivedLogicMixin, RegionLogi
 
     @cached_property
     def has_farming_tools(self) -> StardewRule:
-        return self.logic.tool.has_tool(Tool.hoe) & self.logic.tool.can_water(0)
+        return self.logic.tool.has_tool(Tool.hoe) & self.logic.tool.can_water()
 
     def has_fertilizer(self, tier: int) -> StardewRule:
         if tier <= 0:
