@@ -1,8 +1,8 @@
 import unittest
 
+from ..content.content_packs import all_content_pack_names
 from ..items import load_item_csv
 from ..locations import load_location_csv
-from ..options import Mods
 
 
 class TestCsvIntegrity(unittest.TestCase):
@@ -23,11 +23,11 @@ class TestCsvIntegrity(unittest.TestCase):
             unique_names = set(all_names)
             self.assertEqual(len(all_names), len(unique_names))
 
-        with self.subTest("Test all mod names are valid"):
-            mod_names = {item.content_pack for item in items}
-            for mod_name in mod_names:
-                if mod_name:
-                    self.assertIn(mod_name, Mods.valid_keys)
+        with self.subTest("Test all content packs are valid"):
+            content_packs = {item.content_pack for item in items}
+            for content_pack in content_packs:
+                if content_pack:
+                    self.assertIn(content_pack, all_content_pack_names)
 
     def test_locations_integrity(self):
         locations = load_location_csv()
@@ -47,7 +47,7 @@ class TestCsvIntegrity(unittest.TestCase):
             self.assertEqual(len(all_names), len(unique_names))
 
         with self.subTest("Test all mod names are valid"):
-            mod_names = {location.content_pack for location in locations}
-            for mod_name in mod_names:
-                if mod_name:
-                    self.assertIn(mod_name, Mods.valid_keys)
+            content_packs = {location.content_pack for location in locations}
+            for content_pack in content_packs:
+                if content_pack:
+                    self.assertIn(content_pack, all_content_pack_names)

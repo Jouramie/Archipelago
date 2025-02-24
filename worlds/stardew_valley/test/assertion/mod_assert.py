@@ -1,17 +1,18 @@
-from typing import Union, Iterable
+from typing import Iterable
 from unittest import TestCase
 
 from BaseClasses import MultiWorld
 from ... import item_table, location_table
+from ...content.content_packs import vanilla_content_pack_names
 from ...mods.mod_data import ModNames
 
 
 class ModAssertMixin(TestCase):
-    def assert_stray_mod_items(self, chosen_mods: Union[Iterable[str], str], multiworld: MultiWorld):
+    def assert_stray_mod_items(self, chosen_mods: Iterable[str] | str, multiworld: MultiWorld):
         if isinstance(chosen_mods, str):
-            chosen_mods = [chosen_mods]
+            chosen_mods = vanilla_content_pack_names | {chosen_mods}
         else:
-            chosen_mods = list(chosen_mods)
+            chosen_mods = vanilla_content_pack_names | set(chosen_mods)
 
         if ModNames.jasper in chosen_mods:
             # Jasper is a weird case because it shares NPC w/ SVE...

@@ -1,5 +1,5 @@
 from ..game_content import ContentPack, StardewContent
-from ..mod_registry import register_mod_content_pack
+from ..mod_registry import register_mod_content_pack, register_fake_content_pack
 from ..override import override
 from ..vanilla.ginger_island import ginger_island_content_pack as ginger_island_content_pack
 from ...data import villagers_data, fish_data
@@ -219,3 +219,4 @@ register_mod_content_pack(SVEContentPack(
         override(villagers_data.wizard, bachelor=True, mod_name=ModNames.sve),
     )
 ))
+register_fake_content_pack(SVE_GINGER_ISLAND_PACK)

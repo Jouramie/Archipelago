@@ -7,6 +7,7 @@ from typing import Dict, List, Protocol, Union
 
 from BaseClasses import Item, ItemClassification
 from .. import data
+from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..logic.logic_event import all_events
 
 ITEM_CODE_OFFSET = 717000
@@ -111,11 +112,17 @@ def load_item_csv():
     with files(data).joinpath("items.csv").open() as file:
         item_reader = csv.DictReader(file)
         for item in item_reader:
-            id = int(item["id"]) if item["id"] else None
+            item_id = int(item["id"]) if item["id"] else None
             classification = reduce((lambda a, b: a | b), {ItemClassification[str_classification] for str_classification in item["classification"].split(",")})
             groups = {Group[group] for group in item["groups"].split(",") if group}
-            mod_name = str(item["content_pack"]) if item["content_pack"] else None
-            items.append(ItemData(id, item["name"], classification, mod_name, groups))
+
+            content_pack_value = item["content_pack"]
+            if Group.GINGER_ISLAND in groups:
+                content_pack = content_pack_value + "+" + ginger_island_content_pack.name if content_pack_value else ginger_island_content_pack.name
+            else:
+                content_pack = content_pack_value if content_pack_value else None
+
+            items.append(ItemData(item_id, item["name"], classification, content_pack, groups))
     return items
 
 

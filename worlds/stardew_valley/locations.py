@@ -7,6 +7,7 @@ from typing import Optional, Dict, Protocol, List, Iterable
 from . import data
 from .bundles.bundle_room import BundleRoom
 from .content.game_content import StardewContent
+from .content.vanilla.ginger_island import ginger_island_content_pack
 from .data.game_item import ItemTag
 from .data.museum_data import all_museum_items
 from .mods.mod_data import ModNames
@@ -145,16 +146,22 @@ class StardewLocationCollector(Protocol):
 def load_location_csv() -> List[LocationData]:
     from importlib.resources import files
 
+    locations = []
     with files(data).joinpath("locations.csv").open() as file:
-        reader = csv.DictReader(file)
-        return [LocationData(int(location["id"]) if location["id"] else None,
-                             location["region"],
-                             location["name"],
-                             str(location["content_pack"]) if location["content_pack"] else None,
-                             frozenset(LocationTags[group]
-                                       for group in location["tags"].split(",")
-                                       if group))
-                for location in reader]
+        location_reader = csv.DictReader(file)
+        for location in location_reader:
+            location_id = int(location["id"]) if location["id"] else None
+            groups = frozenset(LocationTags[group] for group in location["tags"].split(",") if group)
+
+            content_pack_value = location["content_pack"]
+            if LocationTags.GINGER_ISLAND in groups:
+                content_pack = content_pack_value + "+" + ginger_island_content_pack.name if content_pack_value else ginger_island_content_pack.name
+            else:
+                content_pack = content_pack_value if content_pack_value else None
+
+            locations.append(LocationData(location_id, location["region"], location["name"], content_pack, groups))
+
+    return locations
 
 
 events_locations = [
@@ -340,11 +347,11 @@ def extend_mandatory_locations(randomized_locations: List[LocationData], options
     randomized_locations.extend(filtered_mandatory_locations)
 
 
-def extend_situational_quest_locations(randomized_locations: List[LocationData], options: StardewValleyOptions):
+def extend_situational_quest_locations(randomized_locations: List[LocationData], options: StardewValleyOptions, content: StardewContent):
     if options.quest_locations < 0:
         return
-    if ModNames.distant_lands in options.mods:
-        if ModNames.alecto in options.mods:
+    if ModNames.distant_lands in content.registered_packs:
+        if ModNames.alecto in content.registered_packs:
             randomized_locations.append(location_table[ModQuest.WitchOrder])
         else:
             randomized_locations.append(location_table[ModQuest.CorruptedCropsTask])
@@ -359,7 +366,7 @@ def extend_bundle_locations(randomized_locations: List[LocationData], bundle_roo
             randomized_locations.append(location_table[bundle.name])
 
 
-def extend_backpack_locations(randomized_locations: List[LocationData], options: StardewValleyOptions):
+def extend_backpack_locations(randomized_locations: List[LocationData], options: StardewValleyOptions, content: StardewContent):
     if options.backpack_progression == BackpackProgression.option_vanilla:
         return
 
@@ -367,22 +374,22 @@ def extend_backpack_locations(randomized_locations: List[LocationData], options:
         backpack_locations = [location for location in locations_by_tag[LocationTags.BACKPACK_TIER]]
     else:
         num_per_tier = options.backpack_size.count_per_tier()
-        backpack_tier_names = Backpack.get_purchasable_tiers(ModNames.big_backpack in options.mods)
+        backpack_tier_names = Backpack.get_purchasable_tiers(ModNames.big_backpack in content.registered_packs)
         backpack_locations = []
         for tier in backpack_tier_names:
             for i in range(1, num_per_tier + 1):
                 backpack_locations.append(location_table[f"{tier} {i}"])
                 i += 1
 
-    filtered_backpack_locations = filter_modded_locations(options, backpack_locations)
+    filtered_backpack_locations = filter_modded_locations(backpack_locations, content)
     randomized_locations.extend(filtered_backpack_locations)
 
 
-def extend_elevator_locations(randomized_locations: List[LocationData], options: StardewValleyOptions):
+def extend_elevator_locations(randomized_locations: List[LocationData], options: StardewValleyOptions, content: StardewContent):
     if options.elevator_progression == ElevatorProgression.option_vanilla:
         return
     elevator_locations = [location for location in locations_by_tag[LocationTags.ELEVATOR]]
-    filtered_elevator_locations = filter_modded_locations(options, elevator_locations)
+    filtered_elevator_locations = filter_modded_locations(elevator_locations, content)
     randomized_locations.extend(filtered_elevator_locations)
 
 
@@ -521,12 +528,12 @@ def create_locations(location_collector: StardewLocationCollector,
 
     extend_mandatory_locations(randomized_locations, options, content)
     extend_bundle_locations(randomized_locations, bundle_rooms)
-    extend_backpack_locations(randomized_locations, options)
+    extend_backpack_locations(randomized_locations, options, content)
 
     if content.features.tool_progression.is_progressive:
         randomized_locations.extend(locations_by_tag[LocationTags.TOOL_UPGRADE])
 
-    extend_elevator_locations(randomized_locations, options)
+    extend_elevator_locations(randomized_locations, options, content)
 
     skill_progression = content.features.skill_progression
     if skill_progression.is_progressive:
@@ -563,7 +570,7 @@ def create_locations(location_collector: StardewLocationCollector,
     extend_secrets_locations(randomized_locations, options, content)
 
     # Mods
-    extend_situational_quest_locations(randomized_locations, options)
+    extend_situational_quest_locations(randomized_locations, options, content)
 
     for location_data in randomized_locations:
         location_collector(location_data.name, location_data.code, location_data.region)
@@ -611,8 +618,8 @@ def filter_masteries_locations(content: StardewContent, locations: Iterable[Loca
     return (location for location in locations if LocationTags.REQUIRES_MASTERIES not in location.tags)
 
 
-def filter_modded_locations(options: StardewValleyOptions, locations: Iterable[LocationData]) -> Iterable[LocationData]:
-    return (location for location in locations if location.content_pack is None or location.content_pack in options.mods)
+def filter_modded_locations(locations: Iterable[LocationData], content: StardewContent) -> Iterable[LocationData]:
+    return (location for location in locations if location.content_pack is None or location.content_pack in content.registered_packs)
 
 
 def filter_disabled_locations(options: StardewValleyOptions, content: StardewContent, locations: Iterable[LocationData]) -> Iterable[LocationData]:
@@ -621,5 +628,5 @@ def filter_disabled_locations(options: StardewValleyOptions, content: StardewCon
     locations_island_filter = filter_ginger_island(options, locations_farm_filter)
     locations_qi_filter = filter_qi_order_locations(options, locations_island_filter)
     locations_masteries_filter = filter_masteries_locations(content, locations_qi_filter)
-    locations_mod_filter = filter_modded_locations(options, locations_masteries_filter)
+    locations_mod_filter = filter_modded_locations(locations_masteries_filter, content)
     return locations_mod_filter
