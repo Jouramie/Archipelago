@@ -2,7 +2,7 @@ import csv
 import enum
 from dataclasses import dataclass
 from random import Random
-from typing import Optional, Dict, Protocol, List, FrozenSet, Iterable
+from typing import Optional, Dict, Protocol, List, Iterable
 
 from . import data
 from .bundles.bundle_room import BundleRoom
@@ -126,14 +126,14 @@ class LocationTags(enum.Enum):
 
 @dataclass(frozen=True)
 class LocationData:
-    code_without_offset: Optional[int]
+    code_without_offset: int | None
     region: str
     name: str
-    mod_name: Optional[str] = None
-    tags: FrozenSet[LocationTags] = frozenset()
+    content_pack: str | None = None
+    tags: frozenset[LocationTags] = frozenset()
 
     @property
-    def code(self) -> Optional[int]:
+    def code(self) -> int | None:
         return LOCATION_CODE_OFFSET + self.code_without_offset if self.code_without_offset is not None else None
 
 
@@ -150,7 +150,7 @@ def load_location_csv() -> List[LocationData]:
         return [LocationData(int(location["id"]) if location["id"] else None,
                              location["region"],
                              location["name"],
-                             str(location["mod_name"]) if location["mod_name"] else None,
+                             str(location["content_pack"]) if location["content_pack"] else None,
                              frozenset(LocationTags[group]
                                        for group in location["tags"].split(",")
                                        if group))
@@ -612,7 +612,7 @@ def filter_masteries_locations(content: StardewContent, locations: Iterable[Loca
 
 
 def filter_modded_locations(options: StardewValleyOptions, locations: Iterable[LocationData]) -> Iterable[LocationData]:
-    return (location for location in locations if location.mod_name is None or location.mod_name in options.mods)
+    return (location for location in locations if location.content_pack is None or location.content_pack in options.mods)
 
 
 def filter_disabled_locations(options: StardewValleyOptions, content: StardewContent, locations: Iterable[LocationData]) -> Iterable[LocationData]:

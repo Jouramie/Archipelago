@@ -496,7 +496,7 @@ def set_story_quests_rules(all_location_names: Set[str], logic: StardewLogic, mu
     if world_options.quest_locations < 0:
         return
     for quest in locations.locations_by_tag[LocationTags.STORY_QUEST]:
-        if quest.name in all_location_names and (quest.mod_name is None or quest.mod_name in world_options.mods):
+        if quest.name in all_location_names and (quest.content_pack is None or quest.content_pack in world_options.mods):
             MultiWorldRules.set_rule(multiworld.get_location(quest.name, player),
                                      logic.registry.quest_rules[quest.name])
 

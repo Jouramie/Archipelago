@@ -24,7 +24,7 @@ class TestCsvIntegrity(unittest.TestCase):
             self.assertEqual(len(all_names), len(unique_names))
 
         with self.subTest("Test all mod names are valid"):
-            mod_names = {item.mod_name for item in items}
+            mod_names = {item.content_pack for item in items}
             for mod_name in mod_names:
                 if mod_name:
                     self.assertIn(mod_name, Mods.valid_keys)
@@ -47,7 +47,7 @@ class TestCsvIntegrity(unittest.TestCase):
             self.assertEqual(len(all_names), len(unique_names))
 
         with self.subTest("Test all mod names are valid"):
-            mod_names = {location.mod_name for location in locations}
+            mod_names = {location.content_pack for location in locations}
             for mod_name in mod_names:
                 if mod_name:
                     self.assertIn(mod_name, Mods.valid_keys)

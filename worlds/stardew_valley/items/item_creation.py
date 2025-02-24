@@ -548,7 +548,7 @@ def create_sve_special_items(item_factory: StardewItemFactory, options: StardewV
     if ModNames.sve not in options.mods:
         return
 
-    items.extend([item_factory(item) for item in items_by_group[Group.MOD_WARP] if item.mod_name == ModNames.sve])
+    items.extend([item_factory(item) for item in items_by_group[Group.MOD_WARP] if item.content_pack == ModNames.sve])
 
 
 def create_quest_rewards_sve(item_factory: StardewItemFactory, options: StardewValleyOptions, items: List[Item]):
@@ -597,7 +597,7 @@ def fill_with_resource_packs_and_traps(item_factory: StardewItemFactory, options
     trap_items = [trap for trap in items_by_group[Group.TRAP]
                   if trap.name not in items_already_added_names and
                   Group.DEPRECATED not in trap.groups and
-                  (trap.mod_name is None or trap.mod_name in options.mods) and
+                  (trap.content_pack is None or trap.content_pack in options.mods) and
                   options.trap_distribution[trap.name] > 0]
     player_buffs = get_allowed_player_buffs(options.enabled_filler_buffs)
 
@@ -673,7 +673,7 @@ def filter_ginger_island_items(exclude_island: bool, items: List[ItemData]) -> L
 
 
 def filter_mod_items(mods: Set[str], items: List[ItemData]) -> List[ItemData]:
-    return [item for item in items if item.mod_name is None or item.mod_name in mods]
+    return [item for item in items if item.content_pack is None or item.content_pack in mods]
 
 
 def remove_excluded_items(items, options: StardewValleyOptions):

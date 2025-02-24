@@ -41,7 +41,7 @@ class ShippingLogic(BaseLogic[Union[ReceivedLogicMixin, ShippingLogicMixin, Buil
                 continue
             if exclude_qi and LocationTags.REQUIRES_QI_ORDERS in location.tags:
                 continue
-            if location.mod_name and location.mod_name not in mod_list:
+            if location.content_pack and location.content_pack not in mod_list:
                 continue
             all_items_to_ship.append(location.name[len(shipsanity_prefix):])
         return self.logic.building.has_building(Building.shipping_bin) & self.logic.has_all(*all_items_to_ship)

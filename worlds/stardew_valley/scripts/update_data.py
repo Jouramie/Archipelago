@@ -42,7 +42,7 @@ def write_location_csv(locations: List[LocationData]):
                 "name": location.name,
                 "region": location.region,
                 "tags": ",".join(sorted(group.name for group in location.tags)),
-                "mod_name": location.mod_name
+                "mod_name": location.content_pack
             }
             write.writerow(location_dict)
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     for location in loaded_locations:
         if location.code_without_offset is None:
             locations_to_write.append(
-                LocationData(next(location_counter), location.region, location.name, location.mod_name, location.tags))
+                LocationData(next(location_counter), location.region, location.name, location.content_pack, location.tags))
             continue
 
         locations_to_write.append(location)

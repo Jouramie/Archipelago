@@ -3,7 +3,7 @@ import enum
 from dataclasses import dataclass, field
 from functools import reduce
 from pathlib import Path
-from typing import Dict, List, Protocol, Union, Set, Optional
+from typing import Dict, List, Protocol, Union
 
 from BaseClasses import Item, ItemClassification
 from .. import data
@@ -80,18 +80,18 @@ class Group(enum.Enum):
 
 @dataclass(frozen=True)
 class ItemData:
-    code_without_offset: Optional[int]
+    code_without_offset: int | None
     name: str
     classification: ItemClassification
-    mod_name: Optional[str] = None
-    groups: Set[Group] = field(default_factory=frozenset)
+    content_pack: str | None = None
+    groups: set[Group] = field(default_factory=frozenset)
 
     def __post_init__(self):
         if not isinstance(self.groups, frozenset):
             super().__setattr__("groups", frozenset(self.groups))
 
     @property
-    def code(self):
+    def code(self) -> int | None:
         return ITEM_CODE_OFFSET + self.code_without_offset if self.code_without_offset is not None else None
 
     def has_any_group(self, *group: Group) -> bool:
@@ -114,7 +114,7 @@ def load_item_csv():
             id = int(item["id"]) if item["id"] else None
             classification = reduce((lambda a, b: a | b), {ItemClassification[str_classification] for str_classification in item["classification"].split(",")})
             groups = {Group[group] for group in item["groups"].split(",") if group}
-            mod_name = str(item["mod_name"]) if item["mod_name"] else None
+            mod_name = str(item["content_pack"]) if item["content_pack"] else None
             items.append(ItemData(id, item["name"], classification, mod_name, groups))
     return items
 

@@ -108,7 +108,7 @@ class GoalLogic(BaseLogic[StardewLogic]):
         for location in locations_by_tag[LocationTags.COOKSANITY]:
             if exclude_island and LocationTags.GINGER_ISLAND in location.tags:
                 continue
-            if location.mod_name and location.mod_name not in self.options.mods:
+            if location.content_pack and location.content_pack not in self.options.mods:
                 continue
             all_recipes_names.append(location.name[len(cooksanity_prefix):])
         all_recipes = [all_cooking_recipes_by_name[recipe_name] for recipe_name in all_recipes_names]
@@ -127,7 +127,7 @@ class GoalLogic(BaseLogic[StardewLogic]):
             # FIXME Remove when recipes are in content packs
             if exclude_masteries and LocationTags.REQUIRES_MASTERIES in location.tags:
                 continue
-            if location.mod_name and location.mod_name not in self.options.mods:
+            if location.content_pack and location.content_pack not in self.options.mods:
                 continue
             all_recipes_names.append(location.name[len(craftsanity_prefix):])
         all_recipes = [all_crafting_recipes_by_name[recipe_name] for recipe_name in all_recipes_names]

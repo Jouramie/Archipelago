@@ -147,7 +147,7 @@ class TestTraps(SVTestCase):
             world_options.update({TrapDifficulty.internal_name: trap_option.options[value]})
             with solo_multiworld(world_options) as (multi_world, _):
                 trap_items = [item_data.name for item_data in items_by_group[Group.TRAP] if
-                              Group.DEPRECATED not in item_data.groups and item_data.mod_name is None]
+                              Group.DEPRECATED not in item_data.groups and item_data.content_pack is None]
                 multiworld_items = [item.name for item in multi_world.get_items()]
                 for item in trap_items:
                     with self.subTest(f"Option: {value}, Item: {item}"):
@@ -174,7 +174,7 @@ class TestSpecialOrders(SVTestCase):
                 self.assertNotIn(LocationTags.SPECIAL_ORDER_QI, location.tags)
 
             for board_location in locations_by_tag[LocationTags.SPECIAL_ORDER_BOARD]:
-                if board_location.mod_name:
+                if board_location.content_pack:
                     continue
                 self.assertIn(board_location.name, locations_in_pool)
 
@@ -186,12 +186,12 @@ class TestSpecialOrders(SVTestCase):
 
             locations_in_pool = {location.name for location in multi_world.get_locations()}
             for qi_location in locations_by_tag[LocationTags.SPECIAL_ORDER_QI]:
-                if qi_location.mod_name:
+                if qi_location.content_pack:
                     continue
                 self.assertIn(qi_location.name, locations_in_pool)
 
             for board_location in locations_by_tag[LocationTags.SPECIAL_ORDER_BOARD]:
-                if board_location.mod_name:
+                if board_location.content_pack:
                     continue
                 self.assertIn(board_location.name, locations_in_pool)
 
