@@ -1,9 +1,9 @@
 import logging
 from random import Random
-from typing import List, Set
+from typing import List, Protocol
 
 from BaseClasses import Item, ItemClassification
-from .item_data import StardewItemFactory, items_by_group, Group, ItemData, item_table
+from .item_data import items_by_group, Group, ItemData, item_table
 from ..content.feature import friendsanity
 from ..content.game_content import StardewContent
 from ..data.game_item import ItemTag
@@ -22,6 +22,17 @@ from ..strings.tool_names import Tool
 from ..strings.wallet_item_names import Wallet
 
 logger = logging.getLogger(__name__)
+
+
+class StardewItemFactory(Protocol):
+    def __call__(self, item: str | ItemData, /, *, classification_pre_fill: ItemClassification = None,
+                 classification_post_fill: ItemClassification = None) -> Item:
+        """
+        :param item: The item to create. Can be the name of the item or the item data.
+        :param classification_pre_fill: The classification to use for the item before the fill. If None, the basic classification of the item is used.
+        :param classification_post_fill: The classification to use for the item after the fill. If None, the pre_fill classification will be used.
+        """
+        raise NotImplementedError
 
 
 def get_too_many_items_error_message(locations_count: int, items_count: int) -> str:
@@ -185,7 +196,9 @@ def create_tools(item_factory: StardewItemFactory, content: StardewContent, item
         # Trash can is only used in tool upgrade logic, so the last trash can is not progression because it basically does not unlock anything.
         if tool == Tool.trash_can:
             count -= 1
-            items.append(item_factory(item, ItemClassification.useful))
+            items.append(item_factory(item,
+                                      classification_pre_fill=ItemClassification.useful,
+                                      classification_post_fill=ItemClassification.progression_skip_balancing))
 
         items.extend([item_factory(item) for _ in range(count)])
 
@@ -207,11 +220,11 @@ def create_skills(item_factory: StardewItemFactory, content: StardewContent, ite
 
 def create_wizard_buildings(item_factory: StardewItemFactory, options: StardewValleyOptions, items: List[Item]):
     useless_buildings_classification = ItemClassification.progression_skip_balancing if world_is_perfection(options) else ItemClassification.useful
-    items.append(item_factory("Earth Obelisk", useless_buildings_classification))
-    items.append(item_factory("Water Obelisk", useless_buildings_classification))
+    items.append(item_factory("Earth Obelisk", classification_pre_fill=useless_buildings_classification))
+    items.append(item_factory("Water Obelisk", classification_pre_fill=useless_buildings_classification))
     items.append(item_factory("Desert Obelisk"))
     items.append(item_factory("Junimo Hut"))
-    items.append(item_factory("Gold Clock", useless_buildings_classification))
+    items.append(item_factory("Gold Clock", classification_pre_fill=useless_buildings_classification))
     if options.exclude_ginger_island == ExcludeGingerIsland.option_false:
         items.append(item_factory("Island Obelisk"))
     if ModNames.deepwoods in options.mods:
@@ -244,7 +257,7 @@ def create_special_quest_rewards(item_factory: StardewItemFactory, options: Star
     if ModNames.sve in options.mods:
         items.append(item_factory(Wallet.bears_knowledge))
     else:
-        items.append(item_factory(Wallet.bears_knowledge, ItemClassification.useful))  # Not necessary outside of SVE
+        items.append(item_factory(Wallet.bears_knowledge, classification_pre_fill=ItemClassification.useful))  # Not necessary outside of SVE
     items.append(item_factory(Wallet.iridium_snake_milk))
     items.append(item_factory("Dark Talisman"))
     if options.exclude_ginger_island == ExcludeGingerIsland.option_false:
@@ -263,25 +276,25 @@ def create_help_wanted_quest_rewards(item_factory: StardewItemFactory, options: 
 
 def create_stardrops(item_factory: StardewItemFactory, options: StardewValleyOptions, content: StardewContent, items: List[Item]):
     stardrops_classification = get_stardrop_classification(options)
-    items.append(item_factory("Stardrop", stardrops_classification))  # The Mines level 100
-    items.append(item_factory("Stardrop", stardrops_classification))  # Old Master Cannoli
-    items.append(item_factory("Stardrop", stardrops_classification))  # Krobus Stardrop
+    items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # The Mines level 100
+    items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Old Master Cannoli
+    items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Krobus Stardrop
     if content.features.fishsanity.is_enabled:
-        items.append(item_factory("Stardrop", stardrops_classification))  # Master Angler Stardrop
+        items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Master Angler Stardrop
     if ModNames.deepwoods in options.mods:
-        items.append(item_factory("Stardrop", stardrops_classification))  # Petting the Unicorn
+        items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Petting the Unicorn
     if content.features.friendsanity.is_enabled:
-        items.append(item_factory("Stardrop", stardrops_classification))  # Spouse Stardrop
+        items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Spouse Stardrop
     if options.secretsanity >= Secretsanity.option_all:
         # Always Progression as a different secret requires a stardrop
-        items.append(item_factory("Stardrop", ItemClassification.progression))  # Old Master Cannoli.
+        items.append(item_factory("Stardrop", classification_pre_fill=ItemClassification.progression))  # Old Master Cannoli.
 
 
 def create_museum_items(item_factory: StardewItemFactory, options: StardewValleyOptions, items: List[Item]):
     items.append(item_factory(Wallet.rusty_key))
     items.append(item_factory(Wallet.dwarvish_translation_guide))
     items.append(item_factory("Ancient Seeds Recipe"))
-    items.append(item_factory("Stardrop", get_stardrop_classification(options)))
+    items.append(item_factory("Stardrop", classification_pre_fill=get_stardrop_classification(options)))
     if options.museumsanity == Museumsanity.option_none:
         return
     items.extend(item_factory(item) for item in ["Magic Rock Candy"] * 10)
@@ -299,13 +312,13 @@ def create_friendsanity_items(item_factory: StardewItemFactory, options: Stardew
         item_name = friendsanity.to_item_name(villager.name)
 
         for _ in content.features.friendsanity.get_randomized_hearts(villager):
-            items.append(item_factory(item_name, ItemClassification.progression))
+            items.append(item_factory(item_name))
 
     need_pet = options.goal == Goal.option_grandpa_evaluation
     pet_item_classification = ItemClassification.progression_skip_balancing if need_pet else ItemClassification.useful
 
     for _ in content.features.friendsanity.get_pet_randomized_hearts():
-        items.append(item_factory(friendsanity.pet_heart_item_name, pet_item_classification))
+        items.append(item_factory(friendsanity.pet_heart_item_name, classification_pre_fill=pet_item_classification))
 
 
 def create_babies(item_factory: StardewItemFactory, items: List[Item], random: Random):
@@ -366,7 +379,7 @@ def create_festival_rewards(item_factory: StardewItemFactory, options: StardewVa
         return
 
     festival_rewards = [item_factory(item) for item in items_by_group[Group.FESTIVAL] if item.classification != ItemClassification.filler]
-    items.extend([*festival_rewards, item_factory("Stardrop", get_stardrop_classification(options))])
+    items.extend([*festival_rewards, item_factory("Stardrop", classification_pre_fill=get_stardrop_classification(options))])
 
 
 def create_walnuts(item_factory: StardewItemFactory, options: StardewValleyOptions, items: List[Item]):
@@ -587,70 +600,72 @@ def weapons_count(options: StardewValleyOptions):
     return weapon_count
 
 
-def fill_with_resource_packs_and_traps(item_factory: StardewItemFactory, options: StardewValleyOptions, random: Random,
-                                       items_already_added: List[Item],
+def fill_with_resource_packs_and_traps(item_factory: StardewItemFactory, options: StardewValleyOptions, random: Random, items_already_added: List[Item],
                                        number_locations: int) -> List[Item]:
-    include_traps = options.trap_difficulty != TrapDifficulty.option_no_traps
-    items_already_added_names = [item.name for item in items_already_added]
+    def filler_factory(item: ItemData):
+        # Yes some fillers are progression. We add multiple
+        if ItemClassification.progression in item.classification:
+            return item_factory(item,
+                                classification_pre_fill=ItemClassification.filler,
+                                classification_post_fill=ItemClassification.progression_skip_balancing)
+        return item_factory(item)
+
+    include_traps = options.trap_difficulty.include_traps()
+    items_already_added_names = {item.name for item in items_already_added}
+
     useful_resource_packs = [pack for pack in items_by_group[Group.RESOURCE_PACK_USEFUL]
                              if pack.name not in items_already_added_names]
-    trap_items = [trap for trap in items_by_group[Group.TRAP]
-                  if trap.name not in items_already_added_names and
-                  Group.DEPRECATED not in trap.groups and
-                  (trap.mod_name is None or trap.mod_name in options.mods) and
-                  options.trap_distribution[trap.name] > 0]
     player_buffs = get_allowed_player_buffs(options.enabled_filler_buffs)
-
-    priority_filler_items = []
-    priority_filler_items.extend(useful_resource_packs)
-    priority_filler_items.extend(player_buffs)
+    traps = get_allowed_traps(options)
+    priority_fillers = useful_resource_packs + player_buffs
 
     if include_traps:
-        priority_filler_items.extend(trap_items)
+        traps = [trap
+                 for trap in items_by_group[Group.TRAP]
+                 if trap.name not in items_already_added_names
+                 and Group.DEPRECATED not in trap.groups
+                 and (trap.mod_name is None or trap.mod_name in options.mods)
+                 and options.trap_distribution[trap.name] > 0]
+        priority_fillers.extend(traps)
 
     exclude_ginger_island = options.exclude_ginger_island == ExcludeGingerIsland.option_true
-    all_filler_packs = remove_excluded_items(get_all_filler_items(include_traps, exclude_ginger_island), options)
-    all_filler_packs.extend(player_buffs)
-    priority_filler_items = remove_excluded_items(priority_filler_items, options)
+    priority_fillers = remove_excluded_items(priority_fillers, options)
 
-    number_priority_items = len(priority_filler_items)
     required_resource_pack = number_locations - len(items_already_added)
-    if required_resource_pack < number_priority_items:
-        chosen_priority_items = [item_factory(resource_pack) for resource_pack in
-                                 random.sample(priority_filler_items, required_resource_pack)]
-        return chosen_priority_items
+    if required_resource_pack < len(priority_fillers):
+        return [filler_factory(priority_filler)
+                for priority_filler in random.sample(priority_fillers, required_resource_pack)]
 
-    items = []
-    chosen_priority_items = [item_factory(resource_pack,
-                                          ItemClassification.trap if resource_pack.classification == ItemClassification.trap else ItemClassification.useful)
-                             for resource_pack in priority_filler_items]
-    items.extend(chosen_priority_items)
-    required_resource_pack -= number_priority_items
-    all_filler_packs = [filler_pack for filler_pack in all_filler_packs
-                        if Group.MAXIMUM_ONE not in filler_pack.groups or
-                        (filler_pack.name not in [priority_item.name for priority_item in
-                                                  priority_filler_items] and filler_pack.name not in items_already_added_names)]
+    all_fillers = remove_excluded_items(get_all_filler_items(include_traps, exclude_ginger_island), options)
+    all_fillers.extend(player_buffs)
 
-    filler_weights = get_filler_weights(options, all_filler_packs)
+    chosen_fillers = []
+    chosen_fillers.extend([filler_factory(priority_filler) for priority_filler in priority_fillers])
+    required_resource_pack -= len(priority_fillers)
+    items_already_added_names |= {priority_item.name for priority_item in priority_fillers}
+    all_fillers = [filler_pack
+                   for filler_pack in all_fillers
+                   if Group.MAXIMUM_ONE not in filler_pack.groups and filler_pack.name not in items_already_added_names]
+
+    filler_weights = get_filler_weights(options, all_fillers)
 
     while required_resource_pack > 0:
-        resource_pack = random.choices(all_filler_packs, weights=filler_weights, k=1)[0]
+        resource_pack = random.choices(all_fillers, weights=filler_weights, k=1)[0]
         exactly_2 = Group.EXACTLY_TWO in resource_pack.groups
         while exactly_2 and required_resource_pack == 1:
-            resource_pack = random.choices(all_filler_packs, weights=filler_weights, k=1)[0]
+            resource_pack = random.choices(all_fillers, weights=filler_weights, k=1)[0]
             exactly_2 = Group.EXACTLY_TWO in resource_pack.groups
-        classification = ItemClassification.useful if resource_pack.classification == ItemClassification.progression else resource_pack.classification
-        items.append(item_factory(resource_pack, classification))
+        chosen_fillers.append(filler_factory(resource_pack))
         required_resource_pack -= 1
         if exactly_2:
-            items.append(item_factory(resource_pack, classification))
+            chosen_fillers.append(filler_factory(resource_pack))
             required_resource_pack -= 1
         if exactly_2 or Group.MAXIMUM_ONE in resource_pack.groups:
-            index = all_filler_packs.index(resource_pack)
-            all_filler_packs.pop(index)
+            index = all_fillers.index(resource_pack)
+            all_fillers.pop(index)
             filler_weights.pop(index)
 
-    return items
+    return chosen_fillers
 
 
 def get_filler_weights(options: StardewValleyOptions, all_filler_packs: List[ItemData]):
@@ -662,29 +677,6 @@ def get_filler_weights(options: StardewValleyOptions, all_filler_packs: List[Ite
             num = options.trap_distribution.default_weight
         weights.append(num)
     return weights
-
-
-def filter_deprecated_items(items: List[ItemData]) -> List[ItemData]:
-    return [item for item in items if Group.DEPRECATED not in item.groups]
-
-
-def filter_ginger_island_items(exclude_island: bool, items: List[ItemData]) -> List[ItemData]:
-    return [item for item in items if not exclude_island or Group.GINGER_ISLAND not in item.groups]
-
-
-def filter_mod_items(mods: Set[str], items: List[ItemData]) -> List[ItemData]:
-    return [item for item in items if item.mod_name is None or item.mod_name in mods]
-
-
-def remove_excluded_items(items, options: StardewValleyOptions):
-    return remove_excluded_items_island_mods(items, options.exclude_ginger_island == ExcludeGingerIsland.option_true, options.mods.value)
-
-
-def remove_excluded_items_island_mods(items, exclude_ginger_island: bool, mods: Set[str]):
-    deprecated_filter = filter_deprecated_items(items)
-    ginger_island_filter = filter_ginger_island_items(exclude_ginger_island, deprecated_filter)
-    mod_filter = filter_mod_items(mods, ginger_island_filter)
-    return mod_filter
 
 
 def generate_filler_choice_pool(options: StardewValleyOptions) -> list[str]:
@@ -735,6 +727,20 @@ def get_allowed_player_buffs(buff_option: EnabledFillerBuffs) -> List[ItemData]:
     if BuffOptionName.glow in buff_option:
         allowed_buffs.append(item_table[Buff.glow])
     return allowed_buffs
+
+
+def get_allowed_traps(options: StardewValleyOptions, already_added_items: set[str]) -> list[ItemData]:
+    if not options.trap_difficulty.include_traps():
+        return []
+
+    return [
+        trap
+        for trap in items_by_group[Group.TRAP]
+        if trap.name not in already_added_items
+           and Group.DEPRECATED not in trap.groups
+           and (trap.mod_name is None or trap.mod_name in options.mods)
+           and options.trap_distribution[trap.name] > 0
+    ]
 
 
 def get_stardrop_classification(options) -> ItemClassification:

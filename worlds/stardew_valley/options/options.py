@@ -2,6 +2,7 @@ import sys
 import typing
 from dataclasses import dataclass
 from typing import Protocol, ClassVar
+
 from schema import And, Schema
 
 from Options import Range, NamedRange, Toggle, Choice, OptionSet, PerGameCommonOptions, DeathLink, OptionList, Visibility, OptionDict, Removed
@@ -726,6 +727,9 @@ class TrapDifficulty(Choice):
     option_hell = 4
     option_nightmare = 5
 
+    def include_traps(self) -> bool:
+        return self.value > 0
+
 
 trap_default_weight = 100
 
@@ -942,4 +946,3 @@ class StardewValleyOptions(PerGameCommonOptions):
 
     # removed:
     trap_items: TrapItems
-    

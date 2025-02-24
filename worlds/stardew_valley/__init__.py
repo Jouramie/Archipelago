@@ -113,6 +113,7 @@ class StardewValleyWorld(World):
     web = StardewWebWorld()
     modified_bundles: List[BundleRoom]
     randomized_entrances: Dict[str, str]
+    classifications_to_override_post_fill: list[tuple[Item, ItemClassification]]
 
     total_progression_items: int
 
@@ -310,14 +311,16 @@ class StardewValleyWorld(World):
     def get_all_location_names(self) -> List[str]:
         return list(location.name for location in self.multiworld.get_locations(self.player))
 
-    def create_item(self, item: str | ItemData, override_classification: ItemClassification = None) -> StardewItem:
+    def create_item(self, item: str | ItemData,
+                    classification_pre_fill: ItemClassification = None,
+                    classification_post_fill: ItemClassification = None) -> StardewItem:
         if isinstance(item, str):
             item = item_table[item]
 
-        if override_classification is None:
-            override_classification = item.classification
+        if classification_pre_fill is None:
+            classification_pre_fill = item.classification
 
-        return StardewItem(item.name, override_classification, item.code, self.player)
+        return StardewItem(item.name, classification_pre_fill, item.code, self.player)
 
     def create_event_location(self, location_data: LocationData, rule: StardewRule = None, item: Optional[str] = None):
         if rule is None:
@@ -341,6 +344,11 @@ class StardewValleyWorld(World):
 
     def generate_basic(self):
         pass
+
+    def post_fill(self) -> None:
+        # TODO should we update the prog item count?
+        for item, classification in self.classifications_to_override_post_fill:
+            item.classification = classification
 
     def get_filler_item_name(self) -> str:
         if not self.filler_item_pool_names:

@@ -2,16 +2,13 @@ import csv
 import enum
 from dataclasses import dataclass, field
 from functools import reduce
-from pathlib import Path
-from typing import Dict, List, Protocol, Union, Set, Optional
+from typing import Dict, List, Set, Optional
 
-from BaseClasses import Item, ItemClassification
+from BaseClasses import ItemClassification
 from .. import data
 from ..logic.logic_event import all_events
 
 ITEM_CODE_OFFSET = 717000
-
-world_folder = Path(__file__).parent
 
 
 class Group(enum.Enum):
@@ -97,11 +94,6 @@ class ItemData:
     def has_any_group(self, *group: Group) -> bool:
         groups = set(group)
         return bool(groups.intersection(self.groups))
-
-
-class StardewItemFactory(Protocol):
-    def __call__(self, name: Union[str, ItemData], override_classification: ItemClassification = None) -> Item:
-        raise NotImplementedError
 
 
 def load_item_csv():
