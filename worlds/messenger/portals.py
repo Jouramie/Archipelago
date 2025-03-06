@@ -7,7 +7,6 @@ from Options import PlandoConnection
 if TYPE_CHECKING:
     from . import MessengerWorld
 
-
 PORTALS = [
     "Autumn Hills",
     "Riviere Turquoise",
@@ -16,7 +15,6 @@ PORTALS = [
     "Searing Crags",
     "Glacial Peak",
 ]
-
 
 SHOP_POINTS = {
     "Autumn Hills": [
@@ -112,7 +110,6 @@ SHOP_POINTS = {
     ]
 }
 
-
 CHECKPOINTS = {
     "Autumn Hills": [
         "Hope Latch",
@@ -185,7 +182,6 @@ CHECKPOINTS = {
     ]
 }
 
-
 REGION_ORDER = [
     "Autumn Hills",
     "Forlorn Temple",
@@ -202,6 +198,16 @@ REGION_ORDER = [
     "Elemental Skylands",
     "Sunken Shrine",
 ]
+
+
+def find_spot(portal_key: int) -> str:
+    """finds the spot associated with the portal key"""
+    parent = REGION_ORDER[portal_key // 100]
+    if portal_key % 100 == 0:
+        return f"{parent} Portal"
+    if portal_key % 100 // 10 == 1:
+        return SHOP_POINTS[parent][portal_key % 10]
+    return CHECKPOINTS[parent][portal_key % 10]
 
 
 def shuffle_portals(world: "MessengerWorld") -> None:
