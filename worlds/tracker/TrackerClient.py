@@ -137,7 +137,7 @@ class TrackerCommandProcessor(ClientCommandProcessor):
         self.ctx.ignored_locations.clear()
         updateTracker(self.ctx)
         logger.info("Reset ignored locations.")
-
+    
     def _cmd_toggle_auto_tab(self):
         """Toggle the auto map tabbing function"""
         self.ctx.auto_tab = not self.ctx.auto_tab
@@ -591,7 +591,7 @@ class TrackerGameContext(CommonContext):
                     self.location_alias_map = connected_cls.location_id_to_alias
                 if not self.quit_after_update:
                     updateTracker(self)
-                self.watcher_task = asyncio.create_task(game_watcher(self), name="GameWatcher") #This shouldn't be needed, but technically
+                self.watcher_task = asyncio.create_task(game_watcher(self), name="GameWatcher") #This shouldn't be needed, but technically 
             elif cmd == 'RoomUpdate' or cmd == 'ReceivedItems':
                 updateTracker(self)
             elif cmd == 'SetReply':
