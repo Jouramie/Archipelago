@@ -17,6 +17,8 @@ from ...strings.metal_names import Fossil, Ore, MetalBar, Mineral, Artifact
 from ...strings.monster_drop_names import Loot
 from ...strings.seed_names import TreeSeed, Seed
 
+_existing_vars = dir()
+
 wild_horseradish = BundleItem(Forageable.wild_horseradish)
 daffodil = BundleItem(Forageable.daffodil)
 leek = BundleItem(Forageable.leek)
@@ -421,3 +423,6 @@ prize_ticket = BundleItem(Currency.prize_ticket)
 mystery_box = BundleItem(Consumable.mystery_box)
 gold_mystery_box = BundleItem(Consumable.gold_mystery_box, source=BundleItem.Sources.masteries)
 calico_egg = BundleItem(Currency.calico_egg)
+
+__all__ = [v for v in dir() if v not in _existing_vars and not v.startswith("_")]
+print(__all__)
