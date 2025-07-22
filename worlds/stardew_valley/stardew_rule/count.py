@@ -3,10 +3,12 @@ from __future__ import annotations
 import enum
 from collections import Counter
 from functools import cached_property
-from typing import List, Callable, Optional, Dict, Tuple, Protocol, runtime_checkable, Hashable, Collection
+from typing import List, Callable, Optional, Dict, Tuple, Protocol, runtime_checkable, Hashable, Collection, Union
+
+import networkx as nx
 
 from BaseClasses import CollectionState
-from .base import BaseStardewRule, CombinableStardewRule, And, Or
+from .base import BaseStardewRule, CombinableStardewRule, And, Or, _SimplificationState
 from .protocol import StardewRule
 
 
@@ -17,7 +19,7 @@ class ShortCircuitPropagation(enum.Enum):
     EQUAL = enum.auto()
 
     @property
-    def opposite(self):
+    def reverse(self):
         if self is ShortCircuitPropagation.POSITIVE:
             return ShortCircuitPropagation.NEGATIVE
         elif self is ShortCircuitPropagation.NEGATIVE:
@@ -27,6 +29,11 @@ class ShortCircuitPropagation(enum.Enum):
 
 @runtime_checkable
 class CanShortCircuitLink(Protocol):
+
+    @property
+    def short_circuit_able_component(self) -> CanShortCircuitLink:
+        """Return the combinable part of the rule."""
+        ...
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         """Return the link between two rules.
@@ -47,6 +54,10 @@ class CombinableCanShortCircuitLink(CombinableStardewRule, CanShortCircuitLink):
 
     def __init__(self, rule: CombinableStardewRule):
         self.delegate = rule
+
+    @property
+    def short_circuit_able_component(self) -> CanShortCircuitLink:
+        return self
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         if not isinstance(other, CombinableCanShortCircuitLink):
@@ -88,11 +99,24 @@ class CombinableCanShortCircuitLink(CombinableStardewRule, CanShortCircuitLink):
     def __repr__(self):
         return repr(self.delegate)
 
+    def __eq__(self, other):
+        return isinstance(other, CombinableCanShortCircuitLink) and self.delegate == other.delegate
+
+    def __hash__(self):
+        return hash(self.delegate)
+
 
 class AndCanShortCircuitLink(And, CanShortCircuitLink):
 
     def __init__(self, rule: And):
         super().__init__(_combinable_rules=rule.combinable_rules, _simplification_state=rule.simplification_state)
+
+    @cached_property
+    def short_circuit_able_component(self) -> CanShortCircuitLink:
+        if len(self.combinable_rules) == 1:
+            return CombinableCanShortCircuitLink(next(iter(self.combinable_rules.values())))
+
+        return AndCanShortCircuitLink(And(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(())))
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         if isinstance(other, CombinableCanShortCircuitLink):
@@ -168,6 +192,10 @@ class OrCanShortCircuitLink(Or, CanShortCircuitLink):
     def __init__(self, rule: Or):
         super().__init__(_combinable_rules=rule.combinable_rules, _simplification_state=rule.simplification_state)
 
+    @property
+    def short_circuit_able_component(self) -> CanShortCircuitLink:
+        return OrCanShortCircuitLink(Or(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(())))
+
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         # TODO see that later
         print("hey maybe you should implement or short circuit propagation...")
@@ -206,16 +234,136 @@ def to_can_short_circuit_link(rule: StardewRule) -> CanShortCircuitLink:
     return CannotShortCircuitLink(rule)
 
 
-def create_special_count(rules: Collection[StardewRule], count: int) -> Count:
+def create_special_count(rules: Collection[StardewRule], count: int) -> Union[SpecialCount, Count]:
     short_circuit_links = [to_can_short_circuit_link(rule) for rule in rules]
 
-    link_results = {}
+    grouped_by_component = {}
+    for rule in short_circuit_links:
+        grouped_by_component.setdefault(rule.short_circuit_able_component, Counter()).update((rule,))
 
-    for ri in short_circuit_links:
-        for rj in short_circuit_links:
+    link_results = {}
+    short_circuit_able_keys = list(grouped_by_component.keys())
+    for i, ri in enumerate(short_circuit_able_keys):
+        for rj in short_circuit_able_keys[i + 1:]:
             link_results[ri, rj] = ri.calculate_short_circuit_propagation(rj)
 
-    return Count(list(rules), count)
+    directed_links = []
+    for link, direction in link_results.items():
+        if direction is ShortCircuitPropagation.POSITIVE:
+            directed_links.append((link[1], link[0]))
+        elif direction is ShortCircuitPropagation.NEGATIVE:
+            directed_links.append(link)
+
+    if not directed_links:
+        return Count(list(rules), count)
+
+    g = nx.DiGraph(directed_links)
+    tr: nx.DiGraph = nx.transitive_reduction(g)
+
+    final_graph = nx.DiGraph()
+    for u, v in tr.edges:
+        final_graph.add_edge(u, v, propagation=False)
+        final_graph.add_edge(v, u, propagation=True)
+
+    return SpecialCount(grouped_by_component, final_graph, count)
+
+
+class SpecialCount(BaseStardewRule):
+    count: int
+    rules: Dict[CanShortCircuitLink, Counter]
+    short_circuit_propagation: nx.DiGraph
+
+    weight: Dict[CanShortCircuitLink, int]
+    total: int
+    simplify_rule_mapping: Dict[StardewRule, StardewRule]
+
+    def __init__(self, rules: Dict[CanShortCircuitLink, Counter], short_circuit_propagation: nx.DiGraph, count: int):
+        self.count = count
+        self.rules = rules
+        self.short_circuit_propagation = short_circuit_propagation
+
+        self.weight = {rule: sum(counter.values()) for rule, counter in rules.items()}
+        self.total = sum(self.weight.values())
+        self.simplify_rule_mapping = {}
+
+    def __call__(self, state: CollectionState) -> bool:
+        return self.evaluate_with_shortcircuit(state)
+
+    def evaluate_with_shortcircuit(self, state: CollectionState) -> bool:
+        target_points = self.count
+
+        evaluated = {}
+        leftovers = Counter()
+        min_points = 0
+        max_points = self.total
+        exploration = nx.DiGraph(self.short_circuit_propagation)
+
+        while len(evaluated) != len(self.rules):
+            # TODO account for disconnected graphs
+            # TODO handle weights ?
+            center_rule = nx.center(exploration)[0]
+            center_value = center_rule(state)
+
+            short_circuited_nodes = [center_rule]
+            # TODO would it be more efficient if all nodes were already connected? No need to bfs
+            for _, short_circuited_rule in nx.generic_bfs_edges(exploration,
+                                                                center_rule,
+                                                                neighbors=lambda x: (v
+                                                                                     for u, v, d in exploration.out_edges(x, data=True)
+                                                                                     if d["propagation"] == center_value)):
+                short_circuited_nodes.append(short_circuited_rule)
+
+            if center_value:
+                for rule in short_circuited_nodes:
+                    min_points += self.rules[rule].get(rule, 0)
+                    leftovers.update(self.rules[rule])
+                    leftovers.pop(rule, None)
+            else:
+                # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
+                points = sum(self.weight[rule] for rule in short_circuited_nodes)
+                max_points -= points
+
+            if min_points >= target_points:
+                return True
+            elif max_points < target_points:
+                return False
+
+            for rule in short_circuited_nodes:
+                evaluated[rule] = center_value
+            exploration.remove_nodes_from(short_circuited_nodes)
+
+        for rule, value in leftovers.items():
+            if self.call_evaluate_while_simplifying_cached(rule, state):
+                min_points += value
+            else:
+                max_points -= value
+
+            if min_points >= target_points:
+                return True
+            elif max_points < target_points:
+                return False
+
+        assert min_points == max_points
+        return False
+
+    def call_evaluate_while_simplifying_cached(self, rule: StardewRule, state: CollectionState) -> bool:
+        try:
+            # A mapping table with the original rule is used here because two rules could resolve to the same rule.
+            #  This would require to change the counter to merge both rules, and quickly become complicated.
+            return self.simplify_rule_mapping[rule](state)
+        except KeyError:
+            self.simplify_rule_mapping[rule], value = rule.evaluate_while_simplifying(state)
+            return value
+
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
+        return self, self(state)
+
+    @cached_property
+    def rules_count(self):
+        return len(self.rules)
+
+    def __repr__(self):
+        return f"Received {self.count} [{', '.join(f'{value}x {repr(rule)}' for counter in self.rules.values() for rule, value in counter.items())}]"
 
 
 class Count(BaseStardewRule):
