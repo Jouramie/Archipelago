@@ -539,8 +539,7 @@ class Or(AggregatingStardewRule):
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         # TODO see that later
-        print("hey maybe you should implement or short circuit propagation...")
-        return ShortCircuitPropagation.NONE
+        raise NotImplementedError("hey maybe you should implement or short circuit propagation...")
 
     @cached_property
     def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
