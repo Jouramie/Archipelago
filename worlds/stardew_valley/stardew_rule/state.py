@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from functools import cached_property
 from typing import Iterable, Union, List, Tuple, Hashable, TYPE_CHECKING
 
 from BaseClasses import CollectionState
@@ -87,7 +86,7 @@ class Reach(BaseStardewRule):
         return self, self(state)
 
     def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
-        is_available = assumption_state.spots.get(self.key)
+        is_available = assumption_state.get_spot_state(self.resolution_hint, self.spot)
         if is_available is None:
             return self
 
@@ -96,14 +95,10 @@ class Reach(BaseStardewRule):
         return false_
 
     def add_lower_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
-        return assumption_state.set_spot_available(self.key)
+        return assumption_state.set_spot_available(self.resolution_hint, self.spot)
 
     def add_upper_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
-        return assumption_state.set_spot_unavailable(self.key)
-
-    @cached_property
-    def key(self) -> Hashable:
-        return f"{self.resolution_hint}/{self.spot}"
+        return assumption_state.set_spot_unavailable(self.resolution_hint, self.spot)
 
     def __repr__(self):
         return f"Reach {self.resolution_hint} {self.spot}"

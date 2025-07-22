@@ -618,8 +618,7 @@ def set_museum_individual_donations_rules(all_location_names, logic: StardewLogi
         counter += 1
 
 
-def set_museum_milestone_rule(logic: StardewLogic, multiworld: MultiWorld, museum_milestone, museum_prefix: str,
-                              player: int):
+def set_museum_milestone_rule(logic: StardewLogic, multiworld: MultiWorld, museum_milestone, museum_prefix: str, player: int):
     milestone_name = museum_milestone.name[len(museum_prefix):]
     donations_suffix = " Donations"
     minerals_suffix = " Minerals"
@@ -629,9 +628,10 @@ def set_museum_milestone_rule(logic: StardewLogic, multiworld: MultiWorld, museu
     if milestone_name.endswith(donations_suffix):
         rule = get_museum_item_count_rule(logic, donations_suffix, milestone_name, all_museum_items, logic.museum.can_find_museum_items)
     elif milestone_name.endswith(minerals_suffix):
-        rule = to_optimized(get_museum_item_count_rule(logic, minerals_suffix, milestone_name, all_museum_minerals, logic.museum.can_find_museum_minerals))
+        rule = get_museum_item_count_rule(logic, minerals_suffix, milestone_name, all_museum_minerals, logic.museum.can_find_museum_minerals)
     elif milestone_name.endswith(artifacts_suffix):
-        rule = to_optimized(get_museum_item_count_rule(logic, artifacts_suffix, milestone_name, all_museum_artifacts, logic.museum.can_find_museum_artifacts))
+        rule = get_museum_item_count_rule(logic, artifacts_suffix, milestone_name, all_museum_artifacts, logic.museum.can_find_museum_artifacts)
+        rule = to_optimized(rule)
     elif milestone_name == "Dwarf Scrolls":
         rule = And(*(logic.museum.can_find_museum_item(item) for item in dwarf_scrolls)) & logic.received(metal_detector, 2)
     elif milestone_name == "Skeleton Front":
