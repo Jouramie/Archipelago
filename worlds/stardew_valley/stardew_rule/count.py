@@ -100,6 +100,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
     for short_circuited in false_killed_nodes:
         for leftover, weight in rules[short_circuited].items():
             simplified = leftover.simplify_knowing(false_simplification_state)
+
             if simplified is false_:
                 false_weight += weight
                 continue
@@ -129,6 +130,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
     for short_circuited in true_killed_nodes:
         for leftover, weight in rules[short_circuited].items():
             simplified = leftover.simplify_knowing(true_simplification_state)
+
             if simplified is true_:
                 true_weight += weight
                 continue
@@ -192,14 +194,14 @@ def create_special_count(rules: Collection[StardewRule], count: int) -> Union[Sp
 
 class SpecialCount(BaseStardewRule):
     count: int
-    rules: Dict[CanShortCircuitLink, Counter]
+    rules_and_points: List[Tuple[StardewRule, int]]
     evaluation_tree: Node
 
     total: int
 
     def __init__(self, rules: Dict[CanShortCircuitLink, Counter], evaluation_tree: Node, count: int):
         self.count = count
-        self.rules = rules
+        self.rules_and_points = sorted([(rule, value) for counter in rules.values() for rule, value in counter.items()], key=lambda x: x[1], reverse=True)
         self.evaluation_tree = evaluation_tree
 
         self.total = sum(sum(counter.values()) for _, counter in rules.items())
@@ -225,7 +227,11 @@ class SpecialCount(BaseStardewRule):
         return len(self.rules)
 
     def __repr__(self):
-        return f"Received {self.count} [{', '.join(f'{value}x {repr(rule)}' for counter in self.rules.values() for rule, value in counter.items())}]"
+        return f"Received {self.count} [{', '.join(f'{value}x {repr(rule)}' for rule, value in self.rules_and_points)}]"
+
+    @cached_property
+    def rules(self):
+        return [rule for rule, _ in self.rules_and_points]
 
 
 class Count(BaseStardewRule):
@@ -242,16 +248,8 @@ class Count(BaseStardewRule):
         if _rules_and_points is not None:
             self.rules_and_points = _rules_and_points
         self.rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
-
-        if len(self.rules_and_points) / len(rules) < .66:
-            # Checking if it's worth using the count operation with shortcircuit or not. Value should be fine-tuned when Count has more usage.
-            self.total = sum(point for _, point in self.rules_and_points)
-            self.rules = [rule for rule, _ in self.rules_and_points]
-            self.rule_mapping = {}
-            self.evaluate = self.evaluate_with_shortcircuit
-        else:
-            self.rules = rules
-            self.evaluate = self.evaluate_without_shortcircuit
+        self.total = sum(point for _, point in self.rules_and_points)
+        self.rules = [rule for rule, _ in self.rules_and_points]
 
     @staticmethod
     def from_leftovers(leftovers: List[Tuple[StardewRule, int]], count: int):
@@ -260,49 +258,24 @@ class Count(BaseStardewRule):
         return Count(rules, count, _rules_and_points=leftovers)
 
     def __call__(self, state: CollectionState) -> bool:
-        return self.evaluate(state)
+        min_points = 0
+        max_points = self.total
+        goal = self.count
+        rules = self.rules
 
-    def evaluate_without_shortcircuit(self, state: CollectionState) -> bool:
-        c = 0
-        for i in range(self.rules_count):
-            self.rules[i], value = self.rules[i].evaluate_while_simplifying(state)
-            if value:
-                c += 1
-
-            if c >= self.count:
-                return True
-            if c + self.rules_count - i < self.count:
-                break
-
-        return False
-
-    def evaluate_with_shortcircuit(self, state: CollectionState) -> bool:
-        c = 0
-        t = self.total
-
-        for rule, point in self.rules_and_points:
-            evaluation_value = rule(state)
+        for i, (_, point) in enumerate(self.rules_and_points):
+            rules[i], evaluation_value = rules[i].evaluate_while_simplifying(state)
 
             if evaluation_value:
-                c += point
+                min_points += point
+                if min_points >= goal:
+                    return True
             else:
-                t -= point
+                max_points -= point
+                if max_points < goal:
+                    return False
 
-            if c >= self.count:
-                return True
-            elif t < self.count:
-                break
-
-        return False
-
-    def call_evaluate_while_simplifying_cached(self, rule: StardewRule, state: CollectionState) -> bool:
-        try:
-            # A mapping table with the original rule is used here because two rules could resolve to the same rule.
-            #  This would require to change the counter to merge both rules, and quickly become complicated.
-            return self.rule_mapping[rule](state)
-        except KeyError:
-            self.rule_mapping[rule], value = rule.evaluate_while_simplifying(state)
-            return value
+        assert False, "Should have returned before."
 
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
@@ -312,4 +285,4 @@ class Count(BaseStardewRule):
         return len(self.rules)
 
     def __repr__(self):
-        return f"Received {self.count} [{', '.join(f'{value}x {repr(rule)}' for rule, value in self.counter.items())}]"
+        return f"Received {self.count} [{', '.join(f'{value}x {repr(rule)}' for rule, value in self.rules_and_points)}]"
