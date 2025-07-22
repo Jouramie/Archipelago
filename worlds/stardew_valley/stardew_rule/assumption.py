@@ -5,34 +5,9 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Hashable, Iterable
 
 
-# Eventually the world map will handle all regions and locations, but for now it's just there so simplify regions for the mines.
-class WorldMap:
-
-    def find_accessible_spots_given_available(self, resolution_hint: str, spot: str) -> Iterable[tuple[str, str]]:
-        if not spot.startswith("The Mines - Floor "):
-            return []
-
-        floor = int(spot[len("The Mines - Floor "):])
-        return [
-            (resolution_hint, f"The Mines - Floor {floor - i}")
-            for i in range(5, floor, 5)
-        ]
-
-    def find_inaccessible_spots_given_unavailable(self, resolution_hint: str, spot: str) -> Iterable[tuple[str, str]]:
-        if not spot.startswith("The Mines - Floor "):
-            return []
-
-        floor = int(spot[len("The Mines - Floor "):])
-        return [
-            (resolution_hint, f"The Mines - Floor {i + 5}")
-            for i in range(floor, 120, 5)
-        ]
-
-
 @dataclass(frozen=True)
 class AssumptionState:
     UNKNOWN_BOUNDS: ClassVar[tuple[int, int]] = (0, sys.maxsize)
-    world_map: ClassVar[WorldMap] = WorldMap()  # Eventually this will be a parameter.
     combinable_values: dict[Hashable, tuple[int, int]] = field(default_factory=dict)
     """Lower bound is inclusive, upper bound is exclusive.
     """
@@ -73,20 +48,12 @@ class AssumptionState:
         return AssumptionState(self.combinable_values, {
             **self.spots,
             (resolution_hint, spot): True,
-            **{
-                point: True
-                for point in self.world_map.find_accessible_spots_given_available(resolution_hint, spot)
-            },
         })
 
     def set_spot_unavailable(self, resolution_hint: str, spot: str) -> AssumptionState:
         return AssumptionState(self.combinable_values, {
             **self.spots,
             (resolution_hint, spot): False,
-            **{
-                point: False
-                for point in self.world_map.find_inaccessible_spots_given_unavailable(resolution_hint, spot)
-            },
         })
 
     def __str__(self):

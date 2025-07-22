@@ -23,8 +23,8 @@ always_regions_by_setting = {EntranceRandomization.option_disabled: always_acces
                              EntranceRandomization.option_chaos: always_accessible_regions_without_er}
 
 combinable_region_prefixes = (
-    "The Mines - Floor "
-    "Skull Cavern Floor "
+    "The Mines - Floor ",
+    "Skull Cavern Floor ",
     "Volcano - Floor ",
     "Dangerous Mines - Floor ",
     "The Deep Woods Depth ",

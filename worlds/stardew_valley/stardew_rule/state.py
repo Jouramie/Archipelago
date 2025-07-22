@@ -129,6 +129,10 @@ class CombinableReach(Reach, CombinableStardewRule):
     def value(self):
         return self.spot_index
 
+    def __repr__(self):
+        return f"Reach {self.resolution_hint} {self.spot}"
+
+
 class HasProgressionPercent(Received):
     def __init__(self, player: int, percent: int):
         super().__init__(Event.received_progression_percent, player, percent, event=True)

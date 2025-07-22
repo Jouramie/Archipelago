@@ -13,7 +13,7 @@ from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, BaseS
 from .count import Count
 from .literal import LiteralStardewRule
 from .protocol import StardewRule
-from .state import Received, Reach, HasProgressionPercent, TotalReceived
+from .state import Received, Reach, HasProgressionPercent, TotalReceived, CombinableReach
 
 logger = logging.getLogger(__name__)
 
@@ -323,6 +323,29 @@ def _(
         return rule_map
 
     rule_map.add_node(rule, priority=4, score=score)
+
+    return rule_map
+
+
+@_recursive_to_rule_map.register
+def _(
+        rule: CombinableReach,
+        rule_map: nx.DiGraph,
+        score: ShortCircuitScore,
+        combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
+        *_
+) -> nx.DiGraph:
+    if rule_map is None:
+        rule_map = nx.DiGraph()
+    elif rule in rule_map.nodes:
+        rule_map.nodes[rule]["score"] += score
+        return rule_map
+
+    # Reach can trigger cache refresh, which takes time... So, it's better to avoid it, hence the priority at 2.
+    rule_map.add_node(rule, priority=2, score=score)
+
+    if combinable_rules is not None:
+        combinable_rules.setdefault(rule.combination_key, set()).add(rule)
 
     return rule_map
 
