@@ -17,6 +17,7 @@ from BaseClasses import CollectionState, Location
 from Utils import init_logging
 from ..bases import setup_solo_multiworld
 from ..options import presets
+from ...stardew_rule import to_optimized
 from ...stardew_rule.rule_explain import explain
 
 
@@ -34,10 +35,12 @@ def run_locations_benchmark():
             return "\n".join(f"  {time:.4f} in {name}" for name, time in counter.most_common(top))
 
         def location_test(self, test_location: Location, state: CollectionState, state_name: str) -> float:
+            rule = test_location.access_rule
+            rule = to_optimized(rule)
             with TimeIt(f"{test_location.game} {self.rule_iterations} "
                         f"runs of {test_location}.access_rule({state_name})", logger) as t:
                 for _ in range(self.rule_iterations):
-                    test_location.access_rule(state)
+                    rule(state)
                 # if time is taken to disentangle complex ref chains,
                 # this time should be attributed to the rule.
                 gc.collect()

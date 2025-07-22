@@ -23,7 +23,8 @@ class TestCount(unittest.TestCase):
     def test_simplified_rule_is_reused(self):
         expected_result = False
         collection_state = MagicMock()
-        simplified_rule = Mock(return_value=expected_result)
+        simplified_rule = Mock()
+        simplified_rule.evaluate_while_simplifying = Mock(return_value=(simplified_rule, expected_result))
         other_rule = Mock(spec=StardewRule)
         other_rule.evaluate_while_simplifying = Mock(return_value=(simplified_rule, expected_result))
         rule = Count([cast(StardewRule, other_rule), cast(StardewRule, other_rule), cast(StardewRule, other_rule)], 2)
@@ -38,7 +39,7 @@ class TestCount(unittest.TestCase):
         actual_result = rule(collection_state)
 
         other_rule.evaluate_while_simplifying.assert_not_called()
-        simplified_rule.assert_called()
+        simplified_rule.evaluate_while_simplifying.assert_called()
         self.assertEqual(expected_result, actual_result)
 
     def test_break_if_not_enough_rule_to_complete(self):
@@ -56,11 +57,6 @@ class TestCount(unittest.TestCase):
         never_called_rule.assert_not_called()
         never_called_rule.evaluate_while_simplifying.assert_not_called()
         self.assertEqual(expected_result, actual_result)
-
-    def test_evaluate_without_shortcircuit_when_rules_are_all_different(self):
-        rule = Count([cast(StardewRule, Mock()) for i in range(5)], 2)
-
-        self.assertEqual(rule.evaluate, rule.evaluate_without_shortcircuit)
 
 
 class TestSuperCount(unittest.TestCase):

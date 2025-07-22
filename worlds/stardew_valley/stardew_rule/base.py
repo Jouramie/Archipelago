@@ -9,6 +9,7 @@ from functools import cached_property
 from itertools import chain
 from threading import Lock
 from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Set, Optional, cast, ClassVar, Protocol, cast
+from xmlrpc.client import Boolean
 
 from BaseClasses import CollectionState
 from .literal import true_, false_, LiteralStardewRule
@@ -39,14 +40,16 @@ class ShortCircuitPropagation(enum.Enum):
 
 @dataclass(frozen=True)
 class AssumptionState:
+    UNKNOWN_BOUNDS: ClassVar[Tuple[int, int]] = (0, sys.maxsize)
     """Lower bound is inclusive, upper bound is exclusive.
     """
     combinable_values: Dict[Hashable, Tuple[int, int]] = field(default_factory=dict)
+    regions: Dict[str, Boolean] = field(default_factory=dict)
 
-    def add_lower_bounds(self, rule: CanShortCircuit):
+    def add_combinable_lower_bounds(self, lower_bounds: Iterable[Tuple[Hashable, int]]) -> AssumptionState:
         new_bounds = {}
 
-        for key, value in rule.lower_bounds:
+        for key, value in lower_bounds:
             lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
             assert upper_bound >= value
 
@@ -57,10 +60,10 @@ class AssumptionState:
 
         return AssumptionState(self.combinable_values | new_bounds)
 
-    def add_upper_bounds(self, rule: CanShortCircuit):
+    def add_combinable_upper_bounds(self, upper_bounds: Iterable[Tuple[Hashable, int]]) -> AssumptionState:
         new_bounds = {}
 
-        for key, value in rule.upper_bounds:
+        for key, value in upper_bounds:
             lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
             assert lower_bound <= value
 
@@ -118,12 +121,10 @@ class CanShortCircuit(Protocol):
         """
         ...
 
-    @property
-    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+    def add_lower_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
         ...
 
-    @property
-    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+    def add_upper_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
         ...
 
 
@@ -161,13 +162,11 @@ class BaseStardewRule(StardewRule, CanShortCircuit, ABC):
     def calculate_short_circuit_propagation(self, other: CanShortCircuit) -> ShortCircuitPropagation:
         return ShortCircuitPropagation.NONE
 
-    @property
-    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        return ()
+    def add_lower_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state
 
-    @property
-    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        return ()
+    def add_upper_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state
 
 
 class CombinableStardewRule(BaseStardewRule, ABC):
@@ -239,6 +238,12 @@ class CombinableStardewRule(BaseStardewRule, ABC):
             return self
         except KeyError:
             return self
+
+    def add_lower_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state.add_combinable_lower_bounds(self.lower_bounds)
+
+    def add_upper_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state.add_combinable_upper_bounds(self.upper_bounds)
 
     @cached_property
     def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
@@ -525,7 +530,9 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
             combinable_rules[key] = rule.simplify_knowing(assumption_state)
 
         if not combinable_rules:
-            assert self.simplification_state.original_simplifiable_rules
+            if not self.simplification_state.original_simplifiable_rules:
+                return self.identity
+
             if len(self.simplification_state.original_simplifiable_rules) == 1:
                 return next(iter(self.simplification_state.original_simplifiable_rules))
 
@@ -595,9 +602,10 @@ class Or(AggregatingStardewRule):
         # TODO see that later
         raise NotImplementedError("hey maybe you should implement or short circuit propagation...")
 
-    @cached_property
-    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        return RepeatableChain(rule.upper_bounds for rule in self.combinable_rules.values())
+    def add_upper_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        for rule in self.current_rules:
+            assumption_state = rule.add_upper_bounds(assumption_state)
+        return assumption_state
 
 
 class And(AggregatingStardewRule):
@@ -704,9 +712,10 @@ class And(AggregatingStardewRule):
         # Self has a lower or diverging values, so self evaluating to False mean that other will be False was well.
         return ShortCircuitPropagation.NONE
 
-    @cached_property
-    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        return RepeatableChain(rule.lower_bounds for rule in self.combinable_rules.values())
+    def add_lower_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        for rule in self.current_rules:
+            assumption_state = rule.add_lower_bounds(assumption_state)
+        return assumption_state
 
 
 @dataclass(frozen=True)
