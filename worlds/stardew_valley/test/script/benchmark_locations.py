@@ -17,10 +17,10 @@ from BaseClasses import CollectionState, Location
 from Utils import init_logging
 from ..bases import setup_solo_multiworld
 from ..options import presets
-from ...stardew_rule import to_optimized
+from ...stardew_rule import to_optimized_v1
 from ...stardew_rule.rule_explain import explain
 
-assert to_optimized
+assert to_optimized_v1
 
 
 def run_locations_benchmark():
@@ -38,7 +38,7 @@ def run_locations_benchmark():
 
         def location_test(self, test_location: Location, state: CollectionState, state_name: str) -> float:
             rule = test_location.access_rule
-            rule = to_optimized(rule)
+            rule = to_optimized_v1(rule)
             logger.info(str(rule.evaluation_tree))
             logger.info(f"average depth = {rule.evaluation_tree.average_leaf_depth}")
             with TimeIt(f"{test_location.game} {self.rule_iterations} "

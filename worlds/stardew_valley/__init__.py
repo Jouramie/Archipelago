@@ -24,7 +24,7 @@ from .options.presets import sv_options_presets
 from .options.worlds_group import apply_most_restrictive_options
 from .regions import create_regions, prepare_mod_data
 from .rules import set_rules
-from .stardew_rule import True_, StardewRule, HasProgressionPercent, true_, to_optimized
+from .stardew_rule import True_, StardewRule, HasProgressionPercent, true_, to_optimized_v1
 from .strings.ap_names.event_names import Event
 from .strings.goal_names import Goal as GoalName
 

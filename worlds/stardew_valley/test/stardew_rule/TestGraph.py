@@ -2,7 +2,8 @@ import unittest
 
 import networkx as nx
 
-from ...stardew_rule import Received, Reach, ShortCircuitPropagation, to_rule_map, ShortCircuitScore, to_evaluation_tree, Node, false_, true_, Edge
+from ...stardew_rule import Received, Reach, ShortCircuitPropagation, to_rule_map, ShortCircuitScore, to_evaluation_tree, Node, false_, true_, Edge, \
+    to_optimized_v2, CompressedStardewRule, EvaluationTreeStardewRule
 
 
 class NetworkXAssertMixin(unittest.TestCase):
@@ -162,3 +163,87 @@ class TestEvaluationTree(unittest.TestCase):
         two_carrot_node = Node(Edge.simple_edge(Node.leaf(reach_kitchen)), Edge.simple_edge(Node.leaf(false_)), received_two_carrots)
         potato_node = Node(Edge.simple_edge(Node.leaf(true_)), Edge.simple_edge(two_carrot_node), received_potato)
         self.assertEqual(potato_node, evaluation_tree)
+
+
+class TestCompressedStardewRule(unittest.TestCase):
+
+    def test_given_received_when_to_compressed_then_return_original(self):
+        rule = Received("Carrot", 1, 1)
+
+        compressed = to_optimized_v2(rule)
+
+        self.assertEqual(rule, compressed)
+
+    def test_given_reach_when_convert_to_rule_map_then_return_original(self):
+        rule = Reach("Carrot Field", "Location", 1)
+
+        compressed = to_optimized_v2(rule)
+
+        self.assertEqual(rule, compressed)
+
+    def test_given_or_of_duplicated_ands_when_convert_to_rule_map_then_ands_are_deduplicated(self):
+        carrot = Received("Carrot", 1, 1)
+        potato = Received("Potato", 1, 1)
+        and_rule = carrot & potato
+        rule = and_rule | and_rule
+
+        compressed = to_optimized_v2(rule)
+
+        self.assertEqual(CompressedStardewRule(rule, and_rule), compressed)
+
+    def test_given_and_of_duplicated_ors_when_convert_to_rule_map_then_ors_are_deduplicated(self):
+        carrot = Received("Carrot", 1, 1)
+        potato = Received("Potato", 1, 1)
+        or_rule = carrot | potato
+        rule = or_rule & or_rule
+
+        compressed = to_optimized_v2(rule)
+
+        self.assertEqual(CompressedStardewRule(rule, or_rule), compressed)
+
+    def test_given_complex_case_of_or_of_ands_with_same_received_more_than_once_when_convert_to_rule_map_then_rule_is_simplified(self):
+        received_carrot = Received("Carrot", 1, 1)
+        received_two_carrots = Received("Carrot", 1, 2)
+        received_potato = Received("Potato", 1, 1)
+        reach_kitchen = Reach("Kitchen", "Region", 1)
+        kitchen_and_two_carrots = received_two_carrots & reach_kitchen
+        carrot_and_potato = received_carrot & received_potato
+        rule = received_potato | kitchen_and_two_carrots | carrot_and_potato
+
+        compressed = to_optimized_v2(rule)
+
+        expected_compressed = received_potato | (received_two_carrots & reach_kitchen)
+        self.assertEqual(CompressedStardewRule(rule, expected_compressed), compressed)
+
+    def test_given_complex_case_of_or_of_ands_with_different_received_of_same_item_when_convert_to_rule_map_then_one_carrot_shortcircuit_two_carrots(self):
+        received_carrot = Received("Carrot", 1, 1)
+        received_two_carrots = Received("Carrot", 1, 2)
+        received_potato = Received("Potato", 1, 1)
+        received_three_tomatoes = Received("Tomato", 1, 3)
+        reach_kitchen = Reach("Kitchen", "Region", 1)
+        kitchen_and_two_carrots = received_two_carrots & reach_kitchen
+        carrot_and_tomato = received_carrot & received_three_tomatoes
+        rule = received_potato | kitchen_and_two_carrots | carrot_and_tomato
+
+        compressed = to_optimized_v2(rule)
+
+        expected_compressed = received_potato | (received_carrot & (received_three_tomatoes | kitchen_and_two_carrots))
+        self.assertEqual(CompressedStardewRule(rule, expected_compressed), compressed)
+        self.assertEqual(str(CompressedStardewRule(rule, expected_compressed)), str(compressed))
+
+    def test_given_complex_case_of_or_of_ands_with_no_simplification_when_convert_to_rule_map_then_compressed_contains_uncompressed_tree(self):
+        received_carrot = Received("Carrot", 1, 1)
+        received_two_brocoli = Received("Brocoli", 1, 2)
+        received_potato = Received("Potato", 1, 1)
+        received_three_tomatoes = Received("Tomato", 1, 3)
+        reach_kitchen = Reach("Kitchen", "Region", 1)
+        kitchen_and_brocoli = received_two_brocoli & reach_kitchen
+        carrot_and_tomato = received_carrot & received_three_tomatoes
+        rule = received_potato | kitchen_and_brocoli | carrot_and_tomato
+
+        compressed = to_optimized_v2(rule)
+
+        # This might end up being flaky, I'm not actually sure what choose the order of the rule to evaluate here...
+        uncompressed_tree = Node(Edge.simple_leaf(reach_kitchen | carrot_and_tomato), Edge.simple_leaf(carrot_and_tomato), received_two_brocoli)
+        expected_compressed = received_potato | EvaluationTreeStardewRule(uncompressed_tree)
+        self.assertEqual(CompressedStardewRule(rule, expected_compressed), compressed)

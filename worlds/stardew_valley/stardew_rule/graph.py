@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from functools import cached_property, singledispatch
-from typing import Optional, Tuple, Union, Dict, Hashable, Set, List, cast, Collection
+from typing import Tuple, Union, Dict, Hashable, Set, List, cast, Collection
 
 import networkx as nx
 
@@ -11,7 +11,7 @@ from BaseClasses import CollectionState
 from .assumption import AssumptionState
 from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, BaseStardewRule
 from .count import Count
-from .literal import LiteralStardewRule
+from .literal import LiteralStardewRule, true_, false_
 from .protocol import StardewRule
 from .state import Received, Reach, HasProgressionPercent, TotalReceived, CombinableReach
 
@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Node:
-    true_edge: Optional[Edge]
-    false_edge: Optional[Edge]
+    true_edge: Edge | None
+    false_edge: Edge | None
     rule: StardewRule
 
     @staticmethod
@@ -64,18 +64,22 @@ class Node:
 
 @dataclass(frozen=True)
 class Edge:
-    current_state: Tuple[int, int]
+    current_state: tuple[int, int]
     points: int
     """Points are to be added or subtracted depending on there the edge is placed on the node. 
     - true edge will add points to the total;
     - false edge will subtract points from the maximum reachable."""
-    leftovers: List[Tuple[StardewRule, int]]
+    leftovers: list[tuple[StardewRule, int]]
     """Leftovers are the rules that could not be resolved by the short-circuit evaluation. They will be evaluated afterward."""
     node: Node
 
     @staticmethod
     def simple_edge(node: Node):
         return Edge((0, 0), 0, [], node)
+
+    @staticmethod
+    def simple_leaf(rule: StardewRule):
+        return Edge((0, 0), 0, [], Node.leaf(rule))
 
     def __str__(self, depth: int = 0):
         leftovers_points = sum(x[1] for x in self.leftovers)
@@ -86,14 +90,11 @@ class Edge:
         return self.__str__()
 
 
+@dataclass(frozen=True)
 class OptimizedStardewRule:
     """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
     original: StardewRule
     evaluation_tree: Node
-
-    def __init__(self, original: StardewRule, evaluation_tree: Node):
-        self.original = original
-        self.evaluation_tree = evaluation_tree
 
     def __call__(self, state: CollectionState) -> bool:
         current_node = self.evaluation_tree
@@ -116,6 +117,50 @@ class OptimizedStardewRule:
 
     def __repr__(self):
         return repr(self.original)
+
+
+@dataclass(frozen=True)
+class CompressedStardewRule:
+    """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
+    original: StardewRule
+    compressed: StardewRule
+
+    def __call__(self, state: CollectionState) -> bool:
+        return self.compressed(state)
+
+    def __or__(self, other: StardewRule):
+        raise NotImplementedError
+
+    def __and__(self, other: StardewRule):
+        raise NotImplementedError
+
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
+        return self, self(state)
+
+
+@dataclass(frozen=True)
+class EvaluationTreeStardewRule:
+    """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
+    evaluation_tree: Node
+
+    def __call__(self, state: CollectionState) -> bool:
+        current_node = self.evaluation_tree
+        while not current_node.is_leaf:
+            if current_node.rule(state):
+                current_node = current_node.true_edge.node
+            else:
+                current_node = current_node.false_edge.node
+
+        return current_node.rule(state)
+
+    def __or__(self, other: StardewRule):
+        return Or(self, other)
+
+    def __and__(self, other: StardewRule):
+        return And(self, other)
+
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
+        return self, self(state)
 
 
 # TODO try slots, cuz there will be a lot of these. Maybe
@@ -419,7 +464,7 @@ def _recursive_create_evaluation_tree(root: BaseStardewRule, assumption_state: A
     return Node(true_edge, false_edge, most_significant_rule)
 
 
-def to_optimized(rule: StardewRule) -> Union[StardewRule, OptimizedStardewRule]:
+def to_optimized_v1(rule: StardewRule) -> StardewRule | OptimizedStardewRule:
     # TODO allow Count, multiply score by weight of rule
     # TODO do something to reduce Reach(location) into access_rule + region, since it access_rule won't be optimized with current rule.
     if not isinstance(rule, (And, Or, Count)):
@@ -431,4 +476,44 @@ def to_optimized(rule: StardewRule) -> Union[StardewRule, OptimizedStardewRule]:
 
 
 def create_optimized_count(rules: Collection[StardewRule], count: int) -> OptimizedStardewRule:
-    return to_optimized(Count(rules, count))
+    return to_optimized_v1(Count(rules, count))
+
+
+def to_optimized_v2(rule: StardewRule) -> StardewRule | CompressedStardewRule:
+    if not isinstance(rule, (And, Or, Count)):
+        return rule
+    rule = cast(BaseStardewRule, rule)
+
+    evaluation_tree = to_evaluation_tree(rule)
+    compressed = compress_evaluation_tree(evaluation_tree)
+    return CompressedStardewRule(rule, compressed)
+
+
+def compress_evaluation_tree(evaluation_tree: Node) -> StardewRule:
+    return _compress_evaluation_tree_recursive(evaluation_tree)
+
+
+def _compress_evaluation_tree_recursive(evaluation_tree: Node) -> StardewRule:
+    if evaluation_tree.is_leaf:
+        return evaluation_tree.rule
+
+    if evaluation_tree.true_edge.node.rule == true_:
+        return evaluation_tree.rule | _compress_evaluation_tree_recursive(evaluation_tree.false_edge.node)
+
+    compressed_true_branch = _compress_evaluation_tree_recursive(evaluation_tree.true_edge.node)
+    if evaluation_tree.false_edge.node.rule == false_:
+        return evaluation_tree.rule & compressed_true_branch
+
+    if isinstance(compressed_true_branch, EvaluationTreeStardewRule):
+        true_branch = Edge.simple_edge(compressed_true_branch.evaluation_tree)
+    else:
+        true_branch = Edge.simple_leaf(compressed_true_branch)
+
+    compressed_false_branch = _compress_evaluation_tree_recursive(evaluation_tree.false_edge.node)
+    if isinstance(compressed_false_branch, EvaluationTreeStardewRule):
+        false_branch = Edge.simple_edge(compressed_false_branch.evaluation_tree)
+    else:
+        false_branch = Edge.simple_leaf(compressed_false_branch)
+
+    compressed_sub_tree = Node(true_branch, false_branch, evaluation_tree.rule)
+    return EvaluationTreeStardewRule(compressed_sub_tree)
