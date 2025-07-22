@@ -327,11 +327,11 @@ class TestSuperCount(unittest.TestCase):
 
         collection_state.has = Mock(return_value=False)
         self.assertFalse(special_count(collection_state))
-        self.assertEqual(collection_state.has.call_count, 1)
+        self.assertEqual(1, collection_state.has.call_count)
 
         collection_state.has = Mock(return_value=True)
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(collection_state.has.call_count, 1)
+        self.assertEqual(1, collection_state.has.call_count)
 
     def test_can_count_dependent_and_rules(self):
         collection_state = Mock()
@@ -343,10 +343,10 @@ class TestSuperCount(unittest.TestCase):
 
         collection_state.has = Mock(return_value=False)
         self.assertFalse(special_count(collection_state))
-        self.assertEqual(collection_state.has.call_count, 1)
+        self.assertEqual(1, collection_state.has.call_count)
 
         collection_state.has = Mock(return_value=True)
         collection_state.can_reach = Mock(return_value=True)
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(collection_state.has.call_count, 3)  # 2 in the graph loop, 1 in the leftovers
-        self.assertEqual(collection_state.can_reach.call_count, 1)
+        self.assertEqual(3, collection_state.has.call_count)  # 2 in the graph loop, 1 in the leftovers
+        self.assertEqual(1, collection_state.can_reach.call_count)
