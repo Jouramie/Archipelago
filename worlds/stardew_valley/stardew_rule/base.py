@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from itertools import chain
 from threading import Lock
-from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Set, Optional, cast, ClassVar, Protocol, cast
+from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Optional, cast, ClassVar, Protocol, cast
 
 from BaseClasses import CollectionState
 from .assumption import AssumptionState
@@ -208,14 +208,14 @@ class CombinableStardewRule(BaseStardewRule, ABC):
 
 
 class _SimplificationState:
-    original_simplifiable_rules: Tuple[StardewRule, ...]
+    original_simplifiable_rules: tuple[StardewRule, ...]
 
     rules_to_simplify: deque[StardewRule]
-    simplified_rules: Set[StardewRule]
+    simplified_rules: set[StardewRule]
     lock: Lock
 
-    def __init__(self, simplifiable_rules: Tuple[StardewRule, ...], rules_to_simplify: Optional[deque[StardewRule]] = None,
-                 simplified_rules: Optional[Set[StardewRule]] = None):
+    def __init__(self, simplifiable_rules: tuple[StardewRule, ...], rules_to_simplify: deque[StardewRule] | None = None,
+                 simplified_rules: set[StardewRule] | None = None):
         if simplified_rules is None:
             simplified_rules = set()
 
@@ -272,9 +272,9 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
     complement: ClassVar[LiteralStardewRule]
     symbol: ClassVar[str]
 
-    combinable_rules: Dict[Hashable, CombinableStardewRule]
+    combinable_rules: dict[Hashable, CombinableStardewRule]
     simplification_state: _SimplificationState
-    _last_short_circuiting_rule: Optional[StardewRule] = None
+    _last_short_circuiting_rule: StardewRule | None = None
 
     def __init__(self, *rules: StardewRule, _combinable_rules=None, _simplification_state=None):
         if _combinable_rules is None:

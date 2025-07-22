@@ -69,21 +69,18 @@ class Edge:
     """Points are to be added or subtracted depending on there the edge is placed on the node. 
     - true edge will add points to the total;
     - false edge will subtract points from the maximum reachable."""
-    leftovers: list[tuple[StardewRule, int]]
-    """Leftovers are the rules that could not be resolved by the short-circuit evaluation. They will be evaluated afterward."""
     node: Node
 
     @staticmethod
     def simple_edge(node: Node):
-        return Edge((0, 0), 0, [], node)
+        return Edge((0, 0), 0, node)
 
     @staticmethod
     def simple_leaf(rule: StardewRule):
-        return Edge((0, 0), 0, [], Node.leaf(rule))
+        return Edge((0, 0), 0, Node.leaf(rule))
 
     def __str__(self, depth: int = 0):
-        leftovers_points = sum(x[1] for x in self.leftovers)
-        return (f"{{{'+' if self.points > 0 else ''}{self.points} -> {self.current_state} + {leftovers_points} leftovers"
+        return (f"{{{'+' if self.points > 0 else ''}{self.points} -> {self.current_state}"
                 f" {self.node.__str__(depth=depth + 1)}}}")
 
     def __repr__(self):
@@ -480,6 +477,7 @@ def create_optimized_count(rules: Collection[StardewRule], count: int) -> Optimi
 
 
 def to_optimized_v2(rule: StardewRule) -> StardewRule | CompressedStardewRule:
+    """Compress the evaluation tree to reduce the number of branches. It makes it easier to real, will most likely be used for display purposes."""
     if not isinstance(rule, (And, Or, Count)):
         return rule
     rule = cast(BaseStardewRule, rule)
