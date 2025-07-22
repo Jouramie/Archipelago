@@ -7,7 +7,7 @@ from typing import Iterable, Set, Tuple, List, Optional
 
 from BaseClasses import CollectionState, Location, Entrance
 from worlds.generic.Rules import CollectionRule
-from . import StardewRule, AggregatingStardewRule, Count, Has, TotalReceived, Received, Reach, true_
+from . import StardewRule, AggregatingStardewRule, Has, TotalReceived, Received, Reach, true_, Count
 
 
 class ExplainMode(enum.Enum):
@@ -140,7 +140,7 @@ class CountExplanation(RuleExplanation):
         return [
             CountSubRuleExplanation.from_explanation(_explain(rule, self.state, self.expected, self.mode, self.more_explanations, self.explored_rules_key),
                                                      count)
-            for rule, count in self.rule.counter.items()
+            for rule, count in self.rule.rules_and_points
         ]
 
 

@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Iterable, Union, List, Tuple, Hashable
 
 from BaseClasses import CollectionState
-from .base import BaseStardewRule, CombinableStardewRule
+from .base import BaseStardewRule, CombinableStardewRule, AssumptionState
+from .literal import false_, true_
 from .protocol import StardewRule
 from ..strings.ap_names.event_names import Event
 
@@ -80,6 +82,49 @@ class Reach(BaseStardewRule):
 
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
+
+    def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
+        is_available = assumption_state.get_spot_state(self.resolution_hint, self.spot)
+        if is_available is None:
+            return self
+
+        if is_available:
+            return true_
+        return false_
+
+    def add_lower_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state.set_spot_available(self.resolution_hint, self.spot)
+
+    def add_upper_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state.set_spot_unavailable(self.resolution_hint, self.spot)
+
+    def __repr__(self):
+        return f"Reach {self.resolution_hint} {self.spot}"
+
+@dataclass(frozen=True)
+class CombinableReach(CombinableStardewRule, Reach):
+    """ Some region behave like combinable rules (e.g. Received x of one item). In this case, they can be combined by aggregating rules.
+
+    Mine floors are a good example of this. If you can reach floor 100, you can also reach floor 50 and floor 25, so a rule checking floor 100 and 50 and 25 can
+    be simplified to just 100. This goes both ways, so if you can't reach floor 100, you can't reach floor 50 or 25 either. so a rule checking floor 100 or 50
+    or 25 can be simplified to just 25.
+    """
+    resolution_hint: str
+    player: int
+    spot_prefix: str
+    spot_index: int
+
+    @cached_property
+    def spot(self):
+        return f"{self.spot_prefix}{self.spot_index}"
+
+    @cached_property
+    def combination_key(self) -> Hashable:
+        return self.spot_prefix
+
+    @cached_property
+    def value(self):
+        return self.spot_index
 
     def __repr__(self):
         return f"Reach {self.resolution_hint} {self.spot}"
