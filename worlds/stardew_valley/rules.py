@@ -28,7 +28,7 @@ from .options import SpecialOrderLocations, Museumsanity, BackpackProgression, S
     Monstersanity, Chefsanity, Craftsanity, ArcadeMachineLocations, Cooksanity, StardewValleyOptions, Walnutsanity
 from .options.options import FarmType, Moviesanity, Eatsanity, Friendsanity, ExcludeGingerIsland, \
     IncludeEndgameLocations, ToolProgression
-from .stardew_rule import And, StardewRule, true_
+from .stardew_rule import And, StardewRule, true_, to_optimized_v1, to_optimized_v2
 from .stardew_rule.indirect_connection import look_for_indirect_connection
 from .stardew_rule.rule_explain import explain
 from .strings.animal_product_names import AnimalProduct
@@ -67,6 +67,9 @@ from .strings.tool_names import Tool, ToolMaterial, FishingRod
 from .strings.tv_channel_names import Channel
 from .strings.villager_names import NPC, ModNPC
 from .strings.wallet_item_names import Wallet
+
+assert to_optimized_v1
+assert to_optimized_v2
 
 logger = logging.getLogger(__name__)
 

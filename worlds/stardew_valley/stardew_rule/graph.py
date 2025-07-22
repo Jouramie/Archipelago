@@ -447,8 +447,17 @@ def _recursive_create_evaluation_tree(root: BaseStardewRule, assumption_state: A
         return Node.leaf(root)
     root = cast(BaseStardewRule, root)
 
-    most_significant_rule, attrs = max((node for node in rule_map.nodes.items() if node[1]["priority"] != 0),
-                                       key=lambda x: (x[1]["score"].total, x[1]["priority"]))
+    most_significant_rule = None
+    while most_significant_rule is None:
+        most_significant_rule, attrs = max((node for node in rule_map.nodes.items() if node[1]["priority"] != 0),
+                                           key=lambda x: (x[1]["score"].total, x[1]["priority"]),
+                                           default=(None, None))
+
+        if most_significant_rule is None:
+            # Skipping the first node since it's the root and is by definition not priority.
+            iterator = iter(rule_map.nodes.items())
+            next(iterator)
+            rule_map = to_rule_map(next(iterator)[0])
 
     false_assumption_state = most_significant_rule.add_upper_bounds(assumption_state)
     false_evaluation_tree = _recursive_create_evaluation_tree(root, false_assumption_state)
