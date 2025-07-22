@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
 from functools import cached_property
 from typing import List, Callable, Optional, Dict, Tuple, Collection, Union, cast
 
@@ -9,44 +8,9 @@ import networkx as nx
 
 from BaseClasses import CollectionState
 from .base import BaseStardewRule, CanShortCircuit, ShortCircuitPropagation, AssumptionState
+from .graph import Node, Edge
 from .literal import false_, true_
 from .protocol import StardewRule
-
-
-@dataclass(frozen=True)
-class Node:
-    true_edge: Optional[Edge]
-    false_edge: Optional[Edge]
-    rule: BaseStardewRule
-
-    @staticmethod
-    def leaf(rule: BaseStardewRule):
-        return Node(None, None, rule)
-
-    @cached_property
-    def is_leaf(self):
-        return self.true_edge is self.false_edge is None
-
-
-@dataclass(frozen=True)
-class Edge:
-    current_state: Tuple[int, int]
-    points: int
-    """Points are to be added or subtracted depending on there the edge is placed on the node. 
-    - true edge will add points to the total;
-    - false edge will subtract points from the maximum reachable."""
-    leftovers: List[Tuple[StardewRule, int]]
-    """Leftovers are the rules that could not be resolved by the short-circuit evaluation. They will be evaluated afterward."""
-    node: Node
-
-    def __str__(self):
-        leftovers_points = sum(x[1] for x in self.leftovers)
-        return (f"{{{'+' if self.points > 0 else ''}{self.points} -> "
-                f"{self.current_state} + {leftovers_points} leftovers"
-                f"{' [LEAF]' if self.node.is_leaf else ''}}}")
-
-    def __repr__(self):
-        return self.__str__()
 
 
 def create_evaluation_tree(full_rule_graph: nx.DiGraph,
@@ -220,14 +184,10 @@ class SpecialCount(BaseStardewRule):
     rules_and_points: List[Tuple[StardewRule, int]]
     evaluation_tree: Node
 
-    total: int
-
     def __init__(self, rules: Dict[CanShortCircuit, Counter], evaluation_tree: Node, count: int):
         self.count = count
         self.rules_and_points = sorted([(rule, value) for counter in rules.values() for rule, value in counter.items()], key=lambda x: x[1], reverse=True)
         self.evaluation_tree = evaluation_tree
-
-        self.total = sum(sum(counter.values()) for _, counter in rules.items())
 
     def __call__(self, state: CollectionState) -> bool:
         return self.evaluate_with_shortcircuit(state)

@@ -72,18 +72,6 @@ class Received(CombinableStardewRule):
 
 
 @dataclass(frozen=True)
-class ReceivedAll(BaseStardewRule):
-    items: Iterable[str]
-    player: int
-
-    def __call__(self, state: CollectionState) -> bool:
-        return state.has_all(self.items, self.player)
-
-    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
-        return self, self(state)
-
-
-@dataclass(frozen=True)
 class Reach(BaseStardewRule):
     spot: str
     resolution_hint: str
