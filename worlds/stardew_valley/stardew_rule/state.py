@@ -105,7 +105,7 @@ class Reach(BaseStardewRule):
         return f"Reach {self.resolution_hint} {self.spot}"
 
 @dataclass(frozen=True)
-class CombinableReach(Reach, CombinableStardewRule):
+class CombinableReach(CombinableStardewRule, Reach):
     """ Some region behave like combinable rules (e.g. Received x of one item). In this case, they can be combined by aggregating rules.
 
     Mine floors are a good example of this. If you can reach floor 100, you can also reach floor 50 and floor 25, so a rule checking floor 100 and 50 and 25 can
