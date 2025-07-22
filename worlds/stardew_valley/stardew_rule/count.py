@@ -319,25 +319,23 @@ def create_special_count(rules: Collection[StardewRule], count: int) -> Union[Sp
 
     evaluation_tree = create_evaluation_tree(final_graph)
 
-    return SpecialCount(grouped_by_component, evaluation_tree, final_graph, count)
+    return SpecialCount(grouped_by_component, evaluation_tree, count)
 
 
 class SpecialCount(BaseStardewRule):
     count: int
     rules: Dict[CanShortCircuitLink, Counter]
     evaluation_tree: Tuple[nx.DiGraph, Union[CanShortCircuitLink, StardewRule]]
-    short_circuit_propagation: nx.DiGraph
 
     weight: Dict[CanShortCircuitLink, int]
     total: int
     simplify_rule_mapping: Dict[StardewRule, StardewRule]
 
     def __init__(self, rules: Dict[CanShortCircuitLink, Counter], evaluation_tree: Tuple[nx.DiGraph, CanShortCircuitLink],
-                 short_circuit_propagation: nx.DiGraph, count: int):
+                 count: int):
         self.count = count
         self.rules = rules
         self.evaluation_tree = evaluation_tree
-        self.short_circuit_propagation = short_circuit_propagation
 
         self.weight = {rule: sum(counter.values()) for rule, counter in rules.items()}
         self.total = sum(self.weight.values())
@@ -351,28 +349,27 @@ class SpecialCount(BaseStardewRule):
         rules = self.rules
 
         evaluated = {}
-        leftovers = Counter()
+        leftovers = []
         min_points = 0
         max_points = self.total
 
+        # Do a first pass without evaluating all the rules completely, just the short-circuit part.
         tree, root = self.evaluation_tree
         while root != EVALUATION_END_SENTINEL:
             center_rule = root
-            center_value = center_rule(state)
+            evaluation = center_rule(state)
 
-            root = [v
-                    for u, v, d in tree.out_edges(center_rule, data=True)
-                    if d["propagation"] == center_value or d["propagation"] == EVALUATION_END_SENTINEL][0]
-            short_circuited_nodes = tree.get_edge_data(center_rule, root)["short_circuit"]
+            root, short_circuited_nodes = [(v, d["short_circuit"])
+                                           for u, v, d in tree.out_edges(center_rule, data=True)
+                                           if d["propagation"] == evaluation or d["propagation"] == EVALUATION_END_SENTINEL][0]
 
             for short_circuited_rule in short_circuited_nodes:
-                if center_value:
+                if evaluation:
                     min_points += rules[short_circuited_rule].get(short_circuited_rule, 0)
                     if min_points >= target_points:
                         return True
 
-                    leftovers.update(rules[short_circuited_rule])
-                    leftovers.pop(short_circuited_rule, None)
+                    leftovers.append(rules[short_circuited_rule])
                 else:
                     # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
                     points = self.weight[short_circuited_rule]
@@ -380,17 +377,28 @@ class SpecialCount(BaseStardewRule):
                     if max_points < target_points:
                         return False
 
-                evaluated[short_circuited_rule] = center_value
+                evaluated[short_circuited_rule] = evaluation
 
-        for rule, value in leftovers.items():
-            if self.call_evaluate_while_simplifying_cached(rule, state):
-                min_points += value
-                if min_points >= target_points:
-                    return True
-            else:
-                max_points -= value
-                if max_points < target_points:
-                    return False
+        # Do a second pass to evaluate the rules that were not short-circuited.
+        tree, root = self.evaluation_tree
+        for rules_group in leftovers:
+            for rule, points in rules_group.items():
+                if rule == root:
+                    continue
+
+                evaluation = self.call_evaluate_while_simplifying_cached(rule, state)
+                if evaluation:
+                    min_points += points
+                    if min_points >= target_points:
+                        return True
+                else:
+                    max_points -= points
+                    if max_points < target_points:
+                        return False
+
+            root = [v
+                    for u, v, d in tree.out_edges(root, data=True)
+                    if d["propagation"] == evaluated[root] or d["propagation"] == EVALUATION_END_SENTINEL][0]
 
         assert min_points == max_points
         return False
