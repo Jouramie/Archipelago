@@ -33,7 +33,7 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         graph = to_rule_map(rule)
 
         expected = nx.DiGraph()
-        expected.add_node(rule, priority=1, score=ShortCircuitScore(1, 1))
+        expected.add_node(rule, priority=2, score=ShortCircuitScore(1, 1))
         self.assert_graph_equals(expected, graph)
 
     def test_given_or_of_duplicated_ands_when_convert_to_rule_map_then_ands_are_merged(self):
@@ -87,7 +87,7 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         expected.add_node(received_carrot, priority=5, score=ShortCircuitScore(1 / 6, 1 / 3 + 1 / 3))
         expected.add_node(received_two_carrots, priority=5, score=ShortCircuitScore(1 / 6 + 1 / 6, 1 / 3))
         expected.add_node(received_potato, priority=5, score=ShortCircuitScore(1 + 1 / 6, 1 / 3 + 1 / 3))
-        expected.add_node(reach_kitchen, priority=1, score=ShortCircuitScore(1 / 6, 1 / 3))
+        expected.add_node(reach_kitchen, priority=2, score=ShortCircuitScore(1 / 6, 1 / 3))
         expected.add_node(kitchen_and_two_carrots, priority=0, score=ShortCircuitScore(1, 1 / 3), root=False)
         expected.add_node(carrot_and_potato, priority=0, score=ShortCircuitScore(1, 1 / 3), root=False)
         expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1), root=True)
