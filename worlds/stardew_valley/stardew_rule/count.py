@@ -34,7 +34,7 @@ class Edge:
 EVALUATION_END_SENTINEL = Node(None, None, None)
 
 
-def create_evaluation_tree(short_circuit_graph: nx.DiGraph,
+def create_evaluation_tree(full_rule_graph: nx.DiGraph,
                            weights: Dict[CanShortCircuitLink, int],
                            rules: Dict[Optional[CanShortCircuitLink], Counter]) -> Node:
     """ Precalculate the evaluation tree based on the possible results of each rule (recursively).
@@ -42,39 +42,32 @@ def create_evaluation_tree(short_circuit_graph: nx.DiGraph,
 
     :returns: The root node.
     """
-    if not short_circuit_graph:
+    if not full_rule_graph:
         return EVALUATION_END_SENTINEL
 
-    components = list(nx.weakly_connected_components(short_circuit_graph))
-    main_component = max(components, key=len)
+    components = list(nx.weakly_connected_components(full_rule_graph))
+    main_component = max(components, key=lambda x: sum(weights[i] for i in x))
     components.remove(main_component)
 
     # Rules that do not have short-circuit-able part are added to the leftovers directly.
     starting_leftovers = [(rule, points) for rule, points in rules.get(None, Counter()).items()]
-
-    # Keeping only the largest component, the rest is added to the leftovers even if there might be short_circuit_able rules in it.
-    #  This could be optimized later if that proves to improve performance.
-    #  TODO pass sub components to recursion so they are placed in the evaluation tree.
-    for component in components:
-        for node in component:
-            starting_leftovers.extend((node, weight) for node, weight in rules[node].items())
-    short_circuit_graph = short_circuit_graph.subgraph(main_component)
+    main_rule_graph: nx.DiGraph = full_rule_graph.subgraph(main_component)
 
     # TODO handle weights ? -> Keep all nodes with equal links so center see the other rules. Add weight on equal link depending on point.
     #  Add node matching exact rule to true_, so weight of that node can be considered.
     #  Build graph by calling simplify_knowing() on each equal node.
-    #  Then we could evaluate one state subrule at the time. Prioritize received rule.  
-    center_rule = nx.center(short_circuit_graph)[0]
+    #  Then we could evaluate one state subrule at the time. Prioritize received rule.
+    center_rule = nx.center(main_rule_graph)[0]
 
     false_killed_nodes = [center_rule]
-    for _, short_circuited_node in nx.generic_bfs_edges(short_circuit_graph,
+    for _, short_circuited_node in nx.generic_bfs_edges(main_rule_graph,
                                                         center_rule,
                                                         neighbors=lambda x: (v
-                                                                             for u, v, d in short_circuit_graph.out_edges(x, data=True)
+                                                                             for u, v, d in main_rule_graph.out_edges(x, data=True)
                                                                              if d["propagation"] is False)):
         false_killed_nodes.append(short_circuited_node)
 
-    false_surviving_graph = nx.DiGraph(short_circuit_graph)
+    false_surviving_graph: nx.DiGraph = full_rule_graph.copy()
     false_surviving_graph.remove_nodes_from(false_killed_nodes)
     false_weight = sum(weights[rule] for rule in false_killed_nodes)
     # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
@@ -84,14 +77,14 @@ def create_evaluation_tree(short_circuit_graph: nx.DiGraph,
     false_edge = Edge(false_weight, false_leftovers, false_evaluation_tree)
 
     true_killed_nodes = [center_rule]
-    for _, short_circuited_node in nx.generic_bfs_edges(short_circuit_graph,
+    for _, short_circuited_node in nx.generic_bfs_edges(main_rule_graph,
                                                         center_rule,
                                                         neighbors=lambda x: (v
-                                                                             for u, v, d in short_circuit_graph.out_edges(x, data=True)
+                                                                             for u, v, d in main_rule_graph.out_edges(x, data=True)
                                                                              if d["propagation"] is True)):
         true_killed_nodes.append(short_circuited_node)
 
-    true_surviving_graph = nx.DiGraph(short_circuit_graph)
+    true_surviving_graph: nx.DiGraph = full_rule_graph.copy()
     true_surviving_graph.remove_nodes_from(true_killed_nodes)
     true_weight = sum(rules[rule].get(rule, 0) for rule in true_killed_nodes)
     # TODO remove the short-circuited part from the leftovers so they can merge with the other leftovers
@@ -138,8 +131,9 @@ def create_special_count(rules: Collection[StardewRule], count: int) -> Union[Sp
     if not edges:
         return Count(list(rules), count)
 
-    starting_graph = nx.DiGraph(edges)
+    starting_graph = nx.DiGraph()
     starting_graph.add_nodes_from(nodes)
+    starting_graph.add_edges_from(edges)
     reduced_graph: nx.DiGraph = nx.transitive_reduction(starting_graph)
 
     final_graph = nx.DiGraph()

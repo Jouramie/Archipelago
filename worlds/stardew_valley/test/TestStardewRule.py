@@ -369,3 +369,20 @@ class TestSuperCount(unittest.TestCase):
         collection_state.can_reach = Mock(side_effect=lambda x, y, z: x == "Carrot Field" and y == "Location" and z == 1)
         self.assertTrue(special_count(collection_state))
         self.assertEqual(3, collection_state.has.call_count)  # 2 in the graph loop, 1 in the leftovers
+
+    def test_given_two_disconnected_received_when_evaluate_then_evaluate_received_before_reach(self):
+        collection_state = Mock()
+        special_count = create_special_count([
+            Received("Carrot", 1, 2),
+            Received("Carrot", 1, 2),
+            Received("Potato", 1, 2),
+            Received("Potato", 1, 3) & Reach("Potato Field", "Location", 1),
+        ], 3)
+
+        collection_state.has = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+        self.assertEqual(1, collection_state.has.call_count)  # Potatoes
+
+        collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 2), ("Potato", 1, 2)})
+        self.assertTrue(special_count(collection_state))
+        self.assertEqual(2, collection_state.has.call_count)  # 2 in the graph loop
