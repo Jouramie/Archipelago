@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import enum
+import sys
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
+from functools import cached_property
 from itertools import chain
 from threading import Lock
 from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Set, Optional, cast, ClassVar, Protocol
@@ -30,6 +32,75 @@ class ShortCircuitPropagation(enum.Enum):
         return self
 
 
+@dataclass(frozen=True)
+class AssumptionState:
+    """Lower bound is inclusive, upper bound is exclusive.
+    """
+    combinable_values: Dict[Hashable, Tuple[int, int]] = field(default_factory=dict)
+
+    def add_lower_bound(self, key: Hashable, value: int):
+        lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
+        assert upper_bound >= value
+
+        if lower_bound >= value:
+            return self
+
+        return AssumptionState(self.combinable_values | {key: (value, upper_bound)})
+
+    def add_upper_bound(self, key: Hashable, value: int):
+        lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
+        assert lower_bound <= value
+
+        if upper_bound <= value:
+            return self
+
+        return AssumptionState(self.combinable_values | {key: (lower_bound, value)})
+
+    def add_lower_bounds(self, rule: CanShortCircuitLink):
+        new_bounds = {}
+
+        for key, value in rule.lower_bounds:
+            lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
+            assert upper_bound >= value
+
+            if lower_bound >= value:
+                continue
+
+            new_bounds[key] = (value, upper_bound)
+
+        return AssumptionState(self.combinable_values | new_bounds)
+
+    def add_upper_bounds(self, rule: CanShortCircuitLink):
+        new_bounds = {}
+
+        for key, value in rule.upper_bounds:
+            lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
+            assert lower_bound <= value
+
+            if upper_bound <= value:
+                continue
+
+            new_bounds[key] = (lower_bound, value)
+
+        return AssumptionState(self.combinable_values | new_bounds)
+
+    def __str__(self):
+        return f"{{{', '.join(f'{key}: {self.str_bound(*bound)}' for key, bound in self.combinable_values.items())}}}"
+
+    def __repr__(self):
+        return self.__str__()
+
+    @staticmethod
+    def str_bound(lower_bound: int, upper_bound: int) -> str:
+        if lower_bound == 0:
+            return f"(0, {upper_bound}]"
+        if upper_bound == sys.maxsize:
+            return f"({lower_bound}, ~]"
+        if lower_bound + 1 == upper_bound:
+            return f"{lower_bound}"
+        return f"({lower_bound}, {upper_bound}]"
+
+
 class CanShortCircuitLink(Protocol):
 
     @property
@@ -48,6 +119,18 @@ class CanShortCircuitLink(Protocol):
 
         And/Or rules will always have a NONE link one another.
         """
+        ...
+
+    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
+        """Simplify the rule knowing the state of other rules."""
+        ...
+
+    @property
+    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        ...
+
+    @property
+    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
         ...
 
 
@@ -71,6 +154,17 @@ class BaseStardewRule(StardewRule, CanShortCircuitLink, ABC):
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         return ShortCircuitPropagation.NONE
+
+    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
+        return self
+
+    @property
+    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        return ()
+
+    @property
+    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        return ()
 
 
 class CombinableStardewRule(BaseStardewRule, ABC):
@@ -131,6 +225,25 @@ class CombinableStardewRule(BaseStardewRule, ABC):
 
         # Self has a lower value, so self evaluating to False mean that other will be False was well.
         return ShortCircuitPropagation.NEGATIVE
+
+    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
+        try:
+            (lower_bound, upper_bound) = simplification_state.combinable_values[self.combination_key]
+            if self.value <= lower_bound:
+                return true_
+            if upper_bound <= self.value:
+                return false_
+            return self
+        except KeyError:
+            return self
+
+    @cached_property
+    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        return [(self.combination_key, self.value)]
+
+    @cached_property
+    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        return [(self.combination_key, self.value)]
 
 
 class _SimplificationState:
@@ -367,6 +480,26 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
 
         return hash((*self.combinable_rules.values(), self.simplification_state.original_simplifiable_rules))
 
+    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
+        combinable_rules = {}
+        for key, rule in self.combinable_rules.items():
+            simplified_rule = rule.simplify_knowing(simplification_state)
+
+            if simplified_rule is self.complement:
+                return self.complement
+
+            if simplified_rule is self.identity:
+                continue
+
+            combinable_rules[key] = rule.simplify_knowing(simplification_state)
+
+        if not combinable_rules:
+            assert self.simplification_state.original_simplifiable_rules
+            if len(self.simplification_state.original_simplifiable_rules) == 1:
+                return next(iter(self.simplification_state.original_simplifiable_rules))
+
+        return type(self)(_combinable_rules=combinable_rules, _simplification_state=self.simplification_state)
+
 
 class Or(AggregatingStardewRule):
     identity = false_
@@ -396,14 +529,22 @@ class Or(AggregatingStardewRule):
 
     @property
     def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
-        return None
-        # TODO
-        # return Or(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
+        if not self.combinable_rules:
+            return None
+
+        if len(self.combinable_rules) == 1:
+            return next(iter(self.combinable_rules.values()))
+
+        return Or(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         # TODO see that later
         print("hey maybe you should implement or short circuit propagation...")
         return ShortCircuitPropagation.NONE
+
+    @cached_property
+    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        return RepeatableChain(rule.upper_bounds for rule in self.combinable_rules.values())
 
 
 class And(AggregatingStardewRule):
@@ -509,6 +650,10 @@ class And(AggregatingStardewRule):
         print("man I never thought this would happen...")
         # Self has a lower or diverging values, so self evaluating to False mean that other will be False was well.
         return ShortCircuitPropagation.NONE
+
+    @cached_property
+    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        return RepeatableChain(rule.lower_bounds for rule in self.combinable_rules.values())
 
 
 @dataclass(frozen=True)

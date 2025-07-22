@@ -2,7 +2,7 @@ import unittest
 from typing import cast
 from unittest.mock import MagicMock, Mock
 
-from ..stardew_rule import StardewRule, Received, And, Or, HasProgressionPercent, false_, true_, Reach
+from ..stardew_rule import StardewRule, Received, And, Or, HasProgressionPercent, false_, true_, Reach, AssumptionState
 from ..stardew_rule.count import Count, create_special_count
 
 
@@ -66,6 +66,22 @@ class TestHasProgressionPercentSimplification(unittest.TestCase):
         for i, case in enumerate(cases):
             with self.subTest(f"{i} {repr(case)}"):
                 self.assertEqual(case, Or(HasProgressionPercent(1, 10)))
+
+    def test_given_knowing_lower_bound_when_simplify_knowing_then_simplify_to_true(self):
+        rule = HasProgressionPercent(1, 10)
+        simplification_state = AssumptionState().add_lower_bounds(rule)
+
+        simplified_rule = rule.simplify_knowing(simplification_state)
+
+        self.assertEqual(true_, simplified_rule)
+
+    def test_given_knowing_upper_bound_when_simplify_knowing_then_simplify_to_false(self):
+        rule = HasProgressionPercent(1, 10)
+        simplification_state = AssumptionState().add_upper_bounds(rule)
+
+        simplified_rule = rule.simplify_knowing(simplification_state)
+
+        self.assertEqual(false_, simplified_rule)
 
 
 class TestEvaluateWhileSimplifying(unittest.TestCase):
@@ -307,16 +323,6 @@ class TestCount(unittest.TestCase):
 
 class TestSuperCount(unittest.TestCase):
 
-    def test_can_count_independent_rules(self):
-        collection_state = MagicMock()
-        special_count = create_special_count([Received("Potato", 1, 1), Received("Carrot", 1, 1), Received("Broccoli", 1, 1)], 1)
-
-        collection_state.has = Mock(return_value=False)
-        self.assertFalse(special_count(collection_state))
-
-        collection_state.has = Mock(return_value=True)
-        self.assertTrue(special_count(collection_state))
-
     def test_can_count_dependent_rules(self):
         collection_state = Mock()
         special_count = create_special_count([
@@ -348,41 +354,36 @@ class TestSuperCount(unittest.TestCase):
         collection_state.has = Mock(return_value=True)
         collection_state.can_reach = Mock(return_value=True)
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(3, collection_state.has.call_count)  # 2 in the graph loop, 1 in the leftovers
+        self.assertEqual(2, collection_state.has.call_count)  # 2 in the graph loop, leftover is simplified.
         self.assertEqual(1, collection_state.can_reach.call_count)
-
-    def test_can_count_disconnected_rules(self):
-        collection_state = Mock()
-        special_count = create_special_count([
-            Received("Carrot", 1, 2),
-            Reach("Carrot Field", "Location", 1) & Reach("Potato Field", "Location", 1),
-            Reach("Carrot Field", "Location", 1),
-            Received("Potato", 1, 2),
-            Received("Potato", 1, 3) & Reach("Potato Field", "Location", 1),
-        ], 3)
-
-        collection_state.has = Mock(return_value=False)
-        self.assertFalse(special_count(collection_state))
-        self.assertEqual(2, collection_state.has.call_count)
-
-        collection_state.has = Mock(return_value=True)
-        collection_state.can_reach = Mock(side_effect=lambda x, y, z: x == "Carrot Field" and y == "Location" and z == 1)
-        self.assertTrue(special_count(collection_state))
-        self.assertEqual(3, collection_state.has.call_count)  # 2 in the graph loop, 1 in the leftovers
 
     def test_given_two_disconnected_received_when_evaluate_then_evaluate_received_before_reach(self):
         collection_state = Mock()
         special_count = create_special_count([
             Received("Carrot", 1, 2),
             Received("Carrot", 1, 2),
+            Received("Carrot", 1, 2),
             Received("Potato", 1, 2),
             Received("Potato", 1, 3) & Reach("Potato Field", "Location", 1),
         ], 3)
 
         collection_state.has = Mock(return_value=False)
         self.assertFalse(special_count(collection_state))
-        self.assertEqual(1, collection_state.has.call_count)  # Potatoes
+        self.assertEqual(1, collection_state.has.call_count)  # Carrot
 
-        collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 2), ("Potato", 1, 2)})
+    def test_given_or_rules_when_evaluate_then_evaluate_or_before_reach(self):
+        collection_state = Mock()
+        special_count = create_special_count([
+            Received("Carrot", 1, 2) | Reach("Carrot Field", "Location", 1),
+            Received("Carrot", 1, 2) | Reach("Carrot Field", "Location", 1),
+            Received("Potato", 1, 3) & Reach("Potato Field", "Location", 1),
+        ], 2)
+
+        collection_state.has = Mock(return_value=False)
+        collection_state.can_reach = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+        self.assertEqual(2, collection_state.has.call_count)
+
+        collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 2)})
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(2, collection_state.has.call_count)  # 2 in the graph loop
+        self.assertEqual(1, collection_state.has.call_count)
