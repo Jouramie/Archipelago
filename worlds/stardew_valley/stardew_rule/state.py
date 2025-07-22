@@ -117,5 +117,7 @@ class HasProgressionPercent(Received):
         assert self.count > 0, "HasProgressionPercent rule must be above 0%"
         assert self.count <= 100, "HasProgressionPercent rule can't require more than 100% of items"
 
+    # TODO override simplify knowing to count the number of progression items in the player's inventory
+
     def __repr__(self):
         return f"Received {self.count}% progression items"
