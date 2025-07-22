@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Iterable, Union, List, Tuple, Hashable, TYPE_CHECKING
 
 from BaseClasses import CollectionState
@@ -103,6 +104,30 @@ class Reach(BaseStardewRule):
     def __repr__(self):
         return f"Reach {self.resolution_hint} {self.spot}"
 
+@dataclass(frozen=True)
+class CombinableReach(Reach, CombinableStardewRule):
+    """ Some region behave like combinable rules (e.g. Received x of one item). In this case, they can be combined by aggregating rules.
+
+    Mine floors are a good example of this. If you can reach floor 100, you can also reach floor 50 and floor 25, so a rule checking floor 100 and 50 and 25 can
+    be simplified to just 100. This goes both ways, so if you can't reach floor 100, you can't reach floor 50 or 25 either. so a rule checking floor 100 or 50
+    or 25 can be simplified to just 25.
+    """
+    resolution_hint: str
+    player: int
+    spot_prefix: str
+    spot_index: int
+
+    @cached_property
+    def spot(self):
+        return f"{self.spot_prefix}{self.spot_index}"
+
+    @cached_property
+    def combination_key(self) -> Hashable:
+        return self.spot_prefix
+
+    @cached_property
+    def value(self):
+        return self.spot_index
 
 class HasProgressionPercent(Received):
     def __init__(self, player: int, percent: int):
