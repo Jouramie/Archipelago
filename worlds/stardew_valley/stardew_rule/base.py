@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from itertools import chain
 from threading import Lock
-from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Set, Optional, cast, ClassVar, Protocol
+from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Set, Optional, cast, ClassVar, Protocol, cast
 
 from BaseClasses import CollectionState
 from .literal import true_, false_, LiteralStardewRule
@@ -17,11 +17,16 @@ from .protocol import StardewRule
 MISSING_ITEM = "THIS ITEM IS MISSING"
 
 
+# TODO maybe this would be easier to understand in term of lower/upper bounds
 class ShortCircuitPropagation(enum.Enum):
     NONE = enum.auto()
+    """None mean the two rules are not related and can't short-circuit one another."""
     POSITIVE = enum.auto()
+    """Positive mean that a True result from evaluating other will simplify self. Typically, other is more restrictive than self."""
     NEGATIVE = enum.auto()
+    """Negative mean that a False result from evaluating other will simplify self. Typically, other is less restrictive than self."""
     EQUAL = enum.auto()
+    """Equal mean that True or False results from evaluating other will simplify self. Typically, other and self are as restrictive."""
 
     @property
     def reverse(self):
@@ -38,25 +43,7 @@ class AssumptionState:
     """
     combinable_values: Dict[Hashable, Tuple[int, int]] = field(default_factory=dict)
 
-    def add_lower_bound(self, key: Hashable, value: int):
-        lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
-        assert upper_bound >= value
-
-        if lower_bound >= value:
-            return self
-
-        return AssumptionState(self.combinable_values | {key: (value, upper_bound)})
-
-    def add_upper_bound(self, key: Hashable, value: int):
-        lower_bound, upper_bound = self.combinable_values.get(key, (0, sys.maxsize))
-        assert lower_bound <= value
-
-        if upper_bound <= value:
-            return self
-
-        return AssumptionState(self.combinable_values | {key: (lower_bound, value)})
-
-    def add_lower_bounds(self, rule: CanShortCircuitLink):
+    def add_lower_bounds(self, rule: CanShortCircuit):
         new_bounds = {}
 
         for key, value in rule.lower_bounds:
@@ -70,7 +57,7 @@ class AssumptionState:
 
         return AssumptionState(self.combinable_values | new_bounds)
 
-    def add_upper_bounds(self, rule: CanShortCircuitLink):
+    def add_upper_bounds(self, rule: CanShortCircuit):
         new_bounds = {}
 
         for key, value in rule.upper_bounds:
@@ -93,22 +80,32 @@ class AssumptionState:
     @staticmethod
     def str_bound(lower_bound: int, upper_bound: int) -> str:
         if lower_bound == 0:
-            return f"(0, {upper_bound}]"
+            return f"[0, {upper_bound})"
         if upper_bound == sys.maxsize:
-            return f"({lower_bound}, ~]"
+            return f"[{lower_bound}, ~)"
         if lower_bound + 1 == upper_bound:
             return f"{lower_bound}"
-        return f"({lower_bound}, {upper_bound}]"
+        return f"[{lower_bound}, {upper_bound})"
 
 
-class CanShortCircuitLink(Protocol):
+class CanShortCircuit(Protocol):
+
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
+        ...
+
+    def simplify(self) -> CanShortCircuit:
+        ...
+
+    def simplify_knowing(self, assumption_state: AssumptionState) -> CanShortCircuit:
+        """Simplify the rule knowing the state of other rules."""
+        ...
 
     @property
-    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+    def short_circuit_able_component(self) -> Optional[CanShortCircuit]:
         """Return the combinable part of the rule."""
         ...
 
-    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+    def calculate_short_circuit_propagation(self, other: CanShortCircuit) -> ShortCircuitPropagation:
         """Return the link between two rules.
         NONE if there is no possible short-circuit propagation;
         POSITIVE if a True result from evaluating self short-circuit other;
@@ -121,10 +118,6 @@ class CanShortCircuitLink(Protocol):
         """
         ...
 
-    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
-        """Simplify the rule knowing the state of other rules."""
-        ...
-
     @property
     def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
         ...
@@ -134,7 +127,8 @@ class CanShortCircuitLink(Protocol):
         ...
 
 
-class BaseStardewRule(StardewRule, CanShortCircuitLink, ABC):
+# TODO split in two abstract class, one for BaseStardewRule, the other for Simplifiable / NonSimplifiable
+class BaseStardewRule(StardewRule, CanShortCircuit, ABC):
 
     def __or__(self, other) -> StardewRule:
         if other is true_ or other is false_ or type(other) is Or:
@@ -148,15 +142,21 @@ class BaseStardewRule(StardewRule, CanShortCircuitLink, ABC):
 
         return And(self, other)
 
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[BaseStardewRule, bool]:
+        return self, self(state)
+
+    def simplify(self) -> BaseStardewRule:
+        return self
+
+    def simplify_knowing(self, assumption_state: AssumptionState) -> BaseStardewRule:
+        return self
+
     @property
-    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+    def short_circuit_able_component(self) -> Optional[BaseStardewRule]:
         return None
 
-    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+    def calculate_short_circuit_propagation(self, other: CanShortCircuit) -> ShortCircuitPropagation:
         return ShortCircuitPropagation.NONE
-
-    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
-        return self
 
     @property
     def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
@@ -204,10 +204,10 @@ class CombinableStardewRule(BaseStardewRule, ABC):
         return super().__or__(other)
 
     @property
-    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+    def short_circuit_able_component(self) -> Optional[CanShortCircuit]:
         return self
 
-    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+    def calculate_short_circuit_propagation(self, other: CanShortCircuit) -> ShortCircuitPropagation:
         if not isinstance(other, CombinableStardewRule):
             return other.calculate_short_circuit_propagation(self)
 
@@ -226,9 +226,9 @@ class CombinableStardewRule(BaseStardewRule, ABC):
         # Self has a lower value, so self evaluating to False mean that other will be False was well.
         return ShortCircuitPropagation.NEGATIVE
 
-    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
+    def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
         try:
-            (lower_bound, upper_bound) = simplification_state.combinable_values[self.combination_key]
+            (lower_bound, upper_bound) = assumption_state.combinable_values[self.combination_key]
             if self.value <= lower_bound:
                 return true_
             if upper_bound <= self.value:
@@ -239,11 +239,11 @@ class CombinableStardewRule(BaseStardewRule, ABC):
 
     @cached_property
     def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        return [(self.combination_key, self.value)]
+        return ((self.combination_key, self.value),)
 
     @cached_property
     def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        return [(self.combination_key, self.value)]
+        return ((self.combination_key, self.value),)
 
 
 class _SimplificationState:
@@ -464,6 +464,7 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
         if value is self.complement.value:
             return self.short_circuit_evaluation(simplified)
 
+    # TODO str should be original rules, repr should be current simplified rules.
     def __str__(self):
         return f"({self.symbol.join(str(rule) for rule in self.original_rules)})"
 
@@ -480,10 +481,32 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
 
         return hash((*self.combinable_rules.values(), self.simplification_state.original_simplifiable_rules))
 
-    def simplify_knowing(self, simplification_state: AssumptionState) -> StardewRule:
+    def simplify(self) -> StardewRule:
+        simplified_rules = []
+        for rule in self.current_rules:
+            if rule is self.complement:
+                return self.complement
+
+            # Assuming all identity have already been removed when the rule was created originally.
+
+            # TODO use simplify knowing, add the assumption that other rules are short-circuited.
+            simplified_rule = rule.simplify()
+
+            if simplified_rule is self.identity:
+                continue
+
+            if simplified_rule is self.complement:
+                return self.complement
+
+            simplified_rules.append(simplified_rule)
+
+        # The process of creating a new rule will handle merging of aggregating and combinable rules.
+        return type(self)(*simplified_rules)
+
+    def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
         combinable_rules = {}
         for key, rule in self.combinable_rules.items():
-            simplified_rule = rule.simplify_knowing(simplification_state)
+            simplified_rule = rule.simplify_knowing(assumption_state)
 
             if simplified_rule is self.complement:
                 return self.complement
@@ -491,7 +514,7 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
             if simplified_rule is self.identity:
                 continue
 
-            combinable_rules[key] = rule.simplify_knowing(simplification_state)
+            combinable_rules[key] = rule.simplify_knowing(assumption_state)
 
         if not combinable_rules:
             assert self.simplification_state.original_simplifiable_rules
@@ -528,7 +551,7 @@ class Or(AggregatingStardewRule):
         return min(left, right, key=lambda x: x.value)
 
     @property
-    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+    def short_circuit_able_component(self) -> Optional[CanShortCircuit]:
         if not self.combinable_rules:
             return None
 
@@ -537,7 +560,7 @@ class Or(AggregatingStardewRule):
 
         return Or(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
 
-    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+    def calculate_short_circuit_propagation(self, other: CanShortCircuit) -> ShortCircuitPropagation:
         # TODO see that later
         raise NotImplementedError("hey maybe you should implement or short circuit propagation...")
 
@@ -573,7 +596,7 @@ class And(AggregatingStardewRule):
         return max(left, right, key=lambda x: x.value)
 
     @property
-    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+    def short_circuit_able_component(self) -> Optional[CanShortCircuit]:
         if not self.combinable_rules:
             return None
 
@@ -582,7 +605,7 @@ class And(AggregatingStardewRule):
 
         return And(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
 
-    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+    def calculate_short_circuit_propagation(self, other: CanShortCircuit) -> ShortCircuitPropagation:
         if isinstance(other, CombinableStardewRule):
             return self.__calculate_short_circuit_propagation_combinable(other)
         elif isinstance(other, And):
@@ -667,6 +690,12 @@ class Has(BaseStardewRule):
 
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self.other_rules[self.item].evaluate_while_simplifying(state)
+
+    def simplify(self) -> StardewRule:
+        sub_rule = self.other_rules[self.item]
+        if isinstance(sub_rule, LiteralStardewRule):
+            return sub_rule
+        return cast(BaseStardewRule, sub_rule).simplify()
 
     def __str__(self):
         if self.item not in self.other_rules:

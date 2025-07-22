@@ -84,6 +84,22 @@ class Reach(BaseStardewRule):
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
 
+    """
+    @cached_property
+    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        # A lower bound at 1 mean that the spot is known to be reachable
+        return ((self.key, 1),)
+
+    @cached_property
+    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
+        # A higher bound at 1 mean that the spot is known to be unreachable
+        return ((self.key, 1),)
+
+    @cached_property
+    def key(self) -> Hashable:
+        return f"{self.resolution_hint}/{self.spot}"
+    """
+
     def __repr__(self):
         return f"Reach {self.resolution_hint} {self.spot}"
 
