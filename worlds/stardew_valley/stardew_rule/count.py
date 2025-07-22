@@ -13,7 +13,6 @@ from .literal import false_, true_
 from .protocol import StardewRule
 
 
-# TODO make sure it's faster with slots
 @dataclass(frozen=True)
 class Node:
     true_edge: Optional[Edge]
@@ -31,6 +30,7 @@ class Node:
 
 @dataclass(frozen=True)
 class Edge:
+    current_state: Tuple[int, int]
     points: int
     """Points are to be added or subtracted depending on there the edge is placed on the node. 
     - true edge will add points to the total;
@@ -40,7 +40,10 @@ class Edge:
     node: Node
 
     def __str__(self):
-        return f"{{{self.points} + {self.leftovers} = {self.points + sum(x[1] for x in self.leftovers)}{' LEAF' if self.node.is_leaf else ''}}}"
+        leftovers_points = sum(x[1] for x in self.leftovers)
+        return (f"{{{'+' if self.points > 0 else ''}{self.points} -> "
+                f"{self.current_state} + {leftovers_points} leftovers"
+                f"{' [LEAF]' if self.node.is_leaf else ''}}}")
 
     def __repr__(self):
         return self.__str__()
@@ -105,7 +108,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
     false_state = (current_state[0], current_state[1] - false_weight)
 
     false_evaluation_tree = create_evaluation_tree(false_surviving_graph, weights, rules, count, false_state, false_leftovers, false_simplification_state)
-    false_edge = Edge(false_weight, false_leftovers, false_evaluation_tree)
+    false_edge = Edge(false_state, -false_weight, false_leftovers, false_evaluation_tree)
 
     # TRUE branch
 
@@ -134,7 +137,7 @@ def create_evaluation_tree(full_rule_graph: nx.DiGraph,
     true_state = (current_state[0] + true_weight, current_state[1])
 
     true_evaluation_tree = create_evaluation_tree(true_surviving_graph, weights, rules, count, true_state, true_leftovers, true_simplification_state)
-    true_edge = Edge(true_weight, true_leftovers, true_evaluation_tree)
+    true_edge = Edge(true_state, true_weight, true_leftovers, true_evaluation_tree)
 
     return Node(true_edge, false_edge, center_rule)
 
@@ -205,31 +208,12 @@ class SpecialCount(BaseStardewRule):
         return self.evaluate_with_shortcircuit(state)
 
     def evaluate_with_shortcircuit(self, state: CollectionState) -> bool:
-        target_points = self.count
-
-        leftovers: List[Tuple[StardewRule, int]] = []
-        min_points = 0
-        max_points = self.total
-
-        # Do a first pass without evaluating all the rules completely, just the short-circuit part.
         current_node = self.evaluation_tree
         while not current_node.is_leaf:
-            evaluation = current_node.rule(state)
-
-            if evaluation:
-                edge = current_node.true_edge
-                min_points += edge.points
-                if min_points >= target_points:
-                    return True
-
+            if current_node.rule(state):
+                current_node = current_node.true_edge.node
             else:
-                edge = current_node.false_edge
-                max_points -= edge.points
-                if max_points < target_points:
-                    return False
-
-            leftovers.extend(edge.leftovers)
-            current_node = edge.node
+                current_node = current_node.false_edge.node
 
         return current_node.rule(state)
 
