@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import cached_property, singledispatch
-from typing import Iterable, Set, Tuple, List, Optional, Union
+from typing import Iterable, Set, Tuple, List, Optional
 
 from BaseClasses import CollectionState, Location, Entrance
 from worlds.generic.Rules import CollectionRule
-from . import StardewRule, AggregatingStardewRule, Has, TotalReceived, Received, Reach, true_, Count, SpecialCount
+from . import StardewRule, AggregatingStardewRule, Has, TotalReceived, Received, Reach, true_, Count
 
 
 @dataclass
@@ -71,7 +71,7 @@ class CountSubRuleExplanation(RuleExplanation):
 
 @dataclass
 class CountExplanation(RuleExplanation):
-    rule: Union[Count, SpecialCount]
+    rule: Count
 
     @cached_property
     def explained_sub_rules(self) -> List[RuleExplanation]:
@@ -100,11 +100,6 @@ def _(rule: AggregatingStardewRule, state: CollectionState, expected: bool, expl
 
 @_explain.register
 def _(rule: Count, state: CollectionState, expected: bool, explored_spots: Set[Tuple[str, str]]) -> RuleExplanation:
-    return CountExplanation(rule, state, expected, rule.rules, explored_rules_key=explored_spots)
-
-
-@_explain.register
-def _(rule: SpecialCount, state: CollectionState, expected: bool, explored_spots: Set[Tuple[str, str]]) -> RuleExplanation:
     return CountExplanation(rule, state, expected, rule.rules, explored_rules_key=explored_spots)
 
 
