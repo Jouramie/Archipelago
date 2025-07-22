@@ -483,6 +483,7 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
 
     def simplify(self) -> StardewRule:
         simplified_rules = []
+        assumption_state = AssumptionState()
         for rule in self.current_rules:
             if rule is self.complement:
                 return self.complement

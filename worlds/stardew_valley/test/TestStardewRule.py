@@ -387,3 +387,21 @@ class TestSuperCount(unittest.TestCase):
         collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 2)})
         self.assertTrue(special_count(collection_state))
         self.assertEqual(1, collection_state.has.call_count)
+
+    def test_given_two_rules_with_common_part_when_evaluate_then_evaluate_common_part_first(self):
+        collection_state = Mock()
+        special_count = create_special_count([
+            Received("Potato", 1, 1) & Received("Brocoli", 1, 1),
+            Received("Brocoli", 1, 1) & Received("Carrot", 1, 2),
+            Received("Brocoli", 1, 3),
+            Received("Brocoli", 1, 2) & Received("Carrot", 1, 1),
+            Received("Carrot", 1, 1)
+        ], 2)
+
+        collection_state.has = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+        self.assertEqual(2, collection_state.has.call_count)
+
+        collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 2)})
+        self.assertTrue(special_count(collection_state))
+        self.assertEqual(1, collection_state.has.call_count)

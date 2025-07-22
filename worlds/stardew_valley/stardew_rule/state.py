@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Iterable, Union, List, Tuple, Hashable, TYPE_CHECKING
 
 from BaseClasses import CollectionState
@@ -71,6 +72,18 @@ class Received(CombinableStardewRule):
 
 
 @dataclass(frozen=True)
+class ReceivedAll(BaseStardewRule):
+    items: Iterable[str]
+    player: int
+
+    def __call__(self, state: CollectionState) -> bool:
+        return state.has_all(self.items, self.player)
+
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
+        return self, self(state)
+
+
+@dataclass(frozen=True)
 class Reach(BaseStardewRule):
     spot: str
     resolution_hint: str
@@ -84,7 +97,6 @@ class Reach(BaseStardewRule):
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
 
-    """
     @cached_property
     def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
         # A lower bound at 1 mean that the spot is known to be reachable
@@ -98,7 +110,6 @@ class Reach(BaseStardewRule):
     @cached_property
     def key(self) -> Hashable:
         return f"{self.resolution_hint}/{self.spot}"
-    """
 
     def __repr__(self):
         return f"Reach {self.resolution_hint} {self.spot}"
