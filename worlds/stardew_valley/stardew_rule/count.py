@@ -3,13 +3,15 @@ from __future__ import annotations
 import enum
 from collections import Counter
 from functools import cached_property
-from typing import List, Callable, Optional, Dict, Tuple, Protocol, runtime_checkable, Hashable, Collection, Union
+from typing import List, Callable, Optional, Dict, Tuple, Protocol, runtime_checkable, Hashable, Collection, Union, Any
 
 import networkx as nx
 
 from BaseClasses import CollectionState
 from .base import BaseStardewRule, CombinableStardewRule, And, Or, _SimplificationState
 from .protocol import StardewRule
+
+EVALUATION_END_SENTINEL = "EVALUATION_END_SENTINEL"
 
 
 class ShortCircuitPropagation(enum.Enum):
@@ -234,6 +236,56 @@ def to_can_short_circuit_link(rule: StardewRule) -> CanShortCircuitLink:
     return CannotShortCircuitLink(rule)
 
 
+def create_evaluation_tree(short_circuit_graph: nx.DiGraph) -> Tuple[nx.DiGraph, Any]:
+    """ Precalculate the evaluation tree based on the possible results of each rule (recursively).
+    Going from the root to one leaf should evaluate all the rules.
+
+    :returns: First element is the tree, second is the root.
+    """
+    if not short_circuit_graph:
+        tree = nx.DiGraph()
+        tree.add_node(EVALUATION_END_SENTINEL)
+        return tree, EVALUATION_END_SENTINEL
+
+    evaluation_tree = nx.DiGraph()
+    # TODO account for disconnected graphs
+    # TODO handle weights ? -> Keep all nodes with equal links so center see the other rules
+    center_rule = nx.center(short_circuit_graph)[0]
+
+    false_short_circuited_nodes = [center_rule]
+    for _, short_circuited_node in nx.generic_bfs_edges(short_circuit_graph,
+                                                        center_rule,
+                                                        neighbors=lambda x: (v
+                                                                             for u, v, d in short_circuit_graph.out_edges(x, data=True)
+                                                                             if d["propagation"] is False)):
+        false_short_circuited_nodes.append(short_circuited_node)
+
+    false_surviving_graph = nx.DiGraph(short_circuit_graph)
+    false_surviving_graph.remove_nodes_from(false_short_circuited_nodes)
+    false_evaluation_tree, false_evaluation_root = create_evaluation_tree(false_surviving_graph)
+    evaluation_tree.update(false_evaluation_tree)
+    evaluation_tree.add_edge(center_rule, false_evaluation_root, short_circuit=false_short_circuited_nodes, propagation=False)
+
+    true_short_circuited_nodes = [center_rule]
+    for _, short_circuited_node in nx.generic_bfs_edges(short_circuit_graph,
+                                                        center_rule,
+                                                        neighbors=lambda x: (v
+                                                                             for u, v, d in short_circuit_graph.out_edges(x, data=True)
+                                                                             if d["propagation"] is True)):
+        true_short_circuited_nodes.append(short_circuited_node)
+
+    true_surviving_graph = nx.DiGraph(short_circuit_graph)
+    true_surviving_graph.remove_nodes_from(true_short_circuited_nodes)
+    true_evaluation_tree, true_evaluation_root = create_evaluation_tree(true_surviving_graph)
+    evaluation_tree.update(true_evaluation_tree)
+    evaluation_tree.add_edge(center_rule, true_evaluation_root, short_circuit=true_short_circuited_nodes, propagation=True)
+
+    if true_evaluation_root == false_evaluation_root == EVALUATION_END_SENTINEL:
+        evaluation_tree.add_edge(center_rule, EVALUATION_END_SENTINEL, short_circuit=[center_rule], propagation=EVALUATION_END_SENTINEL)
+
+    return evaluation_tree, center_rule
+
+
 def create_special_count(rules: Collection[StardewRule], count: int) -> Union[SpecialCount, Count]:
     short_circuit_links = [to_can_short_circuit_link(rule) for rule in rules]
 
@@ -265,21 +317,26 @@ def create_special_count(rules: Collection[StardewRule], count: int) -> Union[Sp
         final_graph.add_edge(u, v, propagation=False)
         final_graph.add_edge(v, u, propagation=True)
 
-    return SpecialCount(grouped_by_component, final_graph, count)
+    evaluation_tree = create_evaluation_tree(final_graph)
+
+    return SpecialCount(grouped_by_component, evaluation_tree, final_graph, count)
 
 
 class SpecialCount(BaseStardewRule):
     count: int
     rules: Dict[CanShortCircuitLink, Counter]
+    evaluation_tree: Tuple[nx.DiGraph, Union[CanShortCircuitLink, StardewRule]]
     short_circuit_propagation: nx.DiGraph
 
     weight: Dict[CanShortCircuitLink, int]
     total: int
     simplify_rule_mapping: Dict[StardewRule, StardewRule]
 
-    def __init__(self, rules: Dict[CanShortCircuitLink, Counter], short_circuit_propagation: nx.DiGraph, count: int):
+    def __init__(self, rules: Dict[CanShortCircuitLink, Counter], evaluation_tree: Tuple[nx.DiGraph, CanShortCircuitLink],
+                 short_circuit_propagation: nx.DiGraph, count: int):
         self.count = count
         self.rules = rules
+        self.evaluation_tree = evaluation_tree
         self.short_circuit_propagation = short_circuit_propagation
 
         self.weight = {rule: sum(counter.values()) for rule, counter in rules.items()}
@@ -291,47 +348,30 @@ class SpecialCount(BaseStardewRule):
 
     def evaluate_with_shortcircuit(self, state: CollectionState) -> bool:
         target_points = self.count
+        rules = self.rules
 
         evaluated = {}
         leftovers = Counter()
         min_points = 0
         max_points = self.total
-        exploration = nx.DiGraph(self.short_circuit_propagation)
 
-        while len(evaluated) != len(self.rules):
-            # TODO account for disconnected graphs
-            # TODO handle weights ?
-            center_rule = nx.center(exploration)[0]
+        tree, root = self.evaluation_tree
+        while root != EVALUATION_END_SENTINEL:
+            center_rule = root
             center_value = center_rule(state)
 
-            if center_value:
-                min_points += self.rules[center_rule].get(center_rule, 0)
-                if min_points >= target_points:
-                    return True
+            root = [v
+                    for u, v, d in tree.out_edges(center_rule, data=True)
+                    if d["propagation"] == center_value or d["propagation"] == EVALUATION_END_SENTINEL][0]
+            short_circuited_nodes = tree.get_edge_data(center_rule, root)["short_circuit"]
 
-                leftovers.update(self.rules[center_rule])
-                leftovers.pop(center_rule, None)
-            else:
-                # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
-                points = self.weight[center_rule]
-                max_points -= points
-                if max_points < target_points:
-                    return False
-
-            short_circuited_nodes = [center_rule]
-            # TODO would it be more efficient if all nodes were already connected? No need to bfs
-            for _, short_circuited_rule in nx.generic_bfs_edges(exploration,
-                                                                center_rule,
-                                                                neighbors=lambda x: (v
-                                                                                     for u, v, d in exploration.out_edges(x, data=True)
-                                                                                     if d["propagation"] == center_value)):
-
+            for short_circuited_rule in short_circuited_nodes:
                 if center_value:
-                    min_points += self.rules[short_circuited_rule].get(short_circuited_rule, 0)
+                    min_points += rules[short_circuited_rule].get(short_circuited_rule, 0)
                     if min_points >= target_points:
                         return True
 
-                    leftovers.update(self.rules[short_circuited_rule])
+                    leftovers.update(rules[short_circuited_rule])
                     leftovers.pop(short_circuited_rule, None)
                 else:
                     # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
@@ -341,21 +381,16 @@ class SpecialCount(BaseStardewRule):
                         return False
 
                 evaluated[short_circuited_rule] = center_value
-                short_circuited_nodes.append(short_circuited_rule)
-
-            # Need to do it after the loop to avoid modifying the graph while iterating over it.
-            exploration.remove_nodes_from(short_circuited_nodes)
 
         for rule, value in leftovers.items():
             if self.call_evaluate_while_simplifying_cached(rule, state):
                 min_points += value
+                if min_points >= target_points:
+                    return True
             else:
                 max_points -= value
-
-            if min_points >= target_points:
-                return True
-            elif max_points < target_points:
-                return False
+                if max_points < target_points:
+                    return False
 
         assert min_points == max_points
         return False
