@@ -134,7 +134,7 @@ class CountExplanation(RuleExplanation):
 
     @cached_property
     def explained_sub_rules(self) -> List[RuleExplanation]:
-        if all(value == 1 for value in self.rule.counter.values()):
+        if all(value == 1 for _, value in self.rule.rules_and_points):
             return super().explained_sub_rules
 
         return [

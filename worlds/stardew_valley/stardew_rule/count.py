@@ -87,5 +87,14 @@ class Count(BaseStardewRule):
 
         return Count.from_leftovers(list(simplified_rules.items()), new_goal)
 
+    def __str__(self):
+        if all(value == 1 for _, value in self.rules_and_points):
+            return f"Has {self.count} of [{', '.join(str(rule) for rule, _ in self.rules_and_points)}]"
+
+        return f"Has {self.count} of [{', '.join(f'{value}x {str(rule)}' for rule, value in self.rules_and_points)}]"
+
     def __repr__(self):
-        return f"Received {self.count} [{', '.join(f'{value}x {repr(rule)}' for rule, value in self.rules_and_points)}]"
+        if all(value == 1 for _, value in self.rules_and_points):
+            return f"Has {self.count} of [{', '.join(repr(rule) for rule, _ in self.rules_and_points)}]"
+
+        return f"Has {self.count} of [{', '.join(f'{value}x {repr(rule)}' for rule, value in self.rules_and_points)}]"
