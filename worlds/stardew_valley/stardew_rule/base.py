@@ -151,6 +151,9 @@ class BaseStardewRule(StardewRule, CanShortCircuit, ABC):
     def simplify_knowing(self, assumption_state: AssumptionState) -> BaseStardewRule:
         return self
 
+    def deep_simplify_knowing(self, assumption_state: AssumptionState) -> BaseStardewRule:
+        return self.simplify_knowing(assumption_state)
+
     @property
     def short_circuit_able_component(self) -> Optional[BaseStardewRule]:
         return None
@@ -482,6 +485,7 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
         return hash((*self.combinable_rules.values(), self.simplification_state.original_simplifiable_rules))
 
     def simplify(self) -> StardewRule:
+        # Duplicated will be eliminated by the rule creation process.
         simplified_rules = []
         assumption_state = AssumptionState()
         for rule in self.current_rules:
@@ -490,7 +494,7 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
 
             # Assuming all identity have already been removed when the rule was created originally.
 
-            # TODO use simplify knowing, add the assumption that other rules are short-circuited.
+            # TODO use simplify knowing, add the assumption that other rules did not short-circuit.
             simplified_rule = rule.simplify()
 
             if simplified_rule is self.identity:
@@ -500,6 +504,9 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
                 return self.complement
 
             simplified_rules.append(simplified_rule)
+
+        if len(simplified_rules) == 1:
+            return simplified_rules[0]
 
         # The process of creating a new rule will handle merging of aggregating and combinable rules.
         return type(self)(*simplified_rules)
@@ -523,6 +530,29 @@ class AggregatingStardewRule(BaseStardewRule, ABC):
                 return next(iter(self.simplification_state.original_simplifiable_rules))
 
         return type(self)(_combinable_rules=combinable_rules, _simplification_state=self.simplification_state)
+
+    def deep_simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
+        # Duplicated will be eliminated by the rule creation process.
+        simplified_rules = []
+        for rule in self.current_rules:
+            simplified_rule = rule.deep_simplify_knowing(assumption_state)
+
+            if simplified_rule is self.identity:
+                continue
+
+            if simplified_rule is self.complement:
+                return self.complement
+
+            simplified_rules.append(simplified_rule)
+
+        if not simplified_rules:
+            return self.identity
+
+        if len(simplified_rules) == 1:
+            return simplified_rules[0]
+
+        # The process of creating a new rule will handle merging of aggregating and combinable rules.
+        return type(self)(*simplified_rules)
 
 
 class Or(AggregatingStardewRule):

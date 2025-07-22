@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 from functools import cached_property, singledispatch
-from typing import Optional, Tuple, List, Union, Dict, Hashable, Set
+from typing import Optional, Tuple, Union, Dict, Hashable, Set, Deque, List
 
 import networkx as nx
 
 from BaseClasses import CollectionState
-from .base import BaseStardewRule, ShortCircuitPropagation, CombinableStardewRule, Or, And
+from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, AssumptionState, BaseStardewRule
+from .literal import LiteralStardewRule
 from .protocol import StardewRule
 from .state import HasProgressionPercent, Reach, Received
 
@@ -16,10 +18,10 @@ from .state import HasProgressionPercent, Reach, Received
 class Node:
     true_edge: Optional[Edge]
     false_edge: Optional[Edge]
-    rule: BaseStardewRule
+    rule: StardewRule
 
     @staticmethod
-    def leaf(rule: BaseStardewRule):
+    def leaf(rule: StardewRule):
         return Node(None, None, rule)
 
     @cached_property
@@ -38,6 +40,10 @@ class Edge:
     """Leftovers are the rules that could not be resolved by the short-circuit evaluation. They will be evaluated afterward."""
     node: Node
 
+    @staticmethod
+    def simple_edge(node: Node):
+        return Edge((0, 0), 0, [], node)
+
     def __str__(self):
         leftovers_points = sum(x[1] for x in self.leftovers)
         return (f"{{{'+' if self.points > 0 else ''}{self.points} -> "
@@ -48,7 +54,7 @@ class Edge:
         return self.__str__()
 
 
-class EvaluationTreeStardewRule:
+class OptimizedStardewRule:
     """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
     original: StardewRule
     evaluation_tree: Node
@@ -99,6 +105,7 @@ class ShortCircuitScore:
         return self.true + self.false
 
 
+# TODO split finding root and recursive part
 @singledispatch
 def to_rule_map(
         rule: StardewRule,
@@ -143,6 +150,7 @@ def _(
     subrules = rule.original_rules
     propagated_score = ShortCircuitScore(_score.min / len(subrules), _score.false)
     for subrule in subrules:
+        # TODO simplify subrule while adding in state, with the assumption that other subrules did not short-circuit
         to_rule_map(subrule, _rule_map, propagated_score, _combinable_rules)
         _rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NEGATIVE)
 
@@ -260,3 +268,52 @@ def _propagate_combinable_scores(rule_map: nx.DiGraph, combinable_rules: Dict[Ha
                     rule_map.add_edge(other_rule, rule, propagation=ShortCircuitPropagation.POSITIVE)
                     rule_map.nodes[rule]["score"] += ShortCircuitScore(0, other_score.false)
                     rule_map.nodes[other_rule]["score"] += ShortCircuitScore(score.true, 0)
+
+
+def to_evaluation_tree(rule_map: nx.DiGraph, root: BaseStardewRule) -> Node:
+    """ Precalculate the evaluation tree based on the possible results of each rule (recursively).
+    Going from the root to one leaf should evaluate all the rules, as long as the leftovers are evaluated afterward.
+
+    TODO New algo to create evaluation tree
+        Find the node that can short-circuit the most rules. Sum true short-circuit rules and false short-circuit rules.
+        If decomposable (And and Or), add to killed nodes and
+
+    TODO handle weights ? -> Keep all nodes with equal links so center see the other rules. Add weight on equal link depending on point.
+        Add node matching exact rule to true_, so weight of that node can be considered.
+        Build graph by calling simplify_knowing() on each equal node.
+        Then we could evaluate one state subrule at the time. Prioritize received rule.
+
+    :returns: The root node.
+    """
+
+    ordered_nodes = sorted(rule_map.nodes.items(), key=lambda x: (x[1]["priority"], x[1]["score"].total))
+    rules = (node[0] for node in ordered_nodes)
+
+    return _recursive_create_evaluation_tree(deque(rules), root, AssumptionState())
+
+
+def _recursive_create_evaluation_tree(evaluation_queue: Deque[BaseStardewRule], root: BaseStardewRule, assumption_state: AssumptionState) -> Node:
+    if isinstance(root, LiteralStardewRule):
+        return Node.leaf(root)
+
+    evaluation_queue = evaluation_queue.copy()
+    center_rule = evaluation_queue.pop()
+    if not evaluation_queue:
+        return Node.leaf(center_rule)
+
+    # FALSE branch
+    false_assumption_state = assumption_state.add_upper_bounds(center_rule)
+    false_simplified_root = root.deep_simplify_knowing(false_assumption_state)
+
+    false_evaluation_tree = _recursive_create_evaluation_tree(evaluation_queue, false_simplified_root, false_assumption_state)
+    false_edge = Edge.simple_edge(false_evaluation_tree)
+
+    # TRUE branch
+
+    true_assumption_state = assumption_state.add_lower_bounds(center_rule)
+    true_simplified_root = root.deep_simplify_knowing(true_assumption_state)
+
+    true_evaluation_tree = _recursive_create_evaluation_tree(evaluation_queue, true_simplified_root, true_assumption_state)
+    true_edge = Edge.simple_edge(true_evaluation_tree)
+
+    return Node(true_edge, false_edge, center_rule)
