@@ -47,8 +47,8 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         expected = nx.DiGraph()
         expected.add_node(carrot, priority=5, score=ShortCircuitScore(1 / 2, 1))
         expected.add_node(potato, priority=5, score=ShortCircuitScore(1 / 2, 1))
-        expected.add_node(and_rule, priority=0, score=ShortCircuitScore(2, 1))
-        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1))
+        expected.add_node(and_rule, priority=0, score=ShortCircuitScore(2, 1), root=False)
+        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1), root=True)
         expected.add_edge(carrot, and_rule, propagation=ShortCircuitPropagation.NEGATIVE)
         expected.add_edge(potato, and_rule, propagation=ShortCircuitPropagation.NEGATIVE)
         expected.add_edge(and_rule, rule, propagation=ShortCircuitPropagation.POSITIVE)
@@ -65,8 +65,8 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         expected = nx.DiGraph()
         expected.add_node(carrot, priority=5, score=ShortCircuitScore(1, 1 / 2))
         expected.add_node(potato, priority=5, score=ShortCircuitScore(1, 1 / 2))
-        expected.add_node(or_rule, priority=0, score=ShortCircuitScore(1, 2))
-        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1))
+        expected.add_node(or_rule, priority=0, score=ShortCircuitScore(1, 2), root=False)
+        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1), root=True)
         expected.add_edge(carrot, or_rule, propagation=ShortCircuitPropagation.POSITIVE)
         expected.add_edge(potato, or_rule, propagation=ShortCircuitPropagation.POSITIVE)
         expected.add_edge(or_rule, rule, propagation=ShortCircuitPropagation.NEGATIVE)
@@ -88,9 +88,9 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         expected.add_node(received_two_carrots, priority=5, score=ShortCircuitScore(1 / 6 + 1 / 6, 1 / 3))
         expected.add_node(received_potato, priority=5, score=ShortCircuitScore(1 + 1 / 6, 1 / 3 + 1 / 3))
         expected.add_node(reach_kitchen, priority=1, score=ShortCircuitScore(1 / 6, 1 / 3))
-        expected.add_node(kitchen_and_two_carrots, priority=0, score=ShortCircuitScore(1, 1 / 3))
-        expected.add_node(carrot_and_potato, priority=0, score=ShortCircuitScore(1, 1 / 3))
-        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1))
+        expected.add_node(kitchen_and_two_carrots, priority=0, score=ShortCircuitScore(1, 1 / 3), root=False)
+        expected.add_node(carrot_and_potato, priority=0, score=ShortCircuitScore(1, 1 / 3), root=False)
+        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1), root=True)
 
         expected.add_edge(received_carrot, carrot_and_potato, propagation=ShortCircuitPropagation.NEGATIVE)
         expected.add_edge(received_potato, carrot_and_potato, propagation=ShortCircuitPropagation.NEGATIVE)
@@ -111,8 +111,7 @@ class TestEvaluationTree(unittest.TestCase):
     def test_given_received_when_convert_to_rule_map_then_single_node_with_high_priority(self):
         rule = Received("Carrot", 1, 1)
 
-        graph = to_rule_map(rule)
-        evaluation_tree = to_evaluation_tree(graph, rule)
+        evaluation_tree = to_evaluation_tree(rule)
 
         expected = Node.leaf(rule)
         self.assertEqual(expected, evaluation_tree)
@@ -120,8 +119,7 @@ class TestEvaluationTree(unittest.TestCase):
     def test_given_reach_when_convert_to_rule_map_then_single_node_with_resolvable(self):
         rule = Reach("Carrot Field", "Location", 1)
 
-        graph = to_rule_map(rule)
-        evaluation_tree = to_evaluation_tree(graph, rule)
+        evaluation_tree = to_evaluation_tree(rule)
 
         expected = Node.leaf(rule)
         self.assertEqual(expected, evaluation_tree)
@@ -132,8 +130,7 @@ class TestEvaluationTree(unittest.TestCase):
         and_rule = carrot & potato
         rule = and_rule | and_rule
 
-        graph = to_rule_map(rule)
-        evaluation_tree = to_evaluation_tree(graph, rule)
+        evaluation_tree = to_evaluation_tree(rule)
 
         self.assertEqual(false_, evaluation_tree.false_edge.node.rule)
         self.assertEqual(false_, evaluation_tree.true_edge.node.false_edge.node.rule)
@@ -145,8 +142,7 @@ class TestEvaluationTree(unittest.TestCase):
         or_rule = carrot | potato
         rule = or_rule & or_rule
 
-        graph = to_rule_map(rule)
-        evaluation_tree = to_evaluation_tree(graph, rule)
+        evaluation_tree = to_evaluation_tree(rule)
 
         self.assertEqual(true_, evaluation_tree.true_edge.node.rule)
         self.assertEqual(true_, evaluation_tree.false_edge.node.true_edge.node.rule)
@@ -161,9 +157,8 @@ class TestEvaluationTree(unittest.TestCase):
         carrot_and_potato = received_carrot & received_potato
         rule = received_potato | kitchen_and_two_carrots | carrot_and_potato
 
-        graph = to_rule_map(rule)
-        evaluation_tree = to_evaluation_tree(graph, rule)
+        evaluation_tree = to_evaluation_tree(rule)
 
-        carrot_node = Node(Edge.simple_edge(Node.leaf(true_)), Edge.simple_edge(Node.leaf(false_)), received_carrot)
-        potato_node = Node(Edge.simple_edge(Node.leaf(true_)), Edge.simple_edge(carrot_node), received_potato)
+        two_carrot_node = Node(Edge.simple_edge(Node.leaf(reach_kitchen)), Edge.simple_edge(Node.leaf(false_)), received_two_carrots)
+        potato_node = Node(Edge.simple_edge(Node.leaf(true_)), Edge.simple_edge(two_carrot_node), received_potato)
         self.assertEqual(potato_node, evaluation_tree)
