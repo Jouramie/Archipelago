@@ -728,3 +728,6 @@ class RepeatableChain(Iterable, Sized):
 
     def __contains__(self, item):
         return any(item in it for it in self.iterables)
+
+    def __repr__(self):
+        return f"RepeatableChain({', '.join(repr(i) for i in self.iterables)})"
