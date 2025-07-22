@@ -247,3 +247,19 @@ class TestCompressedStardewRule(unittest.TestCase):
         uncompressed_tree = Node(Edge.simple_leaf(reach_kitchen | carrot_and_tomato), Edge.simple_leaf(carrot_and_tomato), received_two_brocoli)
         expected_compressed = received_potato | EvaluationTreeStardewRule(uncompressed_tree)
         self.assertEqual(CompressedStardewRule(rule, expected_compressed), compressed)
+
+    def test_given_equivalent_rules_of_different_form_when_to_rule_map_then_optimized_rules_are_the_same(self):
+        received_carrot = Received("Carrot", 1, 1)
+        received_potato = Received("Potato", 1, 1)
+        received_tomato = Received("Tomato", 1, 1)
+        carrot_and_potato = received_carrot & received_potato
+        potato_and_tomato = received_potato & received_tomato
+        tomato_and_carrot = received_tomato & received_carrot
+        rule = carrot_and_potato | potato_and_tomato | tomato_and_carrot
+        optimized1 = to_optimized_v2(rule)
+
+        tomato_and_carrot_or_potato = received_tomato & (received_carrot | received_potato)
+        rule2 = tomato_and_carrot_or_potato | carrot_and_potato
+        optimized2 = to_optimized_v2(rule2)
+
+        self.assertEqual(optimized1.compressed, optimized2.compressed)

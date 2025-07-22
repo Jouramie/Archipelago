@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cached_property, singledispatch
 from typing import Tuple, Union, Dict, Hashable, Set, List, cast, Collection
 
@@ -122,7 +122,7 @@ class OptimizedStardewRule:
 @dataclass(frozen=True)
 class CompressedStardewRule:
     """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
-    original: StardewRule
+    original: StardewRule = field(repr=False, hash=False, compare=False)
     compressed: StardewRule
 
     def __call__(self, state: CollectionState) -> bool:
