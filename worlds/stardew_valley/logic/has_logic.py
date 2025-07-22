@@ -1,5 +1,6 @@
 from .base_logic import BaseLogic
-from ..stardew_rule import StardewRule, And, Or, Has, Count, true_, false_, HasProgressionPercent
+from ..stardew_rule import StardewRule, And, Or, Has, true_, false_, HasProgressionPercent
+from ..stardew_rule.count import Count, create_special_count
 
 
 class HasLogicMixin(BaseLogic):
@@ -28,6 +29,10 @@ class HasLogicMixin(BaseLogic):
         assert percent <= 100, "Can't have a progress percent over 100"
 
         return HasProgressionPercent(self.player, percent)
+
+    @staticmethod
+    def special_count(count: int, *rules: StardewRule) -> StardewRule:
+        return create_special_count(rules, count)
 
     @staticmethod
     def count(count: int, *rules: StardewRule) -> StardewRule:

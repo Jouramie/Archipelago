@@ -6,7 +6,8 @@ from typing import Iterable, Set, Tuple, List, Optional
 
 from BaseClasses import CollectionState, Location, Entrance
 from worlds.generic.Rules import CollectionRule
-from . import StardewRule, AggregatingStardewRule, Count, Has, TotalReceived, Received, Reach, true_
+from . import StardewRule, AggregatingStardewRule, Has, TotalReceived, Received, Reach, true_
+from .count import Count
 
 
 @dataclass

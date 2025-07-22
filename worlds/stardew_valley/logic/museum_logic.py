@@ -45,7 +45,7 @@ class MuseumLogic(BaseLogic):
         for artifact in all_museum_artifacts:
             rules.append(self.logic.museum.can_find_museum_item(artifact))
 
-        return self.logic.count(number, *rules)
+        return self.logic.special_count(number, *rules)
 
     def can_find_museum_minerals(self, number: int) -> StardewRule:
         rules = []
