@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import enum
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
 from itertools import chain
 from threading import Lock
-from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Set, Optional, cast, ClassVar
+from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Set, Optional, cast, ClassVar, Protocol
 
 from BaseClasses import CollectionState
 from .literal import true_, false_, LiteralStardewRule
@@ -14,7 +15,43 @@ from .protocol import StardewRule
 MISSING_ITEM = "THIS ITEM IS MISSING"
 
 
-class BaseStardewRule(StardewRule, ABC):
+class ShortCircuitPropagation(enum.Enum):
+    NONE = enum.auto()
+    POSITIVE = enum.auto()
+    NEGATIVE = enum.auto()
+    EQUAL = enum.auto()
+
+    @property
+    def reverse(self):
+        if self is ShortCircuitPropagation.POSITIVE:
+            return ShortCircuitPropagation.NEGATIVE
+        elif self is ShortCircuitPropagation.NEGATIVE:
+            return ShortCircuitPropagation.POSITIVE
+        return self
+
+
+class CanShortCircuitLink(Protocol):
+
+    @property
+    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+        """Return the combinable part of the rule."""
+        ...
+
+    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+        """Return the link between two rules.
+        NONE if there is no possible short-circuit propagation;
+        POSITIVE if a True result from evaluating self short-circuit other;
+        NEGATIVE if a False result from evaluating self short-circuit other;
+        EQUAL if both resul;ts from evaluating self short-circuit other. In other words, both rules have the same combinable part.
+
+        A POSITIVE or a NEGATIVE implies that other will short-circuit self in the opposite way.
+
+        And/Or rules will always have a NONE link one another.
+        """
+        ...
+
+
+class BaseStardewRule(StardewRule, CanShortCircuitLink, ABC):
 
     def __or__(self, other) -> StardewRule:
         if other is true_ or other is false_ or type(other) is Or:
@@ -27,6 +64,13 @@ class BaseStardewRule(StardewRule, ABC):
             return other & self
 
         return And(self, other)
+
+    @property
+    def short_circuit_able_component(self) -> CanShortCircuitLink:
+        return self
+
+    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+        return ShortCircuitPropagation.NONE
 
 
 class CombinableStardewRule(BaseStardewRule, ABC):
@@ -64,6 +108,25 @@ class CombinableStardewRule(BaseStardewRule, ABC):
         if isinstance(other, CombinableStardewRule) and self.is_same_rule(other):
             return Or.combine(self, other)
         return super().__or__(other)
+
+    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+        if not isinstance(other, CombinableStardewRule):
+            return other.calculate_short_circuit_propagation(self)
+
+        # Different key means nothing in common, so no short-circuit propagation.
+        if self.combination_key != other.combination_key:
+            return ShortCircuitPropagation.NONE
+
+        # Both have same value, so rule is in fact the same.
+        if self.value == other.value:
+            return ShortCircuitPropagation.EQUAL
+
+        # Self has a higher value, so self evaluating to True mean that other will be True was well.
+        if self.value > other.value:
+            return ShortCircuitPropagation.POSITIVE
+
+        # Self has a lower value, so self evaluating to False mean that other will be False was well.
+        return ShortCircuitPropagation.NEGATIVE
 
 
 class _SimplificationState:
@@ -327,6 +390,15 @@ class Or(AggregatingStardewRule):
     def combine(left: CombinableStardewRule, right: CombinableStardewRule) -> CombinableStardewRule:
         return min(left, right, key=lambda x: x.value)
 
+    @property
+    def short_circuit_able_component(self) -> CanShortCircuitLink:
+        return Or(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
+
+    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+        # TODO see that later
+        print("hey maybe you should implement or short circuit propagation...")
+        return ShortCircuitPropagation.NONE
+
 
 class And(AggregatingStardewRule):
     identity = true_
@@ -353,6 +425,81 @@ class And(AggregatingStardewRule):
     @staticmethod
     def combine(left: CombinableStardewRule, right: CombinableStardewRule) -> CombinableStardewRule:
         return max(left, right, key=lambda x: x.value)
+
+    @property
+    def short_circuit_able_component(self) -> CanShortCircuitLink:
+        if len(self.combinable_rules) == 1:
+            return next(iter(self.combinable_rules.values()))
+
+        return And(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
+
+    def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
+        if isinstance(other, CombinableStardewRule):
+            return self.__calculate_short_circuit_propagation_combinable(other)
+        elif isinstance(other, And):
+            return self.__calculate_short_circuit_propagation_and(other)
+        return ShortCircuitPropagation.NONE
+
+    def __calculate_short_circuit_propagation_combinable(self, other: CombinableStardewRule):
+        # Different key means not enough in common, so no short-circuit propagation.
+        if other.combination_key not in self.combinable_rules:
+            return ShortCircuitPropagation.NONE
+
+        # Self has a higher value, meaning it is more restrictive than the other rule.
+        value = self.combinable_rules[other.combination_key].value
+        if value == other.value:
+            return ShortCircuitPropagation.EQUAL
+
+        if value > other.value:
+            return ShortCircuitPropagation.POSITIVE
+
+        # Self has a lower value, so self evaluating to False mean that other will be False was well.
+        if len(self.combinable_rules) == 1 and value < other.value:
+            return ShortCircuitPropagation.NEGATIVE
+
+        # Values are diverging, so no short-circuit propagation.
+        return ShortCircuitPropagation.NONE
+
+    def __calculate_short_circuit_propagation_and(self, other: And):
+        # No combinable rules, so no short-circuit propagation.
+        if not self.combinable_rules or not other.combinable_rules:
+            return ShortCircuitPropagation.NONE
+
+        if self.combinable_rules == other.combinable_rules:
+            return ShortCircuitPropagation.EQUAL
+
+        # No intersection means rules are diverging, so no short-circuit propagation.
+        intersection = self.combinable_rules.keys() & other.combinable_rules.keys()
+        if not intersection:
+            return ShortCircuitPropagation.NONE
+
+        if len(intersection) == len(self.combinable_rules):
+            smaller = self
+            larger = other
+        elif len(intersection) == len(other.combinable_rules):
+            smaller = other
+            larger = self
+        else:
+            # Both have different keys, which means rules are diverging. No short-circuit propagation.
+            return ShortCircuitPropagation.NONE
+
+        # larger has a higher value, meaning it is more restrictive than the other rule.
+        more_restrictive = all(larger.combinable_rules[key].value >= smaller.combinable_rules[key].value for key in smaller.combinable_rules)
+        if more_restrictive:
+            if self is larger:
+                return ShortCircuitPropagation.POSITIVE
+            return ShortCircuitPropagation.NEGATIVE
+
+        # self has a lower value, so it is less restrictive that other rule.
+        less_restrictive = all(larger.combinable_rules[key].value <= smaller.combinable_rules[key].value for key in self.combinable_rules)
+        if len(self.combinable_rules) == len(other.combinable_rules) and less_restrictive:
+            if self is larger:
+                return ShortCircuitPropagation.NEGATIVE
+            return ShortCircuitPropagation.POSITIVE
+
+        print("man I never thought this would happen...")
+        # Self has a lower or diverging values, so self evaluating to False mean that other will be False was well.
+        return ShortCircuitPropagation.NONE
 
 
 @dataclass(frozen=True)
