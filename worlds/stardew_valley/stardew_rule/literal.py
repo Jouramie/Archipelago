@@ -11,6 +11,15 @@ class LiteralStardewRule(StardewRule, ABC):
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self.value
 
+    def simplify(self) -> StardewRule:
+        return self
+
+    def simplify_knowing(self, *_) -> StardewRule:
+        return self
+
+    def deep_simplify_knowing(self, *_) -> StardewRule:
+        return self
+
     def __call__(self, state: CollectionState) -> bool:
         return self.value
 

@@ -44,7 +44,7 @@ class AssumptionState:
     """Lower bound is inclusive, upper bound is exclusive.
     """
     combinable_values: Dict[Hashable, Tuple[int, int]] = field(default_factory=dict)
-    regions: Dict[str, Boolean] = field(default_factory=dict)
+    spots: Dict[Hashable, Boolean] = field(default_factory=dict)
 
     def add_combinable_lower_bounds(self, lower_bounds: Iterable[Tuple[Hashable, int]]) -> AssumptionState:
         new_bounds = {}
@@ -58,7 +58,7 @@ class AssumptionState:
 
             new_bounds[key] = (value, upper_bound)
 
-        return AssumptionState(self.combinable_values | new_bounds)
+        return AssumptionState(self.combinable_values | new_bounds, self.spots)
 
     def add_combinable_upper_bounds(self, upper_bounds: Iterable[Tuple[Hashable, int]]) -> AssumptionState:
         new_bounds = {}
@@ -72,10 +72,17 @@ class AssumptionState:
 
             new_bounds[key] = (lower_bound, value)
 
-        return AssumptionState(self.combinable_values | new_bounds)
+        return AssumptionState(self.combinable_values | new_bounds, self.spots)
+
+    def set_spot_available(self, spot: Hashable) -> AssumptionState:
+        return AssumptionState(self.combinable_values, {**self.spots, spot: True})
+
+    def set_spot_unavailable(self, spot: Hashable) -> AssumptionState:
+        return AssumptionState(self.combinable_values, {**self.spots, spot: False})
 
     def __str__(self):
-        return f"{{{', '.join(f'{key}: {self.str_bound(*bound)}' for key, bound in self.combinable_values.items())}}}"
+        return (f"{{{', '.join(f'{key}: {self.str_bound(*bound)}' for key, bound in self.combinable_values.items())}}}|"
+                f"{{{', '.join(f'{spot}: {available}' for spot, available in self.spots.items())}}}")
 
     def __repr__(self):
         return self.__str__()
@@ -96,10 +103,10 @@ class CanShortCircuit(Protocol):
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         ...
 
-    def simplify(self) -> CanShortCircuit:
+    def simplify(self) -> StardewRule:
         ...
 
-    def simplify_knowing(self, assumption_state: AssumptionState) -> CanShortCircuit:
+    def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
         """Simplify the rule knowing the state of other rules."""
         ...
 
@@ -146,13 +153,13 @@ class BaseStardewRule(StardewRule, CanShortCircuit, ABC):
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[BaseStardewRule, bool]:
         return self, self(state)
 
-    def simplify(self) -> BaseStardewRule:
+    def simplify(self) -> StardewRule:
         return self
 
-    def simplify_knowing(self, assumption_state: AssumptionState) -> BaseStardewRule:
+    def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
         return self
 
-    def deep_simplify_knowing(self, assumption_state: AssumptionState) -> BaseStardewRule:
+    def deep_simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
         return self.simplify_knowing(assumption_state)
 
     @property
@@ -736,6 +743,12 @@ class Has(BaseStardewRule):
         if isinstance(sub_rule, LiteralStardewRule):
             return sub_rule
         return cast(BaseStardewRule, sub_rule).simplify()
+
+    def deep_simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
+        sub_rule = self.other_rules[self.item]
+        if isinstance(sub_rule, LiteralStardewRule):
+            return sub_rule
+        return cast(BaseStardewRule, sub_rule).deep_simplify_knowing(assumption_state)
 
     def __str__(self):
         if self.item not in self.other_rules:

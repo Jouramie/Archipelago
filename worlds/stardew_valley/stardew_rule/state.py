@@ -3,7 +3,8 @@ from functools import cached_property
 from typing import Iterable, Union, List, Tuple, Hashable, TYPE_CHECKING
 
 from BaseClasses import CollectionState
-from .base import BaseStardewRule, CombinableStardewRule
+from .base import BaseStardewRule, CombinableStardewRule, AssumptionState
+from .literal import false_, true_
 from .protocol import StardewRule
 from ..strings.ap_names.event_names import Event
 
@@ -85,15 +86,20 @@ class Reach(BaseStardewRule):
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
 
-    @cached_property
-    def lower_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        # A lower bound at 1 mean that the spot is known to be reachable
-        return ((self.key, 1),)
+    def simplify_knowing(self, assumption_state: AssumptionState) -> StardewRule:
+        is_available = assumption_state.spots.get(self.key)
+        if is_available is None:
+            return self
 
-    @cached_property
-    def upper_bounds(self) -> Iterable[Tuple[Hashable, int]]:
-        # A higher bound at 1 mean that the spot is known to be unreachable
-        return ((self.key, 1),)
+        if is_available:
+            return true_
+        return false_
+
+    def add_lower_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state.set_spot_available(self.key)
+
+    def add_upper_bounds(self, assumption_state: AssumptionState) -> AssumptionState:
+        return assumption_state.set_spot_unavailable(self.key)
 
     @cached_property
     def key(self) -> Hashable:
