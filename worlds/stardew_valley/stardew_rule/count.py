@@ -348,7 +348,7 @@ class SpecialCount(BaseStardewRule):
         target_points = self.count
         rules = self.rules
 
-        evaluated = {}
+        evaluated = []
         leftovers = []
         min_points = 0
         max_points = self.total
@@ -377,10 +377,11 @@ class SpecialCount(BaseStardewRule):
                     if max_points < target_points:
                         return False
 
-                evaluated[short_circuited_rule] = evaluation
+            evaluated.append(evaluation)
 
         # Do a second pass to evaluate the rules that were not short-circuited.
         tree, root = self.evaluation_tree
+        i = 0
         for rules_group in leftovers:
             for rule, points in rules_group.items():
                 if rule == root:
@@ -396,9 +397,9 @@ class SpecialCount(BaseStardewRule):
                     if max_points < target_points:
                         return False
 
-            root = [v
-                    for u, v, d in tree.out_edges(root, data=True)
-                    if d["propagation"] == evaluated[root] or d["propagation"] == EVALUATION_END_SENTINEL][0]
+            root_evaluation = evaluated[i]
+            root = next(v for v, d in tree[root].items() if d["propagation"] == root_evaluation or d["propagation"] == EVALUATION_END_SENTINEL)
+            i += 1
 
         assert min_points == max_points
         return False
