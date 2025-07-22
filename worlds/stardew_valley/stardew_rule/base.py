@@ -66,8 +66,8 @@ class BaseStardewRule(StardewRule, CanShortCircuitLink, ABC):
         return And(self, other)
 
     @property
-    def short_circuit_able_component(self) -> CanShortCircuitLink:
-        return self
+    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+        return None
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         return ShortCircuitPropagation.NONE
@@ -108,6 +108,10 @@ class CombinableStardewRule(BaseStardewRule, ABC):
         if isinstance(other, CombinableStardewRule) and self.is_same_rule(other):
             return Or.combine(self, other)
         return super().__or__(other)
+
+    @property
+    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+        return self
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         if not isinstance(other, CombinableStardewRule):
@@ -391,8 +395,10 @@ class Or(AggregatingStardewRule):
         return min(left, right, key=lambda x: x.value)
 
     @property
-    def short_circuit_able_component(self) -> CanShortCircuitLink:
-        return Or(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
+    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+        return None
+        # TODO
+        # return Or(_combinable_rules=self.combinable_rules, _simplification_state=_SimplificationState(()))
 
     def calculate_short_circuit_propagation(self, other: CanShortCircuitLink) -> ShortCircuitPropagation:
         # TODO see that later
@@ -427,7 +433,10 @@ class And(AggregatingStardewRule):
         return max(left, right, key=lambda x: x.value)
 
     @property
-    def short_circuit_able_component(self) -> CanShortCircuitLink:
+    def short_circuit_able_component(self) -> Optional[CanShortCircuitLink]:
+        if not self.combinable_rules:
+            return None
+
         if len(self.combinable_rules) == 1:
             return next(iter(self.combinable_rules.values()))
 

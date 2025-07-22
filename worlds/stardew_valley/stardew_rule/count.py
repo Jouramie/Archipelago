@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from collections import Counter
 from dataclasses import dataclass
 from functools import cached_property
@@ -12,41 +11,59 @@ from BaseClasses import CollectionState
 from .base import BaseStardewRule, CanShortCircuitLink, ShortCircuitPropagation
 from .protocol import StardewRule
 
-if sys.version_info >= (3, 10):
-    slots = {"slots": True}
-else:
-    slots = {}
-
 
 # TODO make sure it's faster with slots
-@dataclass(frozen=True, **slots)
+@dataclass(frozen=True)
 class Node:
     true_edge: Edge
     false_edge: Edge
     rule: BaseStardewRule
 
 
-@dataclass(frozen=True, **slots)
+@dataclass(frozen=True)
 class Edge:
     points: int
+    """Points are to be added or subtracted depending on there the edge is placed on the node. 
+    - true edge will add points to the total;
+    - false edge will subtract points from the maximum reachable."""
     leftovers: List[Tuple[StardewRule, int]]
+    """Leftovers are the rules that could not be resolved by the short-circuit evaluation. They will be evaluated afterward."""
     node: Node
 
 
 EVALUATION_END_SENTINEL = Node(None, None, None)
 
 
-def create_evaluation_tree(short_circuit_graph: nx.DiGraph, weights: Dict[CanShortCircuitLink, int], rules: Dict[CanShortCircuitLink, Counter]) -> Node:
+def create_evaluation_tree(short_circuit_graph: nx.DiGraph,
+                           weights: Dict[CanShortCircuitLink, int],
+                           rules: Dict[Optional[CanShortCircuitLink], Counter]) -> Node:
     """ Precalculate the evaluation tree based on the possible results of each rule (recursively).
-    Going from the root to one leaf should evaluate all the rules.
+    Going from the root to one leaf should evaluate all the rules, as long as the leftovers are evaluated afterward.
 
-    :returns: First element is the tree, second is the root.
+    :returns: The root node.
     """
     if not short_circuit_graph:
         return EVALUATION_END_SENTINEL
 
-    # TODO account for disconnected graphs
-    # TODO handle weights ? -> Keep all nodes with equal links so center see the other rules
+    components = list(nx.weakly_connected_components(short_circuit_graph))
+    main_component = max(components, key=len)
+    components.remove(main_component)
+
+    # Rules that do not have short-circuit-able part are added to the leftovers directly.
+    starting_leftovers = [(rule, points) for rule, points in rules.get(None, Counter()).items()]
+
+    # Keeping only the largest component, the rest is added to the leftovers even if there might be short_circuit_able rules in it.
+    #  This could be optimized later if that proves to improve performance.
+    #  TODO pass sub components to recursion so they are placed in the evaluation tree.
+    for component in components:
+        for node in component:
+            starting_leftovers.extend((node, weight) for node, weight in rules[node].items())
+    short_circuit_graph = short_circuit_graph.subgraph(main_component)
+
+    # TODO handle weights ? -> Keep all nodes with equal links so center see the other rules. Add weight on equal link depending on point.
+    #  Add node matching exact rule to true_, so weight of that node can be considered.
+    #  Build graph by calling simplify_knowing() on each equal node.
+    #  Then we could evaluate one state subrule at the time. Prioritize received rule.  
     center_rule = nx.center(short_circuit_graph)[0]
 
     false_killed_nodes = [center_rule]
@@ -61,7 +78,8 @@ def create_evaluation_tree(short_circuit_graph: nx.DiGraph, weights: Dict[CanSho
     false_surviving_graph.remove_nodes_from(false_killed_nodes)
     false_weight = sum(weights[rule] for rule in false_killed_nodes)
     # FIXME this is assuming a AND but will not work with OR. Should add some kind of "resolve knowing" method.
-    false_leftovers = []
+    false_leftovers = sorted(starting_leftovers + [],
+                             key=lambda x: x[1])
     false_evaluation_tree = create_evaluation_tree(false_surviving_graph, weights, rules)
     false_edge = Edge(false_weight, false_leftovers, false_evaluation_tree)
 
@@ -76,10 +94,11 @@ def create_evaluation_tree(short_circuit_graph: nx.DiGraph, weights: Dict[CanSho
     true_surviving_graph = nx.DiGraph(short_circuit_graph)
     true_surviving_graph.remove_nodes_from(true_killed_nodes)
     true_weight = sum(rules[rule].get(rule, 0) for rule in true_killed_nodes)
-    true_leftovers = sorted([(leftover, weight)
-                             for short_circuited in true_killed_nodes
-                             for leftover, weight in rules[short_circuited].items()
-                             if leftover != short_circuited],
+    # TODO remove the short-circuited part from the leftovers so they can merge with the other leftovers
+    true_leftovers = sorted(starting_leftovers + [(leftover, weight)
+                                                  for short_circuited in true_killed_nodes
+                                                  for leftover, weight in rules[short_circuited].items()
+                                                  if leftover != short_circuited],
                             key=lambda x: x[1])
     true_evaluation_tree = create_evaluation_tree(true_surviving_graph, weights, rules)
     true_edge = Edge(true_weight, true_leftovers, true_evaluation_tree)
@@ -97,24 +116,35 @@ def create_special_count(rules: Collection[StardewRule], count: int) -> Union[Sp
     link_results = {}
     short_circuit_able_keys = list(grouped_by_component.keys())
     for i, ri in enumerate(short_circuit_able_keys):
+        if ri is None:
+            continue
+
         for rj in short_circuit_able_keys[i + 1:]:
+            if rj is None:
+                continue
+
             link_results[ri, rj] = ri.calculate_short_circuit_propagation(rj)
 
-    directed_links = []
+    nodes = set()
+    edges = []
     for link, direction in link_results.items():
-        if direction is ShortCircuitPropagation.POSITIVE:
-            directed_links.append((link[1], link[0]))
-        elif direction is ShortCircuitPropagation.NEGATIVE:
-            directed_links.append(link)
+        nodes.update(link)
 
-    if not directed_links:
+        if direction is ShortCircuitPropagation.POSITIVE:
+            edges.append((link[1], link[0]))
+        elif direction is ShortCircuitPropagation.NEGATIVE:
+            edges.append(link)
+
+    if not edges:
         return Count(list(rules), count)
 
-    g = nx.DiGraph(directed_links)
-    tr: nx.DiGraph = nx.transitive_reduction(g)
+    starting_graph = nx.DiGraph(edges)
+    starting_graph.add_nodes_from(nodes)
+    reduced_graph: nx.DiGraph = nx.transitive_reduction(starting_graph)
 
     final_graph = nx.DiGraph()
-    for u, v in tr.edges:
+    final_graph.add_nodes_from(reduced_graph.nodes)
+    for u, v in reduced_graph.edges:
         final_graph.add_edge(u, v, propagation=False)
         final_graph.add_edge(v, u, propagation=True)
 
@@ -196,7 +226,7 @@ class SpecialCount(BaseStardewRule):
                 if max_points < target_points:
                     return False
 
-        assert min_points == max_points
+        assert min_points == max_points, "Seems like some rules were not evaluated correctly."
         return False
 
     def call_evaluate_while_simplifying_cached(self, rule: StardewRule, state: CollectionState) -> bool:

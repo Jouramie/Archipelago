@@ -52,14 +52,14 @@ class MuseumLogic(BaseLogic):
         for mineral in all_museum_minerals:
             rules.append(self.logic.museum.can_find_museum_item(mineral))
 
-        return self.logic.count(number, *rules)
+        return self.logic.special_count(number, *rules)
 
     def can_find_museum_items(self, number: int) -> StardewRule:
         rules = []
         for donation in all_museum_items:
             rules.append(self.logic.museum.can_find_museum_item(donation))
 
-        return self.logic.count(number, *rules)
+        return self.logic.special_count(number, *rules)
 
     def can_complete_museum(self) -> StardewRule:
         rules = [self.logic.region.can_reach(Region.museum)]
