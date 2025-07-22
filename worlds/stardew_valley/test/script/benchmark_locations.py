@@ -8,12 +8,12 @@ import argparse
 import collections
 import gc
 import logging
-import os
-import sys
 import time
 import typing
+from random import Random
+from typing import Protocol
 
-from BaseClasses import CollectionState, Location
+from BaseClasses import CollectionState, Location, Item, get_seed
 from Utils import init_logging
 from ..bases import setup_solo_multiworld
 from ..options import presets
@@ -28,25 +28,69 @@ def run_locations_benchmark():
     init_logging("Benchmark Runner")
     logger = logging.getLogger("Benchmark")
 
+    class StateGenerator(Protocol):
+        def __next__(self) -> CollectionState:
+            ...
+
+    class CollectingStateGenerator:
+        def __init__(self, state: CollectionState, items: list[Item], random: Random):
+            self.state = state
+            self.collecting_queue = collections.deque(items)
+            self.removing_queue = collections.deque()
+            self.random = random
+
+            self.is_filling = True
+
+            self.random.shuffle(self.collecting_queue)
+
+        def __next__(self) -> CollectionState:
+            if self.is_filling:
+                item = self.collecting_queue.pop()
+                self.state.collect(item)
+                self.removing_queue.append(item)
+
+                if not self.collecting_queue:
+                    self.is_filling = False
+                    self.random.shuffle(self.removing_queue)
+
+            else:
+                item = self.removing_queue.pop()
+                self.state.remove(item)
+                self.collecting_queue.append(item)
+
+                if not self.removing_queue:
+                    self.is_filling = True
+                    self.random.shuffle(self.collecting_queue)
+
+            return self.state
+
+    class NoopStateGenerator:
+        def __init__(self, state: CollectionState):
+            self.state = state
+
+        def __next__(self) -> CollectionState:
+            return self.state
+
     class BenchmarkRunner:
         gen_steps: typing.Tuple[str, ...] = (
             "generate_early", "create_regions", "create_items", "set_rules", "generate_basic", "pre_fill")
-        rule_iterations: int = 100_000
+        rule_iterations: int = 1_000
 
         @staticmethod
         def format_times_from_counter(counter: collections.Counter[str], top: int = 5) -> str:
             return "\n".join(f"  {time:.4f} in {name}" for name, time in counter.most_common(top))
 
-        def location_test(self, test_location: Location, state: CollectionState, state_name: str) -> float:
+        def location_test(self, test_location: Location, state: StateGenerator, state_name: str) -> float:
             rule = test_location.access_rule
             rule = to_optimized_v2(rule)
             # logger.info(str(rule))
             # logger.info(str(rule.evaluation_tree))
             # logger.info(f"average depth = {rule.evaluation_tree.average_leaf_depth}")
+
             with TimeIt(f"{test_location.game} {self.rule_iterations} "
                         f"runs of {test_location}.access_rule({state_name})", logger) as t:
                 for _ in range(self.rule_iterations):
-                    rule(state)
+                    rule(next(state))
                 # if time is taken to disentangle complex ref chains,
                 # this time should be attributed to the rule.
                 gc.collect()
@@ -56,20 +100,26 @@ def run_locations_benchmark():
             game = "Stardew Valley"
             summary_data: typing.Dict[str, collections.Counter[str]] = {
                 "empty_state": collections.Counter(),
+                "filling_state": collections.Counter(),
                 "all_state": collections.Counter(),
             }
             try:
                 parser = argparse.ArgumentParser()
                 parser.add_argument('--options', help="Define the option set to use, from the preset in test/__init__.py .", type=str, required=True)
                 parser.add_argument('--seed', help="Define the seed to use.", type=int, required=True)
+                parser.add_argument('--filling_seed', help="Define the seed to use for the filling_state.", type=int, default=None)
                 parser.add_argument('--location', help="Define the specific location to benchmark.", type=str, default=None)
                 parser.add_argument('--state', help="Define the state in which the location will be benchmarked.", type=str, default=None)
                 args = parser.parse_args()
                 options_set = args.options
                 options = getattr(presets, options_set)()
                 seed = args.seed
+                filling_seed = args.filling_seed
                 location = args.location
                 state = args.state
+
+                if filling_seed is None:
+                    filling_seed = get_seed()
 
                 multiworld = setup_solo_multiworld(options, seed)
                 gc.collect()
@@ -79,14 +129,20 @@ def run_locations_benchmark():
                 else:
                     locations = sorted(multiworld.get_locations(1))
 
-                all_state = multiworld.get_all_state(False)
                 for location in locations:
-                    if state != "all_state":
-                        time_taken = self.location_test(location, multiworld.state, "empty_state")
+                    if state == "empty_state" or not state:
+                        time_taken = self.location_test(location, NoopStateGenerator(multiworld.state), "empty_state")
                         summary_data["empty_state"][location.name] = time_taken
 
-                    if state != "empty_state":
-                        time_taken = self.location_test(location, all_state, "all_state")
+                    if state == "filling_state" or not state:
+                        logger.info(f"Using seed {filling_seed} for filling_state.")
+                        generator = CollectingStateGenerator(multiworld.state, multiworld.itempool, Random(filling_seed))
+                        time_taken = self.location_test(location, generator, "filling_state")
+                        summary_data["filling_state"][location.name] = time_taken
+
+                    if state == "all_state" or not state:
+                        all_state = multiworld.get_all_state(False)
+                        time_taken = self.location_test(location, NoopStateGenerator(all_state), "all_state")
                         summary_data["all_state"][location.name] = time_taken
 
                 total_empty_state = sum(summary_data["empty_state"].values())
@@ -130,20 +186,6 @@ class TimeIt:
             self.end_timer = time.perf_counter()
         if self.logger:
             self.logger.info(f"{self.dif:.4f} seconds in {self.name}.")
-
-
-def change_home():
-    """Allow scripts to run from "this" folder."""
-    old_home = os.path.dirname(__file__)
-    sys.path.remove(old_home)
-    new_home = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-    os.chdir(new_home)
-    sys.path.append(new_home)
-    # fallback to local import
-    sys.path.append(old_home)
-
-    from Utils import local_path
-    local_path.cached_path = new_home
 
 
 if __name__ == "__main__":

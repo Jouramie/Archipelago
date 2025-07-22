@@ -21,7 +21,7 @@ from .logic.tool_logic import tool_upgrade_prices
 from .mods.mod_data import ModNames
 from .options import ExcludeGingerIsland, SpecialOrderLocations, Museumsanity, BackpackProgression, Shipsanity, \
     Monstersanity, Chefsanity, Craftsanity, ArcadeMachineLocations, Cooksanity, StardewValleyOptions, Walnutsanity
-from .stardew_rule import And, StardewRule, true_, to_optimized_v1
+from .stardew_rule import And, StardewRule, true_, to_optimized_v1, to_optimized_v2
 from .stardew_rule.indirect_connection import look_for_indirect_connection
 from .stardew_rule.rule_explain import explain
 from .strings.ap_names.ap_option_names import WalnutsanityOptionName
@@ -626,9 +626,10 @@ def set_museum_milestone_rule(logic: StardewLogic, multiworld: MultiWorld, museu
     metal_detector = Wallet.metal_detector
     rule = None
     if milestone_name.endswith(donations_suffix):
-        rule = get_museum_item_count_rule(logic, donations_suffix, milestone_name, all_museum_items, logic.museum.can_find_museum_items)
+        rule = to_optimized_v2(get_museum_item_count_rule(logic, donations_suffix, milestone_name, all_museum_items, logic.museum.can_find_museum_items))
     elif milestone_name.endswith(minerals_suffix):
         rule = get_museum_item_count_rule(logic, minerals_suffix, milestone_name, all_museum_minerals, logic.museum.can_find_museum_minerals)
+        rule = rule
     elif milestone_name.endswith(artifacts_suffix):
         rule = get_museum_item_count_rule(logic, artifacts_suffix, milestone_name, all_museum_artifacts, logic.museum.can_find_museum_artifacts)
         rule = to_optimized_v1(rule)
