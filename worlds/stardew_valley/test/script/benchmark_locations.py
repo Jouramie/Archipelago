@@ -27,7 +27,7 @@ def run_locations_benchmark():
     class BenchmarkRunner:
         gen_steps: typing.Tuple[str, ...] = (
             "generate_early", "create_regions", "create_items", "set_rules", "generate_basic", "pre_fill")
-        rule_iterations: int = 100_000
+        rule_iterations: int = 10_000
 
         @staticmethod
         def format_times_from_counter(counter: collections.Counter[str], top: int = 5) -> str:
