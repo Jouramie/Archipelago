@@ -24,7 +24,7 @@ from .options.presets import sv_options_presets
 from .options.worlds_group import apply_most_restrictive_options
 from .regions import create_regions, prepare_mod_data
 from .rules import set_rules
-from .stardew_rule import True_, StardewRule, HasProgressionPercent
+from .stardew_rule import True_, StardewRule, HasProgressionPercent, true_, to_optimized_v1
 from .strings.ap_names.event_names import Event
 from .strings.goal_names import Goal as GoalName
 
@@ -250,7 +250,7 @@ class StardewValleyWorld(World):
                                        Event.victory)
         elif self.options.goal == Goal.option_complete_collection:
             self.create_event_location(location_table[GoalName.complete_museum],
-                                       self.logic.goal.can_complete_complete_collection(),
+                                       to_optimized_v1(self.logic.goal.can_complete_complete_collection()),
                                        Event.victory)
         elif self.options.goal == Goal.option_full_house:
             self.create_event_location(location_table[GoalName.full_house],

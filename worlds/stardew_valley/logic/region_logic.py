@@ -3,7 +3,7 @@ from typing import Tuple
 from Utils import cache_self1
 from .base_logic import BaseLogic, BaseLogicMixin
 from ..options import EntranceRandomization
-from ..stardew_rule import StardewRule, Reach, false_, true_
+from ..stardew_rule import StardewRule, Reach, false_, true_, CombinableReach
 from ..strings.region_names import Region
 
 main_outside_area = {Region.menu, Region.stardew_valley, Region.farm_house, Region.farm, Region.town, Region.beach, Region.mountain, Region.forest,
@@ -22,6 +22,14 @@ always_regions_by_setting = {EntranceRandomization.option_disabled: always_acces
                              EntranceRandomization.option_buildings: main_outside_area,
                              EntranceRandomization.option_chaos: always_accessible_regions_without_er}
 
+combinable_region_prefixes = (
+    "The Mines - Floor ",
+    "Skull Cavern Floor ",
+    "Volcano - Floor ",
+    "Dangerous Mines - Floor ",
+    "The Deep Woods Depth ",
+)
+
 
 class RegionLogicMixin(BaseLogicMixin):
     def __init__(self, *args, **kwargs):
@@ -31,6 +39,17 @@ class RegionLogicMixin(BaseLogicMixin):
 
 class RegionLogic(BaseLogic):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.combinable_regions = {
+            region
+            for region in self.regions
+            if any(
+                region.startswith(prefix)
+                for prefix in combinable_region_prefixes
+            )
+        }
+
     @cache_self1
     def can_reach(self, region_name: str) -> StardewRule:
         if region_name in always_regions_by_setting[self.options.entrance_randomization]:
@@ -38,6 +57,10 @@ class RegionLogic(BaseLogic):
 
         if region_name not in self.regions:
             return false_
+
+        if region_name in self.combinable_regions:
+            prefix = next(prefix for prefix in combinable_region_prefixes if region_name.startswith(prefix))
+            return CombinableReach(region_name, "Region", self.player, prefix, int(region_name[len(prefix):]))
 
         return Reach(region_name, "Region", self.player)
 
