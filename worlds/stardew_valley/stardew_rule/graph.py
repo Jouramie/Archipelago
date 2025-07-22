@@ -9,7 +9,7 @@ import networkx as nx
 
 from BaseClasses import CollectionState
 from .assumption import AssumptionState
-from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, BaseStardewRule
+from .base import ShortCircuitPropagation, CombinableStardewRule, Or, And, BaseStardewRule, Has
 from .count import Count
 from .literal import LiteralStardewRule, true_, false_
 from .protocol import StardewRule
@@ -301,7 +301,7 @@ def _(
         false_ratio = points / goal_to_false
         rule_propagated_score = ShortCircuitScore(score.true * true_ratio, score.false * false_ratio)
 
-        if not rule_propagated_score.is_significant():
+        if not root and not rule_propagated_score.is_significant():
             continue
 
         _recursive_to_rule_map(subrule, rule_map, rule_propagated_score, combinable_rules)
@@ -464,6 +464,10 @@ def _recursive_create_evaluation_tree(root: BaseStardewRule, assumption_state: A
     false_edge = Edge.simple_edge(false_evaluation_tree)
 
     true_assumption_state = most_significant_rule.add_lower_bounds(assumption_state)
+    # TODO might be interesting to explore switching nodes in the tree when a lower node removes rule form the count than the parent (1 node removed when not having a recipe is bad compared to 17 node when not having farming level 1)
+    #   just sorting the rules to have those with the most combinable first would be a good start.
+
+    # TODO should also try simplifying while evaluating
     true_evaluation_tree = _recursive_create_evaluation_tree(root, true_assumption_state)
     true_edge = Edge.simple_edge(true_evaluation_tree)
 
@@ -473,7 +477,7 @@ def _recursive_create_evaluation_tree(root: BaseStardewRule, assumption_state: A
 def to_optimized_v1(rule: StardewRule) -> StardewRule | OptimizedStardewRule:
     # TODO allow Count, multiply score by weight of rule
     # TODO do something to reduce Reach(location) into access_rule + region, since it access_rule won't be optimized with current rule.
-    if not isinstance(rule, (And, Or, Count)):
+    if not isinstance(rule, (And, Or, Count, Has)):
         return rule
     rule = cast(BaseStardewRule, rule)
 
@@ -487,7 +491,7 @@ def create_optimized_count(rules: Collection[StardewRule], count: int) -> Optimi
 
 def to_optimized_v2(rule: StardewRule) -> StardewRule | CompressedStardewRule:
     """Compress the evaluation tree to reduce the number of branches. It makes it easier to real, will most likely be used for display purposes."""
-    if not isinstance(rule, (And, Or, Count)):
+    if not isinstance(rule, (And, Or, Count, Has)):
         return rule
     rule = cast(BaseStardewRule, rule)
 

@@ -82,10 +82,10 @@ def run_locations_benchmark():
 
         def location_test(self, test_location: Location, state: StateGenerator, state_name: str) -> float:
             rule = test_location.access_rule
-            rule = to_optimized_v2(rule)
-            # logger.info(str(rule))
-            # logger.info(str(rule.evaluation_tree))
-            # logger.info(f"average depth = {rule.evaluation_tree.average_leaf_depth}")
+            rule = to_optimized_v1(rule)
+            logger.info(str(rule))
+            logger.info(str(rule.evaluation_tree))
+            logger.info(f"average depth = {rule.evaluation_tree.average_leaf_depth}")
 
             with TimeIt(f"{test_location.game} {self.rule_iterations} "
                         f"runs of {test_location}.access_rule({state_name})", logger) as t:
@@ -186,6 +186,7 @@ class TimeIt:
             self.end_timer = time.perf_counter()
         # if self.logger:
         #     self.logger.info(f"{self.dif:.4f} seconds in {self.name}.")
+
 
 if __name__ == "__main__":
     run_locations_benchmark()
