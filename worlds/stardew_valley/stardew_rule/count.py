@@ -243,8 +243,8 @@ class SpecialCount(BaseStardewRule):
 
         target_points = self.count
 
-        for rule, points in leftovers:
-            evaluation = self.call_evaluate_while_simplifying_cached(rule, state)
+        for rule, points in sorted(leftovers, key=lambda x: x[1], reverse=True):
+            evaluation = rule(state)
             if evaluation:
                 min_points += points
                 if min_points >= target_points:
