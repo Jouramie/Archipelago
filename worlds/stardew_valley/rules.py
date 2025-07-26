@@ -278,6 +278,7 @@ def set_mines_floor_entrance_rules(logic, multiworld, player):
 
 
 def set_skull_cavern_floor_entrance_rules(logic, multiworld, player):
+    rule_collector.set_entrance_rule(Entrance.mine_in_skull_cavern, logic.mine.can_progress_in_the_mines_from_floor(120))
     for floor in range(25, 200 + 25, 25):
         rule = logic.mod.elevator.has_skull_cavern_elevator_to_floor(floor - 25)
         if floor == 25 or floor == 75 or floor == 125:
@@ -321,7 +322,8 @@ def set_festival_entrance_rules(logic, multiworld, player):
     set_entrance_rule(multiworld, player, LogicEntrance.attend_flower_dance, logic.season.has(Season.spring))
 
     set_entrance_rule(multiworld, player, LogicEntrance.attend_luau, logic.season.has(Season.summer))
-    set_entrance_rule(multiworld, player, LogicEntrance.attend_trout_derby, logic.season.has(Season.summer))
+    set_entrance_rule(multiworld, player, LogicEntrance.attend_trout_derby,
+                                     logic.season.has(Season.summer))
     set_entrance_rule(multiworld, player, LogicEntrance.attend_moonlight_jellies, logic.season.has(Season.summer))
 
     set_entrance_rule(multiworld, player, LogicEntrance.attend_fair, logic.season.has(Season.fall))
