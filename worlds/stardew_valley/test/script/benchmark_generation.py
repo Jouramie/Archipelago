@@ -15,6 +15,7 @@ from BaseClasses import CollectionState, get_seed
 from Fill import distribute_items_restrictive, FillError
 from test.general import gen_steps
 from worlds import AutoWorld
+from worlds.stardew_valley.logic.has_logic import HasLogicMixin
 from ..bases import setup_solo_multiworld
 from ..options import presets
 from ... import StardewValleyWorld
@@ -82,6 +83,8 @@ def generate_monitor_rules():
     original_sweep_for_advancements = CollectionState.sweep_for_advancements
     original_update_reachable_regions = CollectionState.update_reachable_regions
 
+    original_count = HasLogicMixin.count
+
     class Run:
         def __init__(self, index: int, seed: int):
             self.index = index
@@ -92,6 +95,8 @@ def generate_monitor_rules():
             self.gen_steps = {}
             self.sweep_for_advancements = []
             self.update_reachable_regions = []
+
+            self.count_rules = []
 
         def apply_patches(self):
             @wraps(original_set_location_rule)

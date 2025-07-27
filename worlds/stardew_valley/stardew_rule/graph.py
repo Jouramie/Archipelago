@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import time
+from collections import Counter
 from dataclasses import dataclass, field
 from functools import cached_property, singledispatch
 from typing import Tuple, Union, Dict, Hashable, Set, List, cast, Collection
@@ -201,7 +203,8 @@ def _recursive_to_rule_map(
         rule_map: nx.DiGraph,
         score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False
+        root: bool = False,
+        allowed_depth: int = 0
 ) -> nx.DiGraph:
     """Converts a rule to a graph representation.
     priority: rules with higher priority are to evaluate first. Priority is assigned per rule type, based on how long it takes to evaluate it.
@@ -231,23 +234,24 @@ def _(
         rule_map: nx.DiGraph,
         score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False
+        root: bool = False,
+        allowed_depth: int = 0
+
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
     else:
         rule_map.add_node(rule, priority=0, score=score, root=root)
 
+    if allowed_depth <= 0:
+        return rule_map
+
     subrules = rule.original_rules
     # I checked empirically that using min here reduce the average depth of the tree, which should on average reduce the evaluation time.
     propagated_score = ShortCircuitScore(score.min / len(subrules), score.false)
 
-    if not propagated_score.is_significant():
-        return rule_map
-
     for subrule in subrules:
-        # TODO simplify subrule while adding in state, with the assumption that other subrules did not short-circuit
-        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules)
+        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, False, allowed_depth - 1)
         rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NEGATIVE)
 
     return rule_map
@@ -259,21 +263,22 @@ def _(
         rule_map: nx.DiGraph,
         score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False
+        root: bool = False,
+        allowed_depth: int = 0
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
     else:
         rule_map.add_node(rule, priority=0, score=score, root=root)
 
+    if allowed_depth <= 0:
+        return rule_map
+
     subrules = rule.original_rules
     propagated_score = ShortCircuitScore(score.true, score.min / len(subrules))
 
-    if not propagated_score.is_significant():
-        return rule_map
-
     for subrule in subrules:
-        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules)
+        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, False, allowed_depth - 1)
         rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.POSITIVE)
 
     return rule_map
@@ -285,12 +290,18 @@ def _(
         rule_map: nx.DiGraph,
         score: ShortCircuitScore,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False
+        root: bool = False,
+        allowed_depth: int = 0
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
     else:
         rule_map.add_node(rule, priority=0, score=score, root=root)
+
+    if allowed_depth <= 0:
+        return rule_map
+
+    # TODO Is there really something to simplify if we're in a normal not-optimized count?
 
     subrules = rule.rules_and_points
     rules_count = rule.total
@@ -301,10 +312,7 @@ def _(
         false_ratio = points / goal_to_false
         rule_propagated_score = ShortCircuitScore(score.true * true_ratio, score.false * false_ratio)
 
-        if not root and not rule_propagated_score.is_significant():
-            continue
-
-        _recursive_to_rule_map(subrule, rule_map, rule_propagated_score, combinable_rules)
+        _recursive_to_rule_map(subrule, rule_map, rule_propagated_score, combinable_rules, False, allowed_depth - 1)
         # TODO do we really use propagation?
         rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NONE)
 
@@ -528,3 +536,45 @@ def _compress_evaluation_tree_recursive(evaluation_tree: Node) -> StardewRule:
 
     compressed_sub_tree = Node(true_branch, false_branch, evaluation_tree.rule)
     return EvaluationTreeStardewRule(compressed_sub_tree)
+
+
+def create_count_rule_map(rules_and_points: Collection[tuple[StardewRule, int]], count: int, depth=1) -> nx.DiGraph:
+    combinable_rules = {}
+    rule_map = nx.DiGraph()
+
+    rules_count = sum(r[1] for r in rules_and_points)
+    goal_to_true = count
+    goal_to_false = rules_count - goal_to_true + 1
+    for subrule, points in rules_and_points:
+        true_ratio = points / goal_to_true
+        false_ratio = points / goal_to_false
+        score = ShortCircuitScore(true_ratio, false_ratio)
+
+        _recursive_to_rule_map(subrule, rule_map, score, combinable_rules, False, depth)
+
+    _propagate_combinable_scores(rule_map, combinable_rules)
+    return rule_map
+
+
+def create_count(rules: Collection[StardewRule], count: int):
+    rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
+
+    rule_map = None
+    for i in range(1, 5):
+        # TODO retry testing different with exploring Has rules.
+        start = time.perf_counter_ns()
+        rule_map = create_count_rule_map(rules_and_points, count, depth=i)
+        end = time.perf_counter_ns()
+        print(f"Creating count rule map of depth {i} took {(end - start) / 1_000_000:.2f} ms. "
+              f"Size is {rule_map.number_of_nodes()} nodes, {rule_map.number_of_edges()} edges.")
+
+    if rule_map.number_of_edges() == 0:
+        print("No edges in the rule map, returning unsimplified count.")
+        return Count(rules, count, _rules_and_points=rules_and_points)
+
+    node_edge_ratio = rule_map.number_of_nodes() / rule_map.number_of_edges()
+    if node_edge_ratio > 1:
+        print(f"Node to edge ratio is {node_edge_ratio:.2f}. Simplification will probably be a waste of time.")
+        return Count(rules, count, _rules_and_points=rules_and_points)
+
+    return Count(rules, count, _rules_and_points=rules_and_points)
