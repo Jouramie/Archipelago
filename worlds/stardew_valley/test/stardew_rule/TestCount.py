@@ -2,7 +2,7 @@ import unittest
 from typing import cast
 from unittest.mock import MagicMock, Mock
 
-from ...stardew_rule import StardewRule, Received, Count, Reach, create_optimized_count
+from ...stardew_rule import StardewRule, Received, Count, Reach, create_optimized_count, Has
 
 
 class TestCount(unittest.TestCase):
@@ -141,6 +141,29 @@ class TestSuperCount(unittest.TestCase):
         self.assertFalse(special_count(collection_state))
         self.assertEqual(2, collection_state.has.call_count)
 
-        collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 1), ("Brocoli", 1, 2)})
+        collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 1), ("Brocoli", 1, 1), ("Brocoli", 1, 2)})
         self.assertTrue(special_count(collection_state))
         self.assertEqual(2, collection_state.has.call_count)
+
+    def test_given_two_rules_with_has_when_evaluate_then_has_is_broken_down(self):
+        collection_state = Mock()
+        rules = {
+            "Potato": Received("Progressive Seed", 1, 1) & Reach("Potato field", "Location", 1),
+            "Carrot": Received("Progressive Seed", 1, 2) & Reach("Carrot field", "Location", 1),
+            "Brocoli": Received("Progressive Seed", 1, 3) & Reach("Brocoli field", "Location", 1),
+        }
+        special_count = create_optimized_count([
+            Has("Potato", rules),
+            Has("Carrot", rules),
+            Has("Brocoli", rules),
+        ], 2)
+
+        collection_state.has = Mock(return_value=False)
+        self.assertFalse(special_count(collection_state))
+        self.assertEqual(1, collection_state.has.call_count)
+
+        collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Progressive Seed", 1, 1), ("Progressive Seed", 1, 2)})
+        collection_state.can_reach = Mock(return_value=True)
+        self.assertTrue(special_count(collection_state))
+        self.assertEqual(1, collection_state.has.call_count)
+        self.assertEqual(2, collection_state.can_reach.call_count)

@@ -267,6 +267,7 @@ def _recursive_to_rule_map(
     if rule_map is None:
         rule_map = nx.DiGraph()
     elif rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
@@ -294,6 +295,7 @@ def _(
         **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
     else:
@@ -324,6 +326,7 @@ def _(
 
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
     else:
@@ -355,6 +358,7 @@ def _(
         **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
     else:
@@ -384,6 +388,7 @@ def _(
         **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
@@ -407,6 +412,7 @@ def _(
         **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
@@ -429,6 +435,7 @@ def _(
         **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
@@ -449,6 +456,7 @@ def _(
         **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
@@ -472,6 +480,7 @@ def _(
         **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
+        rule_map.nodes[rule]["value"] += value
         rule_map.nodes[rule]["score"] += score
         rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
@@ -618,6 +627,7 @@ def create_count_rule_map(rules_and_points: Collection[tuple[StardewRule, int]],
 def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[StardewRule, int, int]]:
     """Create a sequence of rules to evaluate based on the rule map.
     The sequence is created by traversing the rule map and selecting the most significant rules first.
+    FIXME ça marche pas vraiment, ça arrive qu'on claim des pts de True alors que les False sont déjà claimed pour la même règle...
     """
     assert rule_map.number_of_nodes() is not None
 
@@ -633,7 +643,7 @@ def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[Stardew
         edges_to_explore = list((r, e, True) for r, e in rule_map[current_most_significant_rule].items())
         explored_nodes = set()
         nodes_to_remove = [current_most_significant_rule]
-        edges_to_update = []  # TODO fill
+        edges_to_update = []  # TODO fill to recalculate scores of every toughed nodes once they are claimed
         while edges_to_explore:
             linked_rule, edge_attrs, is_direct_edge = edges_to_explore.pop()
             explored_nodes.add(linked_rule)
@@ -649,7 +659,7 @@ def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[Stardew
                     node_attrs["value"] = added_value
                     node_attrs["short_circuit_score"] = RuleValue(0, node_attrs["short_circuit_score"].false)
 
-                new_edges = list((r, e, False)
+                new_edges = list((r, {**e, "propagation": ShortCircuitPropagation.POSITIVE}, False)
                                  for r, e in rule_map[linked_rule].items()
                                  if e["propagation"] in (ShortCircuitPropagation.POSITIVE, ShortCircuitPropagation.EQUAL)
                                  and r not in explored_nodes)
@@ -663,9 +673,22 @@ def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[Stardew
                     node_attrs["short_circuit_score"] = RuleValue(node_attrs["short_circuit_score"].true, 0)
                     # TODO probably should also update the score
 
-                new_edges = list((r, e, False)
+                new_edges = list((r, {**e, "propagation": ShortCircuitPropagation.NEGATIVE}, False)
                                  for r, e in rule_map[linked_rule].items()
                                  if e["propagation"] in (ShortCircuitPropagation.NEGATIVE, ShortCircuitPropagation.EQUAL)
+                                 and r not in explored_nodes)
+                edges_to_explore.extend(new_edges)
+
+            elif propagation == ShortCircuitPropagation.EQUAL:
+                if added_value.true > 0 or added_value.false > 0:
+                    points_counted = RuleValue(points_counted.true + added_value.true, points_counted.false + added_value.false)
+                    added_value = RuleValue(0, 0)
+                    node_attrs["value"] = added_value
+                    node_attrs["short_circuit_score"] = RuleValue(0, 0)
+
+                new_edges = list((r, e, is_direct_edge)
+                                 for r, e in rule_map[linked_rule].items()
+                                 if e["propagation"] in (ShortCircuitPropagation.NEGATIVE, ShortCircuitPropagation.POSITIVE, ShortCircuitPropagation.EQUAL)
                                  and r not in explored_nodes)
                 edges_to_explore.extend(new_edges)
             else:
@@ -687,6 +710,9 @@ def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[Stardew
                     new_score = RuleValue(max(0, short_circuit_score.true - removed_score.true), short_circuit_score.false)
                 elif short_circuit_propagation == ShortCircuitPropagation.NEGATIVE:
                     new_score = RuleValue(short_circuit_score.true, max(0, short_circuit_score.false - removed_score.false))
+                elif short_circuit_propagation == ShortCircuitPropagation.EQUAL:
+                    new_score = RuleValue(max(0, short_circuit_score.true - removed_score.true),
+                                          max(0, short_circuit_score.false - removed_score.false))
                 else:
                     raise ValueError(f"Unknown propagation type {short_circuit_propagation} for rule {short_circuiter}.")
 
@@ -701,9 +727,7 @@ def create_optimized_count(rules: Collection[StardewRule], count: int):
 
     start = time.perf_counter_ns()
     rule_map = create_count_rule_map(rules_and_points, count, depth=2)
-    end = time.perf_counter_ns()
-    print(f"Creating count rule map of depth {2} took {(end - start) / 1_000_000:.2f} ms. "
-          f"Size is {rule_map.number_of_nodes()} nodes, {rule_map.number_of_edges()} edges.")
+    print(f"Size is {rule_map.number_of_nodes()} nodes, {rule_map.number_of_edges()} edges.")
 
     if rule_map.number_of_edges() == 0:
         print("No edges in the rule map, returning unsimplified count.")
@@ -715,7 +739,9 @@ def create_optimized_count(rules: Collection[StardewRule], count: int):
         return Count(rules, count, _rules_and_points=rules_and_points)
 
     sequence = create_count_evaluation_sequence(rule_map)
-    assert sum(t for r, t, f in sequence) == len(rules)
-    assert sum(f for r, t, f in sequence) == len(rules)
+    end = time.perf_counter_ns()
+    print(f"Creating count of depth {2} took {(end - start) / 1_000_000:.2f} ms. ")
+
+    assert sum(t for _, t, _ in sequence) == len(rules) and sum(f for _, _, f in sequence) == len(rules)
 
     return SequenceCountStardewRule(rules_and_points, sequence, count, len(rules))
