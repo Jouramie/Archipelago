@@ -6,7 +6,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from functools import cached_property, singledispatch
-from typing import Tuple, Dict, Hashable, Set, List, cast, Collection
+from typing import Tuple, Dict, Hashable, Set, List, cast, Collection, ClassVar
 
 import networkx as nx
 
@@ -209,6 +209,7 @@ class EvaluationTreeStardewRule:
 # TODO try slots, cuz there will be a lot of these. Maybe
 @dataclass(frozen=True)
 class RuleValue:
+    none: ClassVar[RuleValue] = None
     true: int | float
     false: int | float
 
@@ -229,7 +230,10 @@ class RuleValue:
     def avg(self) -> float:
         # A score of more than 1 is overkill, it's better to evaluate a more balanced rule.
         # TODO or maybe multiply instead of min?
-        return (min(self.true, 1) + min(self.true, 1)) / 2
+        return (min(self.true, 1) + min(self.false, 1)) / 2
+
+
+RuleValue.none = RuleValue(0, 0)
 
 
 def to_rule_map(rule: StardewRule) -> nx.DiGraph:
@@ -239,7 +243,7 @@ def to_rule_map(rule: StardewRule) -> nx.DiGraph:
     scores: the percentage of the rule that will be resolved when this rule is evaluated.
     """
     combinable_rules = {}
-    rule_map = _recursive_to_rule_map(rule, nx.DiGraph(), RuleValue(1, 1), combinable_rules, RuleValue(1, 1))
+    rule_map = _recursive_to_rule_map(rule, nx.DiGraph(), RuleValue(1, 1), combinable_rules, value=RuleValue(1, 1))
     _propagate_combinable_scores(rule_map, combinable_rules)
     return rule_map
 
@@ -250,7 +254,9 @@ def _recursive_to_rule_map(
         rule_map: nx.DiGraph,
         score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        value: RuleValue | None = None,
+        /,
+        *,
+        value: RuleValue = RuleValue.none,
         allowed_depth: int = 0
 ) -> nx.DiGraph:
     """Converts a rule to a graph representation.
@@ -262,16 +268,17 @@ def _recursive_to_rule_map(
         rule_map = nx.DiGraph()
     elif rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=1, score=score, value=value)
+    rule_map.add_node(rule, priority=1, score=score, short_circuit_score=score, value=value)
 
     return rule_map
 
 
 @_recursive_to_rule_map.register
-def _(rule: LiteralStardewRule, rule_map: nx.DiGraph, score: RuleValue, value: RuleValue | None = None, *_, **__) -> nx.DiGraph:
-    rule_map.add_node(rule, priority=9, score=score, value=value)
+def _(rule: LiteralStardewRule, rule_map: nx.DiGraph, score: RuleValue, *_, value: RuleValue = RuleValue.none, **__) -> nx.DiGraph:
+    rule_map.add_node(rule, priority=9, score=score, short_circuit_score=score, value=value)
     return rule_map
 
 
@@ -281,14 +288,16 @@ def _(
         rule_map: nx.DiGraph,
         score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        value: RuleValue | None = None,
+        *_,
+        value: RuleValue = RuleValue.none,
         allowed_depth: int = 0,
-        *_, **__
+        **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
     else:
-        rule_map.add_node(rule, priority=1, score=score, value=value)
+        rule_map.add_node(rule, priority=1, score=score, short_circuit_score=score, value=value)
 
     subrule = rule.other_rules.get(rule.item)
     if subrule is None:
@@ -296,7 +305,7 @@ def _(
         # FIXME So I guess simplification process should happen later when all the rules are known?
         return rule_map
 
-    _recursive_to_rule_map(subrule, rule_map, score, combinable_rules, False, allowed_depth)
+    _recursive_to_rule_map(subrule, rule_map, score, combinable_rules, allowed_depth=allowed_depth)
     rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.EQUAL, link=RuleLinkType.INCLUSION)
 
     return rule_map
@@ -308,15 +317,17 @@ def _(
         rule_map: nx.DiGraph,
         score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        value: RuleValue | None = None,
+        *_,
+        value: RuleValue = RuleValue.none,
         allowed_depth: int = 0,
-        *_, **__
+        **__
 
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
     else:
-        rule_map.add_node(rule, priority=0, score=score, value=value)
+        rule_map.add_node(rule, priority=0, score=score, short_circuit_score=score, value=value)
 
     if allowed_depth <= 0:
         return rule_map
@@ -326,7 +337,7 @@ def _(
     propagated_score = RuleValue(score.min / len(subrules), score.false)
 
     for subrule in subrules:
-        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, False, allowed_depth - 1)
+        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, allowed_depth=allowed_depth - 1)
         rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NEGATIVE, link=RuleLinkType.INCLUSION)
 
     return rule_map
@@ -338,14 +349,16 @@ def _(
         rule_map: nx.DiGraph,
         score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        value: RuleValue | None = None,
+        *_,
+        value: RuleValue = RuleValue.none,
         allowed_depth: int = 0,
-        *_, **__
+        **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
     else:
-        rule_map.add_node(rule, priority=0, score=score, value=value)
+        rule_map.add_node(rule, priority=0, score=score, short_circuit_score=score, value=value)
 
     if allowed_depth <= 0:
         return rule_map
@@ -354,7 +367,7 @@ def _(
     propagated_score = RuleValue(score.true, score.min / len(subrules))
 
     for subrule in subrules:
-        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, False, allowed_depth - 1)
+        _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, allowed_depth=allowed_depth - 1)
         rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.POSITIVE, link=RuleLinkType.INCLUSION)
 
     return rule_map
@@ -366,14 +379,16 @@ def _(
         rule_map: nx.DiGraph,
         score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        value: RuleValue | None = None,
-        *_, **__
+        *_,
+        value: RuleValue = RuleValue.none,
+        **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=5, score=score, value=value)
+    rule_map.add_node(rule, priority=5, score=score, short_circuit_score=score, value=value)
 
     if combinable_rules is not None:
         combinable_rules.setdefault(rule.combination_key, set()).add(rule)
@@ -387,14 +402,16 @@ def _(
         rule_map: nx.DiGraph,
         score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        value: RuleValue | None = None,
-        *_, **__
+        *_,
+        value: RuleValue = RuleValue.none,
+        **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=4, score=score, value=value)
+    rule_map.add_node(rule, priority=4, score=score, short_circuit_score=score, value=value)
 
     if combinable_rules is not None:
         combinable_rules.setdefault(rule.combination_key, set()).add(rule)
@@ -407,14 +424,16 @@ def _(
         rule: TotalReceived,
         rule_map: nx.DiGraph,
         score: RuleValue,
-        value: RuleValue | None = None,
-        *_, **__
+        *_,
+        value: RuleValue = RuleValue.none,
+        **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=4, score=score, value=value)
+    rule_map.add_node(rule, priority=4, score=score, short_circuit_score=score, value=value)
 
     return rule_map
 
@@ -425,15 +444,17 @@ def _(
         rule_map: nx.DiGraph,
         score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        value: RuleValue | None = None,
-        *_, **__
+        *_,
+        value: RuleValue = RuleValue.none,
+        **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
 
     # Reach can trigger cache refresh, which takes time... So, it's better to avoid it, hence the priority at 2.
-    rule_map.add_node(rule, priority=2, score=score, value=value)
+    rule_map.add_node(rule, priority=2, score=score, short_circuit_score=score, value=value)
 
     if combinable_rules is not None:
         combinable_rules.setdefault(rule.combination_key, set()).add(rule)
@@ -446,15 +467,17 @@ def _(
         rule: Reach,
         rule_map: nx.DiGraph,
         score: RuleValue,
-        value: RuleValue | None = None,
-        *_, **__
+        *_,
+        value: RuleValue = RuleValue.none,
+        **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
+        rule_map.nodes[rule]["short_circuit_score"] += score
         return rule_map
 
     # Reach can trigger cache refresh, which takes time... So, it's better to avoid it, hence the priority at 2.
-    rule_map.add_node(rule, priority=2, score=score, value=value)
+    rule_map.add_node(rule, priority=2, score=score, short_circuit_score=score, value=value)
 
     return rule_map
 
@@ -469,13 +492,13 @@ def _propagate_combinable_scores(rule_map: nx.DiGraph, combinable_rules: Dict[Ha
                 if rule.value > other_rule.value:
                     rule_map.add_edge(rule, other_rule, propagation=ShortCircuitPropagation.POSITIVE, link=RuleLinkType.COMBINABLE)
                     rule_map.add_edge(other_rule, rule, propagation=ShortCircuitPropagation.NEGATIVE, link=RuleLinkType.COMBINABLE)
-                    rule_map.nodes[rule]["score"] += RuleValue(other_score.true, 0)
-                    rule_map.nodes[other_rule]["score"] += RuleValue(0, score.false)
+                    rule_map.nodes[rule]["short_circuit_score"] += RuleValue(other_score.true, 0)
+                    rule_map.nodes[other_rule]["short_circuit_score"] += RuleValue(0, score.false)
                 else:
                     rule_map.add_edge(rule, other_rule, propagation=ShortCircuitPropagation.NEGATIVE, link=RuleLinkType.COMBINABLE)
                     rule_map.add_edge(other_rule, rule, propagation=ShortCircuitPropagation.POSITIVE, link=RuleLinkType.COMBINABLE)
-                    rule_map.nodes[rule]["score"] += RuleValue(0, other_score.false)
-                    rule_map.nodes[other_rule]["score"] += RuleValue(score.true, 0)
+                    rule_map.nodes[rule]["short_circuit_score"] += RuleValue(0, other_score.false)
+                    rule_map.nodes[other_rule]["short_circuit_score"] += RuleValue(score.true, 0)
 
 
 def to_evaluation_tree(root: BaseStardewRule) -> Node:
@@ -604,52 +627,71 @@ def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[Stardew
     #  yes, when the values of all rules have been added, even tho they are not evaluated (graph should be empty if that happens).
     #  or maybe of the total cumulative value of all nodes removed from the graph is greater than min/max point, we can stop
     while rule_map.number_of_nodes() != 0:
-        current_most_significant_rule, attrs = max(rule_map.nodes.items(), key=lambda x: (x[1]["score"].avg, x[1]["priority"]))
+        current_most_significant_rule, attrs = max(rule_map.nodes.items(), key=lambda x: (x[1]["short_circuit_score"].avg, x[1]["priority"]))
         points_counted: RuleValue = attrs["value"]
 
-        edges_to_explore = list(rule_map[current_most_significant_rule].items())
+        edges_to_explore = list((r, e, True) for r, e in rule_map[current_most_significant_rule].items())
         explored_nodes = set()
+        nodes_to_remove = [current_most_significant_rule]
+        edges_to_update = []  # TODO fill
         while edges_to_explore:
-            linked_rule, edge_attrs = edges_to_explore.pop()
+            linked_rule, edge_attrs, is_direct_edge = edges_to_explore.pop()
             explored_nodes.add(linked_rule)
 
-            if edge_attrs["link"] is RuleLinkType.COMBINABLE:
-                node_attrs = rule_map.nodes[linked_rule]
-                added_value: RuleValue = node_attrs["value"]
-                propagation = edge_attrs["propagation"]
+            node_attrs = rule_map.nodes[linked_rule]
+            added_value: RuleValue = node_attrs["value"]
+            propagation = edge_attrs["propagation"]
 
-                if propagation == ShortCircuitPropagation.POSITIVE:
-                    if added_value.true > 0:
-                        points_counted = RuleValue(points_counted.true + added_value.false, points_counted.false)
-                        node_attrs["value"] = RuleValue(0, added_value.false)
-                        node_attrs["score"] = RuleValue(0, node_attrs["score"].false)
+            if propagation == ShortCircuitPropagation.POSITIVE:
+                if added_value.true > 0:
+                    points_counted = RuleValue(points_counted.true + added_value.false, points_counted.false)
+                    added_value = RuleValue(0, added_value.false)
+                    node_attrs["value"] = added_value
+                    node_attrs["short_circuit_score"] = RuleValue(0, node_attrs["short_circuit_score"].false)
 
-                    new_edges = list((r, e)
-                                     for r, e in rule_map[linked_rule].items()
-                                     if e["propagation"] in (ShortCircuitPropagation.POSITIVE, ShortCircuitPropagation.EQUAL)
-                                     and r not in explored_nodes)
-                    edges_to_explore.extend(new_edges)
+                new_edges = list((r, e, False)
+                                 for r, e in rule_map[linked_rule].items()
+                                 if e["propagation"] in (ShortCircuitPropagation.POSITIVE, ShortCircuitPropagation.EQUAL)
+                                 and r not in explored_nodes)
+                edges_to_explore.extend(new_edges)
 
-                elif propagation == ShortCircuitPropagation.NEGATIVE:
-                    if added_value.false > 0:
-                        points_counted = RuleValue(points_counted.true, points_counted.false + added_value.false)
-                        node_attrs["value"] = RuleValue(added_value.true, 0)
-                        node_attrs["score"] = RuleValue(node_attrs["score"].true, 0)
-                        # TODO probably should also update the score
+            elif propagation == ShortCircuitPropagation.NEGATIVE:
+                if added_value.false > 0:
+                    points_counted = RuleValue(points_counted.true, points_counted.false + added_value.false)
+                    added_value = RuleValue(added_value.true, 0)
+                    node_attrs["value"] = added_value
+                    node_attrs["short_circuit_score"] = RuleValue(node_attrs["short_circuit_score"].true, 0)
+                    # TODO probably should also update the score
 
-                    new_edges = list((r, e)
-                                     for r, e in rule_map[linked_rule].items()
-                                     if e["propagation"] in (ShortCircuitPropagation.NEGATIVE, ShortCircuitPropagation.EQUAL)
-                                     and r not in explored_nodes)
-                    edges_to_explore.extend(new_edges)
-                else:
-                    raise ValueError(f"Unknown propagation type {propagation} for rule {linked_rule}.")
-
+                new_edges = list((r, e, False)
+                                 for r, e in rule_map[linked_rule].items()
+                                 if e["propagation"] in (ShortCircuitPropagation.NEGATIVE, ShortCircuitPropagation.EQUAL)
+                                 and r not in explored_nodes)
+                edges_to_explore.extend(new_edges)
             else:
-                ...
+                raise ValueError(f"Unknown propagation type {propagation} for rule {linked_rule}.")
+
+            if is_direct_edge and edge_attrs["link"] == RuleLinkType.INCLUSION:
+                if len(rule_map.in_edges(linked_rule)) == 1:
+                    points_counted = points_counted + added_value
+                    nodes_to_remove.append(linked_rule)
 
         evaluation_sequence.append((current_most_significant_rule, points_counted.true, points_counted.false))
-        rule_map.remove_node(current_most_significant_rule)
+        for node in nodes_to_remove:
+            removed_score = rule_map.nodes[node]["score"]
+            for short_circuiter, _ in rule_map.in_edges(node):
+                short_circuit_score = rule_map.nodes[short_circuiter]["short_circuit_score"]
+                short_circuit_propagation = rule_map.edges[short_circuiter, node]["propagation"]
+
+                if short_circuit_propagation == ShortCircuitPropagation.POSITIVE:
+                    new_score = RuleValue(max(0, short_circuit_score.true - removed_score.true), short_circuit_score.false)
+                elif short_circuit_propagation == ShortCircuitPropagation.NEGATIVE:
+                    new_score = RuleValue(short_circuit_score.true, max(0, short_circuit_score.false - removed_score.false))
+                else:
+                    raise ValueError(f"Unknown propagation type {short_circuit_propagation} for rule {short_circuiter}.")
+
+                rule_map.nodes[short_circuiter]["short_circuit_score"] = new_score
+        rule_map.remove_nodes_from(nodes_to_remove)
 
     return evaluation_sequence
 
