@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import enum
 import logging
 import time
 from collections import Counter
 from dataclasses import dataclass, field
 from functools import cached_property, singledispatch
-from typing import Tuple, Union, Dict, Hashable, Set, List, cast, Collection
+from typing import Tuple, Dict, Hashable, Set, List, cast, Collection
 
 import networkx as nx
 
@@ -18,6 +19,11 @@ from .protocol import StardewRule
 from .state import Received, Reach, HasProgressionPercent, TotalReceived, CombinableReach
 
 logger = logging.getLogger(__name__)
+
+
+class RuleLinkType(enum.Enum):
+    COMBINABLE = enum.auto()
+    INCLUSION = enum.auto()
 
 
 @dataclass(frozen=True)
@@ -90,7 +96,7 @@ class Edge:
 
 
 @dataclass(frozen=True)
-class OptimizedStardewRule:
+class TreeStardewRule:
     """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
     original: StardewRule
     evaluation_tree: Node
@@ -116,6 +122,44 @@ class OptimizedStardewRule:
 
     def __repr__(self):
         return repr(self.original)
+
+
+@dataclass(frozen=True)
+class SequenceCountStardewRule:
+    """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
+    original: list[tuple[StardewRule, int]] = field(repr=False, hash=False, compare=False)
+    evaluation_sequence: list[tuple[StardewRule, int, int]]
+    count: int
+    total: int
+
+    def __call__(self, state: CollectionState) -> bool:
+        min_points = 0
+        max_points = self.total
+        goal = self.count
+
+        for rule, true_points, false_points in self.evaluation_sequence:
+            if rule(state):
+                min_points += true_points
+                if min_points >= goal:
+                    return True
+            else:
+                max_points -= false_points
+                if max_points < goal:
+                    return False
+
+        assert False, "Should have returned before."
+
+    def __or__(self, other: StardewRule):
+        raise NotImplementedError
+
+    def __and__(self, other: StardewRule):
+        raise NotImplementedError
+
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
+        return self, self(state)
+
+    def __repr__(self):
+        return repr(Count([], self.count, _rules_and_points=self.original))
 
 
 @dataclass(frozen=True)
@@ -164,25 +208,28 @@ class EvaluationTreeStardewRule:
 
 # TODO try slots, cuz there will be a lot of these. Maybe
 @dataclass(frozen=True)
-class ShortCircuitScore:
-    true: Union[int, float]
-    false: Union[int, float]
+class RuleValue:
+    true: int | float
+    false: int | float
 
-    def __add__(self, other: ShortCircuitScore) -> ShortCircuitScore:
+    def __add__(self, other: RuleValue) -> RuleValue:
         # Union
-        return ShortCircuitScore(self.true + other.true, self.false + other.false)
+        return RuleValue(self.true + other.true, self.false + other.false)
 
     @cached_property
     def min(self):
         return min(self.true, self.false)
 
     @cached_property
-    def total(self) -> Union[int, float]:
+    def total(self) -> int | float:
         # A score of more than 1 is overkill, it's better to evaluate a more balanced rule.
         return min(self.true, 1) + min(self.false, 1)
 
-    def is_significant(self):
-        return self.true >= 0.1 or self.false >= 0.1
+    @cached_property
+    def avg(self) -> float:
+        # A score of more than 1 is overkill, it's better to evaluate a more balanced rule.
+        # TODO or maybe multiply instead of min?
+        return (min(self.true, 1) + min(self.true, 1)) / 2
 
 
 def to_rule_map(rule: StardewRule) -> nx.DiGraph:
@@ -192,7 +239,7 @@ def to_rule_map(rule: StardewRule) -> nx.DiGraph:
     scores: the percentage of the rule that will be resolved when this rule is evaluated.
     """
     combinable_rules = {}
-    rule_map = _recursive_to_rule_map(rule, nx.DiGraph(), ShortCircuitScore(1, 1), combinable_rules, True)
+    rule_map = _recursive_to_rule_map(rule, nx.DiGraph(), RuleValue(1, 1), combinable_rules, RuleValue(1, 1))
     _propagate_combinable_scores(rule_map, combinable_rules)
     return rule_map
 
@@ -201,9 +248,9 @@ def to_rule_map(rule: StardewRule) -> nx.DiGraph:
 def _recursive_to_rule_map(
         rule: StardewRule,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
+        score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False,
+        value: RuleValue | None = None,
         allowed_depth: int = 0
 ) -> nx.DiGraph:
     """Converts a rule to a graph representation.
@@ -217,14 +264,41 @@ def _recursive_to_rule_map(
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=1, score=score)
+    rule_map.add_node(rule, priority=1, score=score, value=value)
 
     return rule_map
 
 
 @_recursive_to_rule_map.register
-def _(rule: LiteralStardewRule, rule_map: nx.DiGraph, score, *_) -> nx.DiGraph:
-    rule_map.add_node(rule, priority=9, score=score)
+def _(rule: LiteralStardewRule, rule_map: nx.DiGraph, score: RuleValue, value: RuleValue | None = None, *_, **__) -> nx.DiGraph:
+    rule_map.add_node(rule, priority=9, score=score, value=value)
+    return rule_map
+
+
+@_recursive_to_rule_map.register
+def _(
+        rule: Has,
+        rule_map: nx.DiGraph,
+        score: RuleValue,
+        combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
+        value: RuleValue | None = None,
+        allowed_depth: int = 0,
+        *_, **__
+) -> nx.DiGraph:
+    if rule in rule_map.nodes:
+        rule_map.nodes[rule]["score"] += score
+    else:
+        rule_map.add_node(rule, priority=1, score=score, value=value)
+
+    subrule = rule.other_rules.get(rule.item)
+    if subrule is None:
+        # Subrule is not known at this point, so we can't add it to the rule map.
+        # FIXME So I guess simplification process should happen later when all the rules are known?
+        return rule_map
+
+    _recursive_to_rule_map(subrule, rule_map, score, combinable_rules, False, allowed_depth)
+    rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.EQUAL, link=RuleLinkType.INCLUSION)
+
     return rule_map
 
 
@@ -232,27 +306,28 @@ def _(rule: LiteralStardewRule, rule_map: nx.DiGraph, score, *_) -> nx.DiGraph:
 def _(
         rule: And,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
+        score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False,
-        allowed_depth: int = 0
+        value: RuleValue | None = None,
+        allowed_depth: int = 0,
+        *_, **__
 
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
     else:
-        rule_map.add_node(rule, priority=0, score=score, root=root)
+        rule_map.add_node(rule, priority=0, score=score, value=value)
 
     if allowed_depth <= 0:
         return rule_map
 
     subrules = rule.original_rules
     # I checked empirically that using min here reduce the average depth of the tree, which should on average reduce the evaluation time.
-    propagated_score = ShortCircuitScore(score.min / len(subrules), score.false)
+    propagated_score = RuleValue(score.min / len(subrules), score.false)
 
     for subrule in subrules:
         _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, False, allowed_depth - 1)
-        rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NEGATIVE)
+        rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NEGATIVE, link=RuleLinkType.INCLUSION)
 
     return rule_map
 
@@ -261,60 +336,26 @@ def _(
 def _(
         rule: Or,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
+        score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False,
-        allowed_depth: int = 0
+        value: RuleValue | None = None,
+        allowed_depth: int = 0,
+        *_, **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
     else:
-        rule_map.add_node(rule, priority=0, score=score, root=root)
+        rule_map.add_node(rule, priority=0, score=score, value=value)
 
     if allowed_depth <= 0:
         return rule_map
 
     subrules = rule.original_rules
-    propagated_score = ShortCircuitScore(score.true, score.min / len(subrules))
+    propagated_score = RuleValue(score.true, score.min / len(subrules))
 
     for subrule in subrules:
         _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, False, allowed_depth - 1)
-        rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.POSITIVE)
-
-    return rule_map
-
-
-@_recursive_to_rule_map.register
-def _(
-        rule: Count,
-        rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
-        combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        root: bool = False,
-        allowed_depth: int = 0
-) -> nx.DiGraph:
-    if rule in rule_map.nodes:
-        rule_map.nodes[rule]["score"] += score
-    else:
-        rule_map.add_node(rule, priority=0, score=score, root=root)
-
-    if allowed_depth <= 0:
-        return rule_map
-
-    # TODO Is there really something to simplify if we're in a normal not-optimized count?
-
-    subrules = rule.rules_and_points
-    rules_count = rule.total
-    goal_to_true = rule.count
-    goal_to_false = rules_count - goal_to_true + 1
-    for subrule, points in subrules:
-        true_ratio = points / goal_to_true
-        false_ratio = points / goal_to_false
-        rule_propagated_score = ShortCircuitScore(score.true * true_ratio, score.false * false_ratio)
-
-        _recursive_to_rule_map(subrule, rule_map, rule_propagated_score, combinable_rules, False, allowed_depth - 1)
-        # TODO do we really use propagation?
-        rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.NONE)
+        rule_map.add_edge(subrule, rule, propagation=ShortCircuitPropagation.POSITIVE, link=RuleLinkType.INCLUSION)
 
     return rule_map
 
@@ -323,15 +364,16 @@ def _(
 def _(
         rule: Received,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
+        score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        *_
+        value: RuleValue | None = None,
+        *_, **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=5, score=score)
+    rule_map.add_node(rule, priority=5, score=score, value=value)
 
     if combinable_rules is not None:
         combinable_rules.setdefault(rule.combination_key, set()).add(rule)
@@ -343,15 +385,16 @@ def _(
 def _(
         rule: HasProgressionPercent,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
+        score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        *_
+        value: RuleValue | None = None,
+        *_, **__
 ) -> nx.DiGraph:
     if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=4, score=score)
+    rule_map.add_node(rule, priority=4, score=score, value=value)
 
     if combinable_rules is not None:
         combinable_rules.setdefault(rule.combination_key, set()).add(rule)
@@ -363,16 +406,15 @@ def _(
 def _(
         rule: TotalReceived,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
-        *_
+        score: RuleValue,
+        value: RuleValue | None = None,
+        *_, **__
 ) -> nx.DiGraph:
-    if rule_map is None:
-        rule_map = nx.DiGraph()
-    elif rule in rule_map.nodes:
+    if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
-    rule_map.add_node(rule, priority=4, score=score)
+    rule_map.add_node(rule, priority=4, score=score, value=value)
 
     return rule_map
 
@@ -381,18 +423,17 @@ def _(
 def _(
         rule: CombinableReach,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
+        score: RuleValue,
         combinable_rules: Dict[Hashable, Set[CombinableStardewRule]],
-        *_
+        value: RuleValue | None = None,
+        *_, **__
 ) -> nx.DiGraph:
-    if rule_map is None:
-        rule_map = nx.DiGraph()
-    elif rule in rule_map.nodes:
+    if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
     # Reach can trigger cache refresh, which takes time... So, it's better to avoid it, hence the priority at 2.
-    rule_map.add_node(rule, priority=2, score=score)
+    rule_map.add_node(rule, priority=2, score=score, value=value)
 
     if combinable_rules is not None:
         combinable_rules.setdefault(rule.combination_key, set()).add(rule)
@@ -404,17 +445,16 @@ def _(
 def _(
         rule: Reach,
         rule_map: nx.DiGraph,
-        score: ShortCircuitScore,
-        *_
+        score: RuleValue,
+        value: RuleValue | None = None,
+        *_, **__
 ) -> nx.DiGraph:
-    if rule_map is None:
-        rule_map = nx.DiGraph()
-    elif rule in rule_map.nodes:
+    if rule in rule_map.nodes:
         rule_map.nodes[rule]["score"] += score
         return rule_map
 
     # Reach can trigger cache refresh, which takes time... So, it's better to avoid it, hence the priority at 2.
-    rule_map.add_node(rule, priority=2, score=score)
+    rule_map.add_node(rule, priority=2, score=score, value=value)
 
     return rule_map
 
@@ -427,15 +467,15 @@ def _propagate_combinable_scores(rule_map: nx.DiGraph, combinable_rules: Dict[Ha
             for other_rule, other_score in original_scores_by_rule[i + 1:]:
 
                 if rule.value > other_rule.value:
-                    rule_map.add_edge(rule, other_rule, propagation=ShortCircuitPropagation.POSITIVE)
-                    rule_map.add_edge(other_rule, rule, propagation=ShortCircuitPropagation.NEGATIVE)
-                    rule_map.nodes[rule]["score"] += ShortCircuitScore(other_score.true, 0)
-                    rule_map.nodes[other_rule]["score"] += ShortCircuitScore(0, score.false)
+                    rule_map.add_edge(rule, other_rule, propagation=ShortCircuitPropagation.POSITIVE, link=RuleLinkType.COMBINABLE)
+                    rule_map.add_edge(other_rule, rule, propagation=ShortCircuitPropagation.NEGATIVE, link=RuleLinkType.COMBINABLE)
+                    rule_map.nodes[rule]["score"] += RuleValue(other_score.true, 0)
+                    rule_map.nodes[other_rule]["score"] += RuleValue(0, score.false)
                 else:
-                    rule_map.add_edge(rule, other_rule, propagation=ShortCircuitPropagation.NEGATIVE)
-                    rule_map.add_edge(other_rule, rule, propagation=ShortCircuitPropagation.POSITIVE)
-                    rule_map.nodes[rule]["score"] += ShortCircuitScore(0, other_score.false)
-                    rule_map.nodes[other_rule]["score"] += ShortCircuitScore(score.true, 0)
+                    rule_map.add_edge(rule, other_rule, propagation=ShortCircuitPropagation.NEGATIVE, link=RuleLinkType.COMBINABLE)
+                    rule_map.add_edge(other_rule, rule, propagation=ShortCircuitPropagation.POSITIVE, link=RuleLinkType.COMBINABLE)
+                    rule_map.nodes[rule]["score"] += RuleValue(0, other_score.false)
+                    rule_map.nodes[other_rule]["score"] += RuleValue(score.true, 0)
 
 
 def to_evaluation_tree(root: BaseStardewRule) -> Node:
@@ -482,7 +522,7 @@ def _recursive_create_evaluation_tree(root: BaseStardewRule, assumption_state: A
     return Node(true_edge, false_edge, most_significant_rule)
 
 
-def to_optimized_v1(rule: StardewRule) -> StardewRule | OptimizedStardewRule:
+def to_optimized_v1(rule: StardewRule) -> StardewRule | TreeStardewRule:
     # TODO allow Count, multiply score by weight of rule
     # TODO do something to reduce Reach(location) into access_rule + region, since it access_rule won't be optimized with current rule.
     if not isinstance(rule, (And, Or, Count, Has)):
@@ -490,11 +530,7 @@ def to_optimized_v1(rule: StardewRule) -> StardewRule | OptimizedStardewRule:
     rule = cast(BaseStardewRule, rule)
 
     evaluation_tree = to_evaluation_tree(rule)
-    return OptimizedStardewRule(rule, evaluation_tree)
-
-
-def create_optimized_count(rules: Collection[StardewRule], count: int) -> OptimizedStardewRule:
-    return to_optimized_v1(Count(rules, count))
+    return TreeStardewRule(rule, evaluation_tree)
 
 
 def to_optimized_v2(rule: StardewRule) -> StardewRule | CompressedStardewRule:
@@ -548,25 +584,84 @@ def create_count_rule_map(rules_and_points: Collection[tuple[StardewRule, int]],
     for subrule, points in rules_and_points:
         true_ratio = points / goal_to_true
         false_ratio = points / goal_to_false
-        score = ShortCircuitScore(true_ratio, false_ratio)
+        score = RuleValue(true_ratio, false_ratio)
 
-        _recursive_to_rule_map(subrule, rule_map, score, combinable_rules, False, depth)
+        _recursive_to_rule_map(subrule, rule_map, score, combinable_rules, value=RuleValue(points, points), allowed_depth=depth)
 
     _propagate_combinable_scores(rule_map, combinable_rules)
     return rule_map
 
 
-def create_count(rules: Collection[StardewRule], count: int):
+def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[StardewRule, int, int]]:
+    """Create a sequence of rules to evaluate based on the rule map.
+    The sequence is created by traversing the rule map and selecting the most significant rules first.
+    """
+    assert rule_map.number_of_nodes() is not None
+
+    evaluation_sequence = []
+
+    # TODO is there a way to stop adding rules to sequence by knowing we've evaluated enough?
+    #  yes, when the values of all rules have been added, even tho they are not evaluated (graph should be empty if that happens).
+    #  or maybe of the total cumulative value of all nodes removed from the graph is greater than min/max point, we can stop
+    while rule_map.number_of_nodes() != 0:
+        current_most_significant_rule, attrs = max(rule_map.nodes.items(), key=lambda x: (x[1]["score"].avg, x[1]["priority"]))
+        points_counted: RuleValue = attrs["value"]
+
+        edges_to_explore = list(rule_map[current_most_significant_rule].items())
+        explored_nodes = set()
+        while edges_to_explore:
+            linked_rule, edge_attrs = edges_to_explore.pop()
+            explored_nodes.add(linked_rule)
+
+            if edge_attrs["link"] is RuleLinkType.COMBINABLE:
+                node_attrs = rule_map.nodes[linked_rule]
+                added_value: RuleValue = node_attrs["value"]
+                propagation = edge_attrs["propagation"]
+
+                if propagation == ShortCircuitPropagation.POSITIVE:
+                    if added_value.true > 0:
+                        points_counted = RuleValue(points_counted.true + added_value.false, points_counted.false)
+                        node_attrs["value"] = RuleValue(0, added_value.false)
+                        node_attrs["score"] = RuleValue(0, node_attrs["score"].false)
+
+                    new_edges = list((r, e)
+                                     for r, e in rule_map[linked_rule].items()
+                                     if e["propagation"] in (ShortCircuitPropagation.POSITIVE, ShortCircuitPropagation.EQUAL)
+                                     and r not in explored_nodes)
+                    edges_to_explore.extend(new_edges)
+
+                elif propagation == ShortCircuitPropagation.NEGATIVE:
+                    if added_value.false > 0:
+                        points_counted = RuleValue(points_counted.true, points_counted.false + added_value.false)
+                        node_attrs["value"] = RuleValue(added_value.true, 0)
+                        node_attrs["score"] = RuleValue(node_attrs["score"].true, 0)
+                        # TODO probably should also update the score
+
+                    new_edges = list((r, e)
+                                     for r, e in rule_map[linked_rule].items()
+                                     if e["propagation"] in (ShortCircuitPropagation.NEGATIVE, ShortCircuitPropagation.EQUAL)
+                                     and r not in explored_nodes)
+                    edges_to_explore.extend(new_edges)
+                else:
+                    raise ValueError(f"Unknown propagation type {propagation} for rule {linked_rule}.")
+
+            else:
+                ...
+
+        evaluation_sequence.append((current_most_significant_rule, points_counted.true, points_counted.false))
+        rule_map.remove_node(current_most_significant_rule)
+
+    return evaluation_sequence
+
+
+def create_optimized_count(rules: Collection[StardewRule], count: int):
     rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
 
-    rule_map = None
-    for i in range(1, 5):
-        # TODO retry testing different with exploring Has rules.
-        start = time.perf_counter_ns()
-        rule_map = create_count_rule_map(rules_and_points, count, depth=i)
-        end = time.perf_counter_ns()
-        print(f"Creating count rule map of depth {i} took {(end - start) / 1_000_000:.2f} ms. "
-              f"Size is {rule_map.number_of_nodes()} nodes, {rule_map.number_of_edges()} edges.")
+    start = time.perf_counter_ns()
+    rule_map = create_count_rule_map(rules_and_points, count, depth=2)
+    end = time.perf_counter_ns()
+    print(f"Creating count rule map of depth {2} took {(end - start) / 1_000_000:.2f} ms. "
+          f"Size is {rule_map.number_of_nodes()} nodes, {rule_map.number_of_edges()} edges.")
 
     if rule_map.number_of_edges() == 0:
         print("No edges in the rule map, returning unsimplified count.")
@@ -577,4 +672,8 @@ def create_count(rules: Collection[StardewRule], count: int):
         print(f"Node to edge ratio is {node_edge_ratio:.2f}. Simplification will probably be a waste of time.")
         return Count(rules, count, _rules_and_points=rules_and_points)
 
-    return Count(rules, count, _rules_and_points=rules_and_points)
+    sequence = create_count_evaluation_sequence(rule_map)
+    assert sum(t for r, t, f in sequence) == len(rules)
+    assert sum(f for r, t, f in sequence) == len(rules)
+
+    return SequenceCountStardewRule(rules_and_points, sequence, count, len(rules))

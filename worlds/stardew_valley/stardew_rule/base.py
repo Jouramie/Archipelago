@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from itertools import chain
 from threading import Lock
-from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Optional, cast, ClassVar, Protocol, cast
+from typing import Iterable, Dict, Union, Sized, Hashable, Callable, Tuple, Optional, ClassVar, Protocol, cast
 
 from BaseClasses import CollectionState
 from .assumption import AssumptionState

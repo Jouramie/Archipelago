@@ -2,7 +2,7 @@ import unittest
 
 import networkx as nx
 
-from ...stardew_rule import Received, Reach, ShortCircuitPropagation, to_rule_map, ShortCircuitScore, to_evaluation_tree, Node, false_, true_, Edge, \
+from ...stardew_rule import Received, Reach, ShortCircuitPropagation, to_rule_map, RuleValue, to_evaluation_tree, Node, false_, true_, Edge, \
     to_optimized_v2, CompressedStardewRule, EvaluationTreeStardewRule
 
 
@@ -25,7 +25,7 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         graph = to_rule_map(rule)
 
         expected = nx.DiGraph()
-        expected.add_node(rule, priority=5, score=ShortCircuitScore(1, 1))
+        expected.add_node(rule, priority=5, score=RuleValue(1, 1))
         self.assert_graph_equals(expected, graph)
 
     def test_given_reach_when_convert_to_rule_map_then_single_node_with_resolvable(self):
@@ -34,7 +34,7 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         graph = to_rule_map(rule)
 
         expected = nx.DiGraph()
-        expected.add_node(rule, priority=2, score=ShortCircuitScore(1, 1))
+        expected.add_node(rule, priority=2, score=RuleValue(1, 1))
         self.assert_graph_equals(expected, graph)
 
     def test_given_or_of_duplicated_ands_when_convert_to_rule_map_then_ands_are_merged(self):
@@ -46,10 +46,10 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         graph = to_rule_map(rule)
 
         expected = nx.DiGraph()
-        expected.add_node(carrot, priority=5, score=ShortCircuitScore(1 / 2, 1))
-        expected.add_node(potato, priority=5, score=ShortCircuitScore(1 / 2, 1))
-        expected.add_node(and_rule, priority=0, score=ShortCircuitScore(2, 1), root=False)
-        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1), root=True)
+        expected.add_node(carrot, priority=5, score=RuleValue(1 / 2, 1))
+        expected.add_node(potato, priority=5, score=RuleValue(1 / 2, 1))
+        expected.add_node(and_rule, priority=0, score=RuleValue(2, 1), root=False)
+        expected.add_node(rule, priority=0, score=RuleValue(1, 1), root=True)
         expected.add_edge(carrot, and_rule, propagation=ShortCircuitPropagation.NEGATIVE)
         expected.add_edge(potato, and_rule, propagation=ShortCircuitPropagation.NEGATIVE)
         expected.add_edge(and_rule, rule, propagation=ShortCircuitPropagation.POSITIVE)
@@ -64,10 +64,10 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         graph = to_rule_map(rule)
 
         expected = nx.DiGraph()
-        expected.add_node(carrot, priority=5, score=ShortCircuitScore(1, 1 / 2))
-        expected.add_node(potato, priority=5, score=ShortCircuitScore(1, 1 / 2))
-        expected.add_node(or_rule, priority=0, score=ShortCircuitScore(1, 2), root=False)
-        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1), root=True)
+        expected.add_node(carrot, priority=5, score=RuleValue(1, 1 / 2))
+        expected.add_node(potato, priority=5, score=RuleValue(1, 1 / 2))
+        expected.add_node(or_rule, priority=0, score=RuleValue(1, 2), root=False)
+        expected.add_node(rule, priority=0, score=RuleValue(1, 1), root=True)
         expected.add_edge(carrot, or_rule, propagation=ShortCircuitPropagation.POSITIVE)
         expected.add_edge(potato, or_rule, propagation=ShortCircuitPropagation.POSITIVE)
         expected.add_edge(or_rule, rule, propagation=ShortCircuitPropagation.NEGATIVE)
@@ -85,13 +85,13 @@ class TestToRuleMap(NetworkXAssertMixin, unittest.TestCase):
         graph = to_rule_map(rule)
 
         expected = nx.DiGraph()
-        expected.add_node(received_carrot, priority=5, score=ShortCircuitScore(1 / 6, 1 / 3 + 1 / 3))
-        expected.add_node(received_two_carrots, priority=5, score=ShortCircuitScore(1 / 6 + 1 / 6, 1 / 3))
-        expected.add_node(received_potato, priority=5, score=ShortCircuitScore(1 + 1 / 6, 1 / 3 + 1 / 3))
-        expected.add_node(reach_kitchen, priority=2, score=ShortCircuitScore(1 / 6, 1 / 3))
-        expected.add_node(kitchen_and_two_carrots, priority=0, score=ShortCircuitScore(1, 1 / 3), root=False)
-        expected.add_node(carrot_and_potato, priority=0, score=ShortCircuitScore(1, 1 / 3), root=False)
-        expected.add_node(rule, priority=0, score=ShortCircuitScore(1, 1), root=True)
+        expected.add_node(received_carrot, priority=5, score=RuleValue(1 / 6, 1 / 3 + 1 / 3))
+        expected.add_node(received_two_carrots, priority=5, score=RuleValue(1 / 6 + 1 / 6, 1 / 3))
+        expected.add_node(received_potato, priority=5, score=RuleValue(1 + 1 / 6, 1 / 3 + 1 / 3))
+        expected.add_node(reach_kitchen, priority=2, score=RuleValue(1 / 6, 1 / 3))
+        expected.add_node(kitchen_and_two_carrots, priority=0, score=RuleValue(1, 1 / 3), root=False)
+        expected.add_node(carrot_and_potato, priority=0, score=RuleValue(1, 1 / 3), root=False)
+        expected.add_node(rule, priority=0, score=RuleValue(1, 1), root=True)
 
         expected.add_edge(received_carrot, carrot_and_potato, propagation=ShortCircuitPropagation.NEGATIVE)
         expected.add_edge(received_potato, carrot_and_potato, propagation=ShortCircuitPropagation.NEGATIVE)
