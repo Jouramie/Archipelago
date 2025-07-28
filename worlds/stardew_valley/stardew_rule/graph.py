@@ -354,8 +354,7 @@ def _(
         return rule_map
 
     subrules = rule.original_rules
-    # I checked empirically that using min here reduce the average depth of the tree, which should on average reduce the evaluation time.
-    propagated_score = RuleValue(score.min / len(subrules), score.false)
+    propagated_score = RuleValue(score.true / len(subrules), score.false)
 
     for subrule in subrules:
         _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, allowed_depth=allowed_depth - 1)
@@ -386,7 +385,7 @@ def _(
         return rule_map
 
     subrules = rule.original_rules
-    propagated_score = RuleValue(score.true, score.min / len(subrules))
+    propagated_score = RuleValue(score.true, score.false / len(subrules))
 
     for subrule in subrules:
         _recursive_to_rule_map(subrule, rule_map, propagated_score, combinable_rules, allowed_depth=allowed_depth - 1)
@@ -919,12 +918,12 @@ class GrowingNode:
                     score = rule_map.nodes[parent]["score"]
                     if result:
                         assert isinstance(parent, And)
-                        propagated_score = RuleValue(score.min / len(subrules), score.false)
-                        diff = propagated_score - RuleValue(score.min / (len(subrules) + 1), score.false)
+                        propagated_score = RuleValue(score.true / len(subrules), score.false)
+                        diff = propagated_score - RuleValue(score.true / (len(subrules) + 1), score.false)
                     else:
                         assert isinstance(parent, Or)
-                        propagated_score = RuleValue(score.true, score.min / len(subrules))
-                        diff = propagated_score - RuleValue(score.true, score.min / (len(subrules) + 1))
+                        propagated_score = RuleValue(score.true, score.false / len(subrules))
+                        diff = propagated_score - RuleValue(score.true, score.false / (len(subrules) + 1))
 
                     for child in subrules:
                         assert child not in short_circuited_nodes
@@ -937,6 +936,7 @@ class GrowingNode:
 
                 rule_map.remove_node(node)
 
+        # FIXME skip this if we already reached the goal
         remove_short_circuited_nodes()
 
         return points_to_add

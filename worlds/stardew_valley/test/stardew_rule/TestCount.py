@@ -92,7 +92,7 @@ class TestSuperCount(unittest.TestCase):
         collection_state.has = Mock(return_value=True)
         collection_state.can_reach = Mock(return_value=True)
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(1, collection_state.has.call_count)  # FIXME could be lowered to 1 by really removing short circuited rules, not just adding score
+        self.assertEqual(1, collection_state.has.call_count)
         self.assertEqual(1, collection_state.can_reach.call_count)
 
     def test_given_two_disconnected_received_when_evaluate_then_evaluate_received_before_reach(self):
@@ -143,7 +143,8 @@ class TestSuperCount(unittest.TestCase):
 
         collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Carrot", 1, 1), ("Brocoli", 1, 1), ("Brocoli", 1, 2)})
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(2, collection_state.has.call_count)
+        # TODO could be optimized further by adding a bias toward true/false depending on how close we are to the goal
+        self.assertEqual(3, collection_state.has.call_count)
 
     def test_given_two_rules_with_has_when_evaluate_then_has_is_broken_down(self):
         collection_state = Mock()
@@ -165,5 +166,6 @@ class TestSuperCount(unittest.TestCase):
         collection_state.has = Mock(side_effect=lambda x, y, z: (x, y, z) in {("Progressive Seed", 1, 1), ("Progressive Seed", 1, 2)})
         collection_state.can_reach = Mock(return_value=True)
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(1, collection_state.has.call_count)
+        # TODO could be optimized further by capping the score with the missing points to goal (would reduce value of 1 Seed)
+        self.assertEqual(2, collection_state.has.call_count)
         self.assertEqual(2, collection_state.can_reach.call_count)
