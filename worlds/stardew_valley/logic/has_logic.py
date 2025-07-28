@@ -1,5 +1,5 @@
 from .base_logic import BaseLogic
-from ..stardew_rule import StardewRule, And, Or, Has, true_, false_, HasProgressionPercent, Count
+from ..stardew_rule import StardewRule, And, Or, Has, true_, false_, HasProgressionPercent, create_optimized_count
 
 
 class HasLogicMixin(BaseLogic):
@@ -50,8 +50,8 @@ class HasLogicMixin(BaseLogic):
         if count == len(rules):
             return And(*rules)
 
-        # return create_optimized_count(rules, count)
-        return Count(rules, count)
+        return create_optimized_count(rules, count)
+        # return Count(rules, count)
 
     @staticmethod
     def and_(*rules: StardewRule, allow_empty: bool = False) -> StardewRule:

@@ -909,6 +909,8 @@ class GrowingNode:
                     subrules = list(
                         c
                         for c in rule_map.predecessors(parent)
+                        # FIXME Only removing subrule will trigger multiple recalculation of multiple childs are to be short-circuited.
+                        #   Can happen where two Has link to the same item behind the scene.
                         if c is not subrule
                         and rule_map.edges[c, parent]["link"] == RuleLinkType.INCLUSION
                     )
@@ -926,8 +928,6 @@ class GrowingNode:
                         diff = propagated_score - RuleValue(score.true, score.false / (len(subrules) + 1))
 
                     for child in subrules:
-                        assert child not in short_circuited_nodes
-
                         rule_map.nodes[child]["score"] += diff
                         rule_map.nodes[child]["short_circuit_score"] += diff
 
@@ -967,10 +967,13 @@ class GrowingTreeCount:
         return current_node.rule(state)
 
     def __or__(self, other: StardewRule):
-        raise NotImplementedError
+        return Or(self, other)
 
     def __and__(self, other: StardewRule):
-        raise NotImplementedError
+        return And(self, other)
+
+    def __hash__(self):
+        return id(self)
 
     def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
         return self, self(state)
