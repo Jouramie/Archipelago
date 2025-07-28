@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import logging
 import time
+import typing
 from collections import Counter
 from dataclasses import dataclass, field
 from functools import cached_property, singledispatch
@@ -213,10 +214,17 @@ class RuleValue:
     true: int | float
     false: int | float
 
+    def __post_init__(self):
+        assert self.true >= 0, "True value must be non-negative."
+        assert self.false >= 0, "False value must be non-negative."
+
     def __add__(self, other: RuleValue) -> RuleValue:
-        # Union
         return RuleValue(self.true + other.true, self.false + other.false)
 
+    def __sub__(self, other: RuleValue) -> RuleValue:
+        return RuleValue(self.true - other.true, self.false - other.false)
+
+    # TODO Does caching this improve performance?
     @cached_property
     def min(self):
         return min(self.true, self.false)
@@ -231,6 +239,16 @@ class RuleValue:
         # A score of more than 1 is overkill, it's better to evaluate a more balanced rule.
         # TODO or maybe multiply instead of min?
         return (min(self.true, 1) + min(self.false, 1)) / 2
+
+    @property
+    def balance_score(self) -> tuple[int | float, int | float]:
+        return self.true + self.false, -abs(self.true - self.false)
+
+    def get(self, value: bool) -> int | float:
+        """Returns the value of the rule based on the boolean value."""
+        if value:
+            return self.true
+        return self.false
 
 
 RuleValue.none = RuleValue(0, 0)
@@ -707,12 +725,11 @@ def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[Stardew
                 short_circuit_propagation = rule_map.edges[short_circuiter, node]["propagation"]
 
                 if short_circuit_propagation == ShortCircuitPropagation.POSITIVE:
-                    new_score = RuleValue(max(0, short_circuit_score.true - removed_score.true), short_circuit_score.false)
+                    new_score = RuleValue(short_circuit_score.true - removed_score.true, short_circuit_score.false)
                 elif short_circuit_propagation == ShortCircuitPropagation.NEGATIVE:
-                    new_score = RuleValue(short_circuit_score.true, max(0, short_circuit_score.false - removed_score.false))
+                    new_score = RuleValue(short_circuit_score.true, short_circuit_score.false - removed_score.false)
                 elif short_circuit_propagation == ShortCircuitPropagation.EQUAL:
-                    new_score = RuleValue(max(0, short_circuit_score.true - removed_score.true),
-                                          max(0, short_circuit_score.false - removed_score.false))
+                    new_score = RuleValue(short_circuit_score.true - removed_score.true, short_circuit_score.false - removed_score.false)
                 else:
                     raise ValueError(f"Unknown propagation type {short_circuit_propagation} for rule {short_circuiter}.")
 
@@ -722,7 +739,7 @@ def create_count_evaluation_sequence(rule_map: nx.DiGraph) -> list[tuple[Stardew
     return evaluation_sequence
 
 
-def create_optimized_count(rules: Collection[StardewRule], count: int):
+def create_optimized_count_v3(rules: Collection[StardewRule], count: int):
     rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
 
     start = time.perf_counter_ns()
@@ -745,3 +762,241 @@ def create_optimized_count(rules: Collection[StardewRule], count: int):
     assert sum(t for _, t, _ in sequence) == len(rules) and sum(f for _, _, f in sequence) == len(rules)
 
     return SequenceCountStardewRule(rules_and_points, sequence, count, len(rules))
+
+
+@dataclass
+class GrowingNode:
+    rule: typing.Union[StardewRule, None] = None
+
+    rule_map: nx.DiGraph | None = None
+    attrs: dict[str, typing.Any] | None = None
+    true_points: int | None = None
+    false_points: int | None = None
+    goal: int | None = None
+
+    true_branch: GrowingNode | None = None
+    false_branch: GrowingNode | None = None
+
+    @staticmethod
+    def leaf(rule: StardewRule) -> GrowingNode:
+        return GrowingNode(rule)
+
+    @staticmethod
+    def branch(rule_map: nx.DiGraph, true_points: int, false_points: int, goal: int) -> GrowingNode:
+        most_significant_rule, attrs = max(rule_map.nodes.items(), key=lambda x: (x[1]["short_circuit_score"].balance_score, x[1]["priority"]))
+        return GrowingNode(most_significant_rule, rule_map, attrs, true_points, false_points, goal)
+
+    @cached_property
+    def is_leaf(self) -> bool:
+        return self.rule_map is self.true_branch is self.false_branch is None
+
+    def replace_true_branch(self, new_branch: GrowingNode) -> None:
+        self.true_branch = new_branch
+
+    def replace_false_branch(self, new_branch: GrowingNode) -> None:
+        self.false_branch = new_branch
+
+    def grow_true_branch(self) -> GrowingNode:
+        if self.false_branch is not None:
+            rule_map = self.rule_map
+        else:
+            rule_map = self.rule_map.copy()
+
+        points = self._collect_points(rule_map, True)
+        new_points = self.true_points + points
+
+        if new_points >= self.goal:
+            self.true_branch = GrowingNode.leaf(true_)
+        else:
+            self.true_branch = GrowingNode.branch(rule_map, new_points, self.false_points, self.goal)
+
+        if self.false_branch is not None:
+            del self.rule_map
+            del self.attrs
+
+        return self.true_branch
+
+    def grow_false_branch(self) -> GrowingNode:
+        if self.true_branch is not None:
+            rule_map = self.rule_map
+        else:
+            rule_map = self.rule_map.copy()
+
+        points = self._collect_points(rule_map, False)
+        new_points = self.false_points - points
+
+        # TODO maybe switch to normal count when there is no longer an high enough node/edge ratio?
+        if new_points < self.goal:
+            self.false_branch = GrowingNode.leaf(false_)
+        else:
+            self.false_branch = GrowingNode.branch(rule_map, self.true_points, new_points, self.goal)
+
+        if self.true_branch is not None:
+            del self.rule_map
+            del self.attrs
+
+        return self.false_branch
+
+    def _collect_points(self, rule_map: nx.DiGraph, result: bool) -> int:
+        rule = self.rule
+        attrs = self.attrs
+
+        points_to_add: int = attrs["value"].get(result)
+        short_circuited_nodes = {rule}
+
+        # FIXME remove nested functions?
+        def explore_short_circuiting_rules():
+            nonlocal points_to_add
+            if result:
+                propagations = (ShortCircuitPropagation.POSITIVE, ShortCircuitPropagation.EQUAL)
+            else:
+                propagations = (ShortCircuitPropagation.NEGATIVE, ShortCircuitPropagation.EQUAL)
+
+            edges_to_explore = [
+                r
+                for r, e in rule_map[rule].items()
+                if e["propagation"] in propagations
+            ]
+            explored_nodes = {rule}
+
+            while edges_to_explore:
+                linked_rule = edges_to_explore.pop()
+                explored_nodes.add(linked_rule)
+
+                short_circuited_nodes.add(linked_rule)
+                points_to_add += rule_map.nodes[linked_rule]["value"].get(result)
+
+                edges_to_explore.extend(
+                    r
+                    for r, e in rule_map[linked_rule].items()
+                    if e["propagation"] in propagations
+                    and r not in explored_nodes
+                )
+
+        explore_short_circuiting_rules()
+
+        # TODO merge the two functions
+        def remove_short_circuited_nodes():
+
+            for node in short_circuited_nodes:
+                score_to_remove = rule_map.nodes[node]["score"]
+
+                for short_circuiter in rule_map.predecessors(node):
+                    if short_circuiter in short_circuited_nodes:
+                        continue
+
+                    short_circuit_score = rule_map.nodes[short_circuiter]["short_circuit_score"]
+                    short_circuit_propagation = rule_map.edges[short_circuiter, node]["propagation"]
+
+                    if short_circuit_propagation == ShortCircuitPropagation.POSITIVE:
+                        new_score = RuleValue(max(0, short_circuit_score.true - score_to_remove.true), short_circuit_score.false)
+                    elif short_circuit_propagation == ShortCircuitPropagation.NEGATIVE:
+                        new_score = RuleValue(short_circuit_score.true, max(0, short_circuit_score.false - score_to_remove.false))
+                    elif short_circuit_propagation == ShortCircuitPropagation.EQUAL:
+                        new_score = RuleValue(max(0, short_circuit_score.true - score_to_remove.true),
+                                              max(0, short_circuit_score.false - score_to_remove.false))
+                    else:
+                        raise ValueError(f"Unknown propagation type {short_circuit_propagation} for rule {short_circuiter}.")
+
+                    rule_map.nodes[short_circuiter]["short_circuit_score"] = new_score
+
+                # Recalculate the score of the nodes with included relationships
+                impacted_edges = list(rule_map.out_edges(node))
+                for subrule, parent in impacted_edges:
+                    # FIXME should check if parent has real value, otherwise we might recalculate multiple times the same node.
+                    if parent in short_circuited_nodes or rule_map.edges[subrule, parent]["link"] != RuleLinkType.INCLUSION:
+                        continue
+
+                    subrules = list(
+                        c
+                        for c in rule_map.predecessors(parent)
+                        if c is not subrule
+                        and rule_map.edges[c, parent]["link"] == RuleLinkType.INCLUSION
+                    )
+                    if not subrules:
+                        continue
+
+                    score = rule_map.nodes[parent]["score"]
+                    if result:
+                        assert isinstance(parent, And)
+                        propagated_score = RuleValue(score.min / len(subrules), score.false)
+                        diff = propagated_score - RuleValue(score.min / (len(subrules) + 1), score.false)
+                    else:
+                        assert isinstance(parent, Or)
+                        propagated_score = RuleValue(score.true, score.min / len(subrules))
+                        diff = propagated_score - RuleValue(score.true, score.min / (len(subrules) + 1))
+
+                    for child in subrules:
+                        assert child not in short_circuited_nodes
+
+                        rule_map.nodes[child]["score"] += diff
+                        rule_map.nodes[child]["short_circuit_score"] += diff
+
+                    if len(subrules) == 1:
+                        rule_map.edges[subrules[0], parent]["propagation"] = ShortCircuitPropagation.EQUAL
+
+                rule_map.remove_node(node)
+
+        remove_short_circuited_nodes()
+
+        return points_to_add
+
+
+@dataclass(frozen=True)
+class GrowingTreeCount:
+    """A rule that can be evaluated with an evaluation tree. Should only be used for evaluation."""
+    original: list[tuple[StardewRule, int]] = field(repr=False, hash=False, compare=False)
+    count: int = field(repr=False, hash=False, compare=False)
+    evaluation_tree: GrowingNode
+
+    def __call__(self, state: CollectionState) -> bool:
+        current_node = self.evaluation_tree
+
+        while not current_node.is_leaf:
+            if current_node.rule(state):
+                if current_node.true_branch is None:
+                    current_node = current_node.grow_true_branch()
+                else:
+                    current_node = current_node.true_branch
+            else:
+                if current_node.false_branch is None:
+                    current_node = current_node.grow_false_branch()
+                else:
+                    current_node = current_node.false_branch
+
+        return current_node.rule(state)
+
+    def __or__(self, other: StardewRule):
+        raise NotImplementedError
+
+    def __and__(self, other: StardewRule):
+        raise NotImplementedError
+
+    def evaluate_while_simplifying(self, state: CollectionState) -> Tuple[StardewRule, bool]:
+        return self, self(state)
+
+    def __repr__(self):
+        return repr(self.original)
+
+
+def create_optimized_count(rules: Collection[StardewRule], count: int):
+    start = time.perf_counter_ns()
+
+    rules_and_points = sorted(Counter(rules).items(), key=lambda x: x[1], reverse=True)
+    rule_map = create_count_rule_map(rules_and_points, count, depth=2)
+    print(f"Size is {rule_map.number_of_nodes()} nodes, {rule_map.number_of_edges()} edges.")
+
+    if rule_map.number_of_edges() == 0:
+        print("No edges in the rule map, returning unsimplified count.")
+        return Count(rules, count, _rules_and_points=rules_and_points)
+
+    node_edge_ratio = rule_map.number_of_nodes() / rule_map.number_of_edges()
+    if node_edge_ratio > 1:
+        print(f"Node to edge ratio is {node_edge_ratio:.2f}. Simplification will probably be a waste of time.")
+        return Count(rules, count, _rules_and_points=rules_and_points)
+
+    rule = GrowingTreeCount(rules_and_points, count, GrowingNode.branch(rule_map, 0, len(rules), count))
+    end = time.perf_counter_ns()
+    print(f"Creating count of depth {2} took {(end - start) / 1_000_000:.2f} ms. ")
+
+    return rule

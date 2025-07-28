@@ -92,7 +92,7 @@ class TestSuperCount(unittest.TestCase):
         collection_state.has = Mock(return_value=True)
         collection_state.can_reach = Mock(return_value=True)
         self.assertTrue(special_count(collection_state))
-        self.assertEqual(2, collection_state.has.call_count)  # FIXME could be lowered to 1 by really removing short circuited rules, not just adding score
+        self.assertEqual(1, collection_state.has.call_count)  # FIXME could be lowered to 1 by really removing short circuited rules, not just adding score
         self.assertEqual(1, collection_state.can_reach.call_count)
 
     def test_given_two_disconnected_received_when_evaluate_then_evaluate_received_before_reach(self):
