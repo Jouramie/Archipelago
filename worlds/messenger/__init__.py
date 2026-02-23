@@ -19,7 +19,7 @@ from .rules import MessengerHardRules, MessengerOOBRules, MessengerRules
 from .shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS, shuffle_shop_prices
 from .subclasses import MessengerItem, MessengerRegion, MessengerShopLocation
 from .transitions import disconnect_entrances, shuffle_transitions
-from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections
+from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACK_PACK_CONFIG
 
 components.append(
     Component(
@@ -82,6 +82,8 @@ class MessengerWorld(World):
     options: MessengerOptions
     settings_key = "messenger_settings"
     settings: ClassVar[MessengerSettings]
+
+    tracker_world: ClassVar = TRACK_PACK_CONFIG
 
     base_offset = 0xADD_000
     item_name_to_id = {item: item_id
