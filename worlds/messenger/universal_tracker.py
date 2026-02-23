@@ -46,7 +46,7 @@ def handle_auto_tabbing(data: Any) -> int:
 
 
 TRACK_PACK_CONFIG = {
-    "map_page_folder": "poptracker",
+    "map_page_folder": "tracker",
     "map_page_maps": "maps/maps.json",
     "map_page_locations": [
         "locations/AutumnHills.json", "locations/BambooCreek.json", "locations/Catacombs.json", "locations/CloudRuins.json",
