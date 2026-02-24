@@ -34,7 +34,7 @@ def handle_auto_tabbing(data: Any) -> int:
         case "Level_09_A_GlacialPeak":
             return 9
         case "Level_09_B_ElementalSkylands":
-            return 16
+            return 15
         case "Level_10_A_TowerOfTime":
             return 10
         case "Level_11_A_CloudRuins":
