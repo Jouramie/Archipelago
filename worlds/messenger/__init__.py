@@ -15,7 +15,7 @@ from .constants import ALL_ITEMS, ALWAYS_LOCATIONS, BOSS_LOCATIONS, FILLER, NOTE
 from .options import AvailablePortals, Goal, Logic, MessengerOptions, NotesNeeded, option_groups, ShuffleTransitions
 from .portals import PORTALS, add_closed_portal_reqs, disconnect_portals, shuffle_portals, validate_portals
 from .regions import LEVELS, MEGA_SHARDS, LOCATIONS, REGION_CONNECTIONS
-from .rules import MessengerHardRules, MessengerOOBRules, MessengerRules
+from .rules import MessengerHardRules, MessengerOOBRules, MessengerRules, GLITCHED_ITEM
 from .shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS, shuffle_shop_prices
 from .subclasses import MessengerItem, MessengerRegion, MessengerShopLocation
 from .transitions import disconnect_entrances, shuffle_transitions
@@ -84,6 +84,7 @@ class MessengerWorld(World):
     settings: ClassVar[MessengerSettings]
 
     tracker_world: ClassVar = TRACK_PACK_CONFIG
+    glitches_item_name: ClassVar[str] = GLITCHED_ITEM
 
     base_offset = 0xADD_000
     item_name_to_id = {item: item_id
@@ -282,8 +283,14 @@ class MessengerWorld(World):
         logic = self.options.logic_level
         if logic == Logic.option_normal:
             MessengerRules(self).set_messenger_rules()
+            if hasattr(self.multiworld, "re_gen_passthrough"):
+                MessengerHardRules(self).add_glitched_rules()
+
         elif logic == Logic.option_hard:
             MessengerHardRules(self).set_messenger_rules()
+            if hasattr(self.multiworld, "re_gen_passthrough"):
+                MessengerOOBRules(self).add_glitched_rules()
+
         else:
             raise ValueError(f"Somehow you have a logic option that's currently invalid."
                              f" {logic} for {self.multiworld.get_player_name(self.player)}")
