@@ -9,7 +9,6 @@ REVERSED_RANDOMIZED_CONNECTIONS = {v: k for k, v in RANDOMIZED_CONNECTIONS.items
 
 
 def handle_auto_tabbing(data: Any) -> int:
-    print("handling auto tabbing for data:", data)
     match data:
         case "Level_01_NinjaVillage":
             return 1
@@ -96,3 +95,12 @@ def reverse_transitions_into_plando_connections(transitions: list[list[int]]) ->
         plando_connections.append(connection)
 
     return plando_connections
+
+
+def create_tracker_transition_events() -> dict[str, str]:
+    return {
+        "Autumn Hills - Left": "Autumn Hills - Left exit",
+        "Autumn Hills - Right": "Autumn Hills - Right exit",
+        "Autumn Hills - Portal": "Autumn Hills - Portal",
+        "Autumn Hills - Bottom": "Autumn Hills - Bottom exit",
+    }

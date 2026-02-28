@@ -19,7 +19,8 @@ from .rules import MessengerHardRules, MessengerOOBRules, MessengerRules, GLITCH
 from .shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS, shuffle_shop_prices
 from .subclasses import MessengerItem, MessengerRegion, MessengerShopLocation
 from .transitions import disconnect_entrances, shuffle_transitions
-from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACK_PACK_CONFIG
+from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACK_PACK_CONFIG, \
+    create_tracker_transition_events
 
 components.append(
     Component(
@@ -278,6 +279,11 @@ class MessengerWorld(World):
         filler = [self.create_filler() for _ in range(remaining_fill)]
 
         self.multiworld.itempool += filler
+
+        if hasattr(self.multiworld, "re_gen_passthrough"):
+            for region_name, event in create_tracker_transition_events().items():
+                region = self.multiworld.get_region(region_name, self.player)
+                region.add_event(event)
 
     def set_rules(self) -> None:
         logic = self.options.logic_level
