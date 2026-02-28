@@ -20,7 +20,7 @@ from .shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS, shu
 from .subclasses import MessengerItem, MessengerRegion, MessengerShopLocation
 from .transitions import disconnect_entrances, shuffle_transitions
 from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACK_PACK_CONFIG, \
-    create_tracker_transition_events
+    create_tracker_transition_exits
 
 components.append(
     Component(
@@ -161,6 +161,11 @@ class MessengerWorld(World):
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
         return slot_data
 
+    @property
+    def is_ut(self) -> bool:
+        # return getattr(self.multiworld, "generation_is_fake", False)
+        return getattr(self.multiworld, "re_gen_passthrough", False)
+
     def generate_early(self) -> None:
         if self.options.goal == Goal.option_power_seal_hunt:
             self.total_seals = self.options.total_seals.value
@@ -280,20 +285,12 @@ class MessengerWorld(World):
 
         self.multiworld.itempool += filler
 
-        if hasattr(self.multiworld, "re_gen_passthrough"):
-            for region_name, event in create_tracker_transition_events().items():
-                try:
-                    region = self.multiworld.get_region(region_name, self.player)
-                    region.add_event(event)
-                except KeyError:
-                    pass
-
     def set_rules(self) -> None:
         logic = self.options.logic_level
         if logic == Logic.option_normal:
             MessengerRules(self).set_messenger_rules()
 
-            if hasattr(self.multiworld, "re_gen_passthrough"):
+            if self.is_ut:
                 MessengerHardRules(self).add_glitched_rules()
 
         elif logic == Logic.option_hard:
@@ -334,6 +331,35 @@ class MessengerWorld(World):
 
         if self.options.shuffle_transitions:
             shuffle_transitions(self, keep_entrance_logic)
+
+    def generate_basic(self) -> None:
+        if self.is_ut and (getattr(self.multiworld, "enforce_deferred_connections", "off") != "off"):
+            plando_connections = self.options.plando_connections
+            for region_name, transition_exit in create_tracker_transition_exits().items():
+                try:
+                    region = self.multiworld.get_region(region_name, self.player)
+                except KeyError:
+                    continue
+
+                if transition_exit.endswith("Portal"):
+                    continue
+
+                real_connection = next((con for con in plando_connections if con.entrance == region_name), None)
+                if real_connection is not None:
+                    actual_exit_name = f"{real_connection.entrance} -> {real_connection.exit}"
+                else:
+                    real_connection = next((con for con in plando_connections if con.exit == region_name), None)
+                    if real_connection is None:
+                        continue
+                    actual_exit_name = f"{real_connection.exit} -> {real_connection.entrance}"
+
+                try:
+                    actual_exit = next(e for e in region.exits if e.name == actual_exit_name)
+                except StopIteration:
+                    continue
+
+                deferred_exit = region.create_exit(transition_exit)
+                deferred_exit.access_rule = actual_exit.access_rule
 
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         if self.options.available_portals < 6:

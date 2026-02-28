@@ -102,10 +102,10 @@ def _transition_region_to_event_name(region_name: str) -> str:
     return region_name if region_name.endswith(" - Portal") else f"{region_name} exit"
 
 
-def create_tracker_transition_events() -> dict[str, str]:
+def create_tracker_transition_exits() -> dict[str, str]:
     return {
         source: _transition_region_to_event_name(source)
-        for source in chain(TRANSITIONS,
+        for source in chain(RANDOMIZED_CONNECTIONS.keys(),
                             [f"{portal_region} - Portal" for portal_region in PORTALS])
     }
 
