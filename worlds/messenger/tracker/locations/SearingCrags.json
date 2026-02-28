@@ -187,5 +187,85 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Searing Crags - Transitions",
+    "children": [
+      {
+        "name": "Searing Crags - Bottom exit",
+        "sections": [
+          {
+            "name": "Searing Crags - Bottom exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Searing Crags",
+            "x": 485,
+            "y": 665
+          }
+        ]
+      },
+      {
+        "name": "Searing Crags - Left exit",
+        "sections": [
+          {
+            "name": "Searing Crags - Left exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Searing Crags",
+            "x": 175,
+            "y": 788
+          }
+        ]
+      },
+      {
+        "name": "Searing Crags - Right exit",
+        "sections": [
+          {
+            "name": "Searing Crags - Right exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Searing Crags",
+            "x": 835,
+            "y": 600
+          }
+        ]
+      },
+      {
+        "name": "Searing Crags - Top exit",
+        "sections": [
+          {
+            "name": "Searing Crags - Top exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Searing Crags",
+            "x": 600,
+            "y": 60
+          }
+        ]
+      },
+      {
+        "name": "Autumn Hills - Portal",
+        "sections": [
+          {
+            "name": "Autumn Hills - Portal"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Autumn Hills",
+            "x": 630,
+            "y": 480
+          }
+        ]
+      }
+    ]
   }
 ]

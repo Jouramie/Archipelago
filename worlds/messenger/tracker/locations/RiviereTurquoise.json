@@ -152,5 +152,25 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Riviere Turquoise - Transitions",
+    "children": [
+      {
+        "name": "Riviere Turquoise - Portal",
+        "sections": [
+          {
+            "name": "Riviere Turquoise - Portal"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Riviere Turquoise",
+            "x": 3267,
+            "y": 366
+          }
+        ]
+      }
+    ]
   }
 ]

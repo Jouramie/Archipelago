@@ -168,5 +168,70 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Howling Grotto - Transitions",
+    "children": [
+      {
+        "name": "Howling Grotto - Bottom exit",
+        "sections": [
+          {
+            "name": "Howling Grotto - Bottom exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Howling Grotto",
+            "x": 578,
+            "y": 352
+          }
+        ]
+      },
+      {
+        "name": "Howling Grotto - Left exit",
+        "sections": [
+          {
+            "name": "Howling Grotto - Left exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Howling Grotto",
+            "x": 143,
+            "y": 32
+          }
+        ]
+      },
+      {
+        "name": "Howling Grotto - Right exit",
+        "sections": [
+          {
+            "name": "Howling Grotto - Right exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Howling Grotto",
+            "x": 907,
+            "y": 85
+          }
+        ]
+      },
+      {
+        "name": "Howling Grotto - Top exit",
+        "sections": [
+          {
+            "name": "Howling Grotto - Top exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Howling Grotto",
+            "x": 823,
+            "y": 139
+          }
+        ]
+      }
+    ]
   }
 ]

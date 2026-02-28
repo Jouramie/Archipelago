@@ -202,21 +202,6 @@
         ]
       },
       {
-        "name": "Autumn Hills - Portal",
-        "sections": [
-          {
-            "name": "Autumn Hills - Portal"
-          }
-        ],
-        "map_locations": [
-          {
-            "map": "Autumn Hills",
-            "x": 583,
-            "y": 148
-          }
-        ]
-      },
-      {
         "name": "Autumn Hills - Bottom exit",
         "sections": [
           {
@@ -228,6 +213,21 @@
             "map": "Autumn Hills",
             "x": 747,
             "y": 185
+          }
+        ]
+      },
+      {
+        "name": "Autumn Hills - Portal",
+        "sections": [
+          {
+            "name": "Autumn Hills - Portal"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Autumn Hills",
+            "x": 583,
+            "y": 148
           }
         ]
       }

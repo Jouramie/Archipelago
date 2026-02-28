@@ -223,5 +223,40 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Sunken Shrine - Transitions",
+    "children": [
+      {
+        "name": "Sunken Shrine - Left exit",
+        "sections": [
+          {
+            "name": "Sunken Shrine - Left exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Sunken Shrine",
+            "x": 227,
+            "y": 448
+          }
+        ]
+      },
+      {
+        "name": "Sunken Shrine - Portal",
+        "sections": [
+          {
+            "name": "Sunken Shrine - Portal"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Sunken Shrine",
+            "x": 471,
+            "y": 458
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -3,8 +3,8 @@ from typing import Any
 from Options import PlandoConnection
 from .connections import RANDOMIZED_CONNECTIONS
 from .portals import REGION_ORDER, SHOP_POINTS, CHECKPOINTS
-from .transitions import TRANSITIONS
 from .regions import LEVELS, SUB_REGIONS, LOCATIONS, MEGA_SHARDS, REGION_CONNECTIONS
+from .transitions import TRANSITIONS
 
 REVERSED_RANDOMIZED_CONNECTIONS = {v: k for k, v in RANDOMIZED_CONNECTIONS.items()}
 
@@ -130,7 +130,13 @@ def create_tracker_transition_events() -> dict[str, str]:
         source: _transition_region_to_event_name(source)
         for source, target in RANDOMIZED_CONNECTIONS.items()
         if isinstance(source, str)
-        and isinstance(target, str)
-        and source in valid_regions
-        and target in valid_regions
+           and isinstance(target, str)
+           and source in valid_regions
+           and target in valid_regions
     }
+
+# Forlorn Temple - Right
+# Catacombs - Bottom
+# Tous les portals
+# Glacial Peak - Left
+# Elemental Skylands - Right

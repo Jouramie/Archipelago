@@ -134,5 +134,25 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Elemental Skylands - Transitions",
+    "children": [
+      {
+        "name": "Elemental Skylands - Right exit",
+        "sections": [
+          {
+            "name": "Elemental Skylands - Right exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Elemental Skylands",
+            "x": 1589,
+            "y": 142
+          }
+        ]
+      }
+    ]
   }
 ]
