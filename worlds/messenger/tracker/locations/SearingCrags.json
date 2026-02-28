@@ -252,15 +252,15 @@
         ]
       },
       {
-        "name": "Autumn Hills - Portal",
+        "name": "Searing Crags - Portal",
         "sections": [
           {
-            "name": "Autumn Hills - Portal"
+            "name": "Searing Crags - Portal"
           }
         ],
         "map_locations": [
           {
-            "map": "Autumn Hills",
+            "map": "Searing Crags",
             "x": 630,
             "y": 480
           }

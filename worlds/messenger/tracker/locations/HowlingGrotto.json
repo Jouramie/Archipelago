@@ -231,6 +231,21 @@
             "y": 139
           }
         ]
+      },
+      {
+        "name": "Howling Grotto - Portal",
+        "sections": [
+          {
+            "name": "Howling Grotto - Portal"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Howling Grotto",
+            "x": 555,
+            "y": 458
+          }
+        ]
       }
     ]
   }

@@ -282,8 +282,11 @@ class MessengerWorld(World):
 
         if hasattr(self.multiworld, "re_gen_passthrough"):
             for region_name, event in create_tracker_transition_events().items():
-                region = self.multiworld.get_region(region_name, self.player)
-                region.add_event(event)
+                try:
+                    region = self.multiworld.get_region(region_name, self.player)
+                    region.add_event(event)
+                except KeyError:
+                    pass
 
     def set_rules(self) -> None:
         logic = self.options.logic_level
