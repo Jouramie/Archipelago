@@ -22,6 +22,7 @@
     ]
   },
   {
+    "name": "Ninja Village - Key locations",
     "children": [
       {
         "sections": [
@@ -54,17 +55,22 @@
     ]
   },
   {
-    "name": "Ninja Village Seal",
-    "sections": [
+    "name": "Ninja Village - Power Seals",
+    "children": [
       {
-        "name": "Ninja Village Seal - Tree House"
-      }
-    ],
-    "map_locations": [
-      {
-        "map": "Ninja Village",
-        "x": 165,
-        "y": 155
+        "name": "Ninja Village Seal",
+        "sections": [
+          {
+            "name": "Ninja Village Seal - Tree House"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Ninja Village",
+            "x": 165,
+            "y": 155
+          }
+        ]
       }
     ]
   }

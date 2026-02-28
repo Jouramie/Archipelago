@@ -40,6 +40,7 @@
     ]
   },
   {
+    "name": "Cloud Ruins - Key locations",
     "children": [
       {
         "sections": [
@@ -55,73 +56,76 @@
             "size": 18
           }
         ]
+      }
+    ]
+  },
+  {
+    "name": "Cloud Ruins - Power Seals",
+    "children": [
+      {
+        "name": "Cloud Ruins Seal",
+        "sections": [
+          {
+            "name": "Cloud Ruins Seal - Ghost Pit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Cloud Ruins",
+            "x": 229,
+            "y": 63
+          }
+        ]
       },
       {
-        "children": [
+        "name": "Cloud Ruins Seal",
+        "sections": [
           {
-            "name": "Cloud Ruins Seal",
-            "sections": [
-              {
-                "name": "Cloud Ruins Seal - Ghost Pit"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Cloud Ruins",
-                "x": 229,
-                "y": 63
-              }
-            ]
-          },
+            "name": "Cloud Ruins Seal - Toothbrush Alley"
+          }
+        ],
+        "map_locations": [
           {
-            "name": "Cloud Ruins Seal",
-            "sections": [
-              {
-                "name": "Cloud Ruins Seal - Toothbrush Alley"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Cloud Ruins",
-                "x": 372,
-                "y": 116
-              }
-            ]
-          },
+            "map": "Cloud Ruins",
+            "x": 372,
+            "y": 116
+          }
+        ]
+      },
+      {
+        "name": "Cloud Ruins Seal",
+        "sections": [
           {
-            "name": "Cloud Ruins Seal",
-            "sections": [
-              {
-                "name": "Cloud Ruins Seal - Saw Pit"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Cloud Ruins",
-                "x": 729,
-                "y": 117
-              }
-            ]
-          },
+            "name": "Cloud Ruins Seal - Saw Pit"
+          }
+        ],
+        "map_locations": [
           {
-            "sections": [
-              {
-                "name": "Cloud Ruins Seal - Money Farm Room"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Cloud Ruins",
-                "x": 943,
-                "y": 82
-              }
-            ]
+            "map": "Cloud Ruins",
+            "x": 729,
+            "y": 117
+          }
+        ]
+      },
+      {
+        "name": "Cloud Ruins Seal",
+        "sections": [
+          {
+            "name": "Cloud Ruins Seal - Money Farm Room"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Cloud Ruins",
+            "x": 943,
+            "y": 82
           }
         ]
       }
     ]
   },
   {
+    "name": "Cloud Ruins - Mega Shards",
     "children": [
       {
         "name": "Cloud Ruins Mega Shard",

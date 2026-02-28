@@ -34,8 +34,10 @@
     ]
   },
   {
+    "name": "Bamboo Creek - Key locations",
     "children": [
       {
+        "name": "Bamboo Creek - Claustro",
         "sections": [
           {
             "name": "Bamboo Creek - Claustro"
@@ -49,59 +51,61 @@
             "size": 28
           }
         ]
+      }
+    ]
+  },
+  {
+    "name": "Bamboo Creek - Power Seals",
+    "children": [
+      {
+        "name": "Bamboo Creek Seal",
+        "sections": [
+          {
+            "name": "Bamboo Creek Seal - Spike Crushers and Doors"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Bamboo Creek",
+            "x": 306,
+            "y": 255
+          }
+        ]
       },
       {
-        "children": [
+        "name": "Bamboo Creek Seal",
+        "sections": [
           {
-            "name": "Bamboo Creek Seal",
-            "sections": [
-              {
-                "name": "Bamboo Creek Seal - Spike Crushers and Doors"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Bamboo Creek",
-                "x": 306,
-                "y": 255
-              }
-            ]
-          },
+            "name": "Bamboo Creek Seal - Spike Ball Pits"
+          }
+        ],
+        "map_locations": [
           {
-            "name": "Bamboo Creek Seal",
-            "sections": [
-              {
-                "name": "Bamboo Creek Seal - Spike Ball Pits"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Bamboo Creek",
-                "x": 540,
-                "y": 285
-              }
-            ]
-          },
+            "map": "Bamboo Creek",
+            "x": 540,
+            "y": 285
+          }
+        ]
+      },
+      {
+        "name": "Bamboo Creek Seal",
+        "sections": [
           {
-            "name": "Bamboo Creek Seal",
-            "sections": [
-              {
-                "name": "Bamboo Creek Seal - Spike Crushers and Doors v2"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Bamboo Creek",
-                "x": 656,
-                "y": 228
-              }
-            ]
+            "name": "Bamboo Creek Seal - Spike Crushers and Doors v2"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Bamboo Creek",
+            "x": 656,
+            "y": 228
           }
         ]
       }
     ]
   },
   {
+    "name": "Bamboo Creek - Mega Shards",
     "children": [
       {
         "name": "Bamboo Creek Mega Shard",
@@ -145,6 +149,41 @@
             "map": "Bamboo Creek",
             "x": 690,
             "y": 300
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Bamboo Creek - Transitions",
+    "children": [
+      {
+        "name": "Bamboo Creek - Top Left exit",
+        "sections": [
+          {
+            "name": "Bamboo Creek - Top Left exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Bamboo Creek",
+            "x": 0,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "name": "Bamboo Creek - Bottom Right exit",
+        "sections": [
+          {
+            "name": "Bamboo Creek - Bottom Right exit"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Bamboo Creek",
+            "x": 0,
+            "y": 0
           }
         ]
       }

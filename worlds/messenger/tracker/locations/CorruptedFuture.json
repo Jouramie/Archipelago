@@ -14,5 +14,17 @@
         "name": "Corrupted Future - Key of Courage"
       }
     ]
+  },
+  {
+    "name": "Corrupted Future - Key locations",
+    "children": [
+      {
+        "sections": [
+          {
+            "name": "Corrupted Future - Key of Courage"
+          }
+        ]
+      }
+    ]
   }
 ]

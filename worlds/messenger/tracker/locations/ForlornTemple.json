@@ -31,21 +31,27 @@
     ]
   },
   {
-    "sections": [
+    "name": "Forlorn Temple - Key locations",
+    "children": [
       {
-        "name": "Forlorn Temple - Demon King"
-      }
-    ],
-    "map_locations": [
-      {
-        "map": "Forlorn Temple",
-        "x": 734,
-        "y": 483,
-        "size": 36
+        "sections": [
+          {
+            "name": "Forlorn Temple - Demon King"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Forlorn Temple",
+            "x": 734,
+            "y": 483,
+            "size": 36
+          }
+        ]
       }
     ]
   },
   {
+    "name": "Forlorn Temple - Power Seals",
     "children": [
       {
         "name": "Forlorn Temple Seal",
@@ -80,6 +86,7 @@
     ]
   },
   {
+    "name": "Forlorn Temple - Mega Shards",
     "children": [
       {
         "name": "Forlorn Temple Mega Shard",

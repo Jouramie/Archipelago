@@ -34,6 +34,7 @@
     ]
   },
   {
+    "name": "Riviere Turquoise - Key locations",
     "children": [
       {
         "sections": [
@@ -49,102 +50,104 @@
             "size": 90
           }
         ]
-      },
+      }
+    ]
+  },
+  {
+    "name": "Riviere Turquoise - Power Seals",
+    "children": [
       {
-        "children": [
+        "name": "Riviere Turquoise Seal",
+        "sections": [
           {
-            "name": "Riviere Turquoise Seal",
-            "sections": [
-              {
-                "name": "Riviere Turquoise Seal - Bounces and Balls"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Riviere Turquoise",
-                "x": 3345,
-                "y": 445
-              }
-            ]
-          },
+            "name": "Riviere Turquoise Seal - Bounces and Balls"
+          }
+        ],
+        "map_locations": [
           {
-            "name": "Riviere Turquoise Seal",
-            "sections": [
-              {
-                "name": "Riviere Turquoise Seal - Launch of Faith"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Riviere Turquoise",
-                "x": 2385,
-                "y": 1005
-              }
-            ]
-          },
-          {
-            "name": "Riviere Turquoise Seal",
-            "sections": [
-              {
-                "name": "Riviere Turquoise Seal - Flower Power"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Riviere Turquoise",
-                "x": 786,
-                "y": 125
-              }
-            ]
+            "map": "Riviere Turquoise",
+            "x": 3345,
+            "y": 445
           }
         ]
       },
       {
-        "children": [
+        "name": "Riviere Turquoise Seal",
+        "sections": [
           {
-            "name": "Riviere Turquoise Mega Shard",
-            "sections": [
-              {
-                "name": "Waterfall Mega Shard"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Riviere Turquoise",
-                "x": 3025,
-                "y": 410
-              }
-            ]
-          },
+            "name": "Riviere Turquoise Seal - Launch of Faith"
+          }
+        ],
+        "map_locations": [
           {
-            "name": "Riviere Turquoise Mega Shard",
-            "sections": [
-              {
-                "name": "Quick Restock Mega Shard 1"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Riviere Turquoise",
-                "x": 1430,
-                "y": 450
-              }
-            ]
-          },
+            "map": "Riviere Turquoise",
+            "x": 2385,
+            "y": 1005
+          }
+        ]
+      },
+      {
+        "name": "Riviere Turquoise Seal",
+        "sections": [
           {
-            "name": "Riviere Turquoise Mega Shard",
-            "sections": [
-              {
-                "name": "Quick Restock Mega Shard 2"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Riviere Turquoise",
-                "x": 1335,
-                "y": 275
-              }
-            ]
+            "name": "Riviere Turquoise Seal - Flower Power"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Riviere Turquoise",
+            "x": 786,
+            "y": 125
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Riviere Turquoise - Mega Shards",
+    "children": [
+      {
+        "name": "Riviere Turquoise Mega Shard",
+        "sections": [
+          {
+            "name": "Waterfall Mega Shard"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Riviere Turquoise",
+            "x": 3025,
+            "y": 410
+          }
+        ]
+      },
+      {
+        "name": "Riviere Turquoise Mega Shard",
+        "sections": [
+          {
+            "name": "Quick Restock Mega Shard 1"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Riviere Turquoise",
+            "x": 1430,
+            "y": 450
+          }
+        ]
+      },
+      {
+        "name": "Riviere Turquoise Mega Shard",
+        "sections": [
+          {
+            "name": "Quick Restock Mega Shard 2"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Riviere Turquoise",
+            "x": 1335,
+            "y": 275
           }
         ]
       }

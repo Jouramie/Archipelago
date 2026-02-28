@@ -37,6 +37,7 @@
     ]
   },
   {
+    "name": "Howling Grotto - Key locations",
     "children": [
       {
         "sections": [
@@ -65,59 +66,61 @@
             "y": 280
           }
         ]
+      }
+    ]
+  },
+  {
+    "name": "Howling Grotto - Power Seals",
+    "children": [
+      {
+        "name": "Howling Grotto Seal",
+        "sections": [
+          {
+            "name": "Howling Grotto Seal - Windy Saws and Balls"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Howling Grotto",
+            "x": 415,
+            "y": 69
+          }
+        ]
       },
       {
-        "children": [
+        "name": "Howling Grotto Seal",
+        "sections": [
           {
-            "name": "Howling Grotto Seal",
-            "sections": [
-              {
-                "name": "Howling Grotto Seal - Windy Saws and Balls"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Howling Grotto",
-                "x": 415,
-                "y": 69
-              }
-            ]
-          },
+            "name": "Howling Grotto Seal - Crushing Pits"
+          }
+        ],
+        "map_locations": [
           {
-            "name": "Howling Grotto Seal",
-            "sections": [
-              {
-                "name": "Howling Grotto Seal - Crushing Pits"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Howling Grotto",
-                "x": 624,
-                "y": 212
-              }
-            ]
-          },
+            "map": "Howling Grotto",
+            "x": 624,
+            "y": 212
+          }
+        ]
+      },
+      {
+        "name": "Howling Grotto Seal",
+        "sections": [
           {
-            "name": "Howling Grotto Seal",
-            "sections": [
-              {
-                "name": "Howling Grotto Seal - Breezy Crushers"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Howling Grotto",
-                "x": 800,
-                "y": 388
-              }
-            ]
+            "name": "Howling Grotto Seal - Breezy Crushers"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Howling Grotto",
+            "x": 800,
+            "y": 388
           }
         ]
       }
     ]
   },
   {
+    "name": "Howling Grotto - Mega Shards",
     "children": [
       {
         "name": "Howling Grotto Mega Shard",

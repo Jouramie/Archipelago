@@ -37,6 +37,7 @@
     ]
   },
   {
+    "name": "Autumn Hills - Key locations",
     "children": [
       {
         "sections": [
@@ -83,6 +84,7 @@
     ]
   },
   {
+    "name": "Autumn Hills - Power Seals",
     "children": [
       {
         "name": "Autumn Hills Seal",
@@ -147,6 +149,7 @@
     ]
   },
   {
+    "name": "Autumn Hills - Mega Shards",
     "children": [
       {
         "name": "Autumn Hills Mega Shard",
@@ -166,6 +169,7 @@
     ]
   },
   {
+    "name": "Autumn Hills - Transitions",
     "children": [
       {
         "name": "Autumn Hills - Left exit",

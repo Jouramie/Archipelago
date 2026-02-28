@@ -4,6 +4,7 @@ from Options import PlandoConnection
 from .connections import RANDOMIZED_CONNECTIONS
 from .portals import REGION_ORDER, SHOP_POINTS, CHECKPOINTS
 from .transitions import TRANSITIONS
+from .regions import LEVELS, SUB_REGIONS, LOCATIONS, MEGA_SHARDS, REGION_CONNECTIONS
 
 REVERSED_RANDOMIZED_CONNECTIONS = {v: k for k, v in RANDOMIZED_CONNECTIONS.items()}
 
@@ -97,10 +98,39 @@ def reverse_transitions_into_plando_connections(transitions: list[list[int]]) ->
     return plando_connections
 
 
+def _existing_region_names() -> set[str]:
+    names: set[str] = set()
+
+    # Base/special regions
+    names.update(LEVELS)
+    names.update(REGION_CONNECTIONS.keys())
+
+    # Standard sub-regions: "<Level> - <Sub>"
+    for level_name, sub_regions in SUB_REGIONS.items():
+        for sub in sub_regions:
+            names.add(f"{level_name} - {sub}")
+
+    # Region keys used by location/mega-shard placement
+    names.update(LOCATIONS.keys())
+    names.update(MEGA_SHARDS.keys())
+
+    return names
+
+
+def _transition_region_to_event_name(region_name: str) -> str:
+    # "Autumn Hills - Portal" keeps "Portal", everything else becomes "... exit"
+    return region_name if region_name.endswith(" - Portal") else f"{region_name} exit"
+
+
 def create_tracker_transition_events() -> dict[str, str]:
+    valid_regions = _existing_region_names()
+
+    # Keep only transitions where both sides are known regions.
     return {
-        "Autumn Hills - Left": "Autumn Hills - Left exit",
-        "Autumn Hills - Right": "Autumn Hills - Right exit",
-        "Autumn Hills - Portal": "Autumn Hills - Portal",
-        "Autumn Hills - Bottom": "Autumn Hills - Bottom exit",
+        source: _transition_region_to_event_name(source)
+        for source, target in RANDOMIZED_CONNECTIONS.items()
+        if isinstance(source, str)
+        and isinstance(target, str)
+        and source in valid_regions
+        and target in valid_regions
     }

@@ -25,7 +25,7 @@
     ]
   },
   {
-    "name": "Glacial Peak Seal",
+    "name": "Glacial Peak - Power Seals",
     "children": [
       {
         "name": "Glacial Peak Seal",
@@ -75,6 +75,7 @@
     ]
   },
   {
+    "name": "Glacial Peak - Mega Shards",
     "children": [
       {
         "name": "Glacial Peak Mega Shard",

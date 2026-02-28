@@ -31,6 +31,7 @@
     ]
   },
   {
+    "name": "Elemental Skylands - Key locations",
     "children": [
       {
         "sections": [
@@ -46,64 +47,61 @@
             "size": 64
           }
         ]
+      }
+    ]
+  },
+  {
+    "name": "Elemental Skylands - Power Seals",
+    "children": [
+      {
+        "name": "Elemental Skylands Seal",
+        "sections": [
+          {
+            "name": "Elemental Skylands Seal - Air"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Elemental Skylands",
+            "x": 131,
+            "y": 38
+          }
+        ]
       },
       {
-        "children": [
+        "name": "Elemental Skylands Seal",
+        "sections": [
           {
-            "name": "Elemental Skylands Seal",
-            "sections": [
-              {
-                "name": "Elemental Skylands Seal - Air"
-              }
-            ],
-            "map_locations": [
-              {
-                "map": "Elemental Skylands",
-                "x": 131,
-                "y": 38
-              }
-            ]
-          },
+            "name": "Elemental Skylands Seal - Water"
+          }
+        ],
+        "map_locations": [
           {
-            "name": "Elemental Skylands Seal",
-            "children": [
-              {
-                "name": "Elemental Skylands Seal",
-                "sections": [
-                  {
-                    "name": "Elemental Skylands Seal - Water"
-                  }
-                ],
-                "map_locations": [
-                  {
-                    "map": "Elemental Skylands",
-                    "x": 903,
-                    "y": 165
-                  }
-                ]
-              },
-              {
-                "name": "Elemental Skylands Seal",
-                "sections": [
-                  {
-                    "name": "Elemental Skylands Seal - Fire"
-                  }
-                ],
-                "map_locations": [
-                  {
-                    "map": "Elemental Skylands",
-                    "x": 1343,
-                    "y": 165
-                  }
-                ]
-              }
-            ]
+            "map": "Elemental Skylands",
+            "x": 903,
+            "y": 165
+          }
+        ]
+      },
+      {
+        "name": "Elemental Skylands Seal",
+        "sections": [
+          {
+            "name": "Elemental Skylands Seal - Fire"
+          }
+        ],
+        "map_locations": [
+          {
+            "map": "Elemental Skylands",
+            "x": 1343,
+            "y": 165
           }
         ]
       }
     ]
   },
   {
+    "name": "Elemental Skylands - Mega Shards",
     "children": [
       {
         "name": "Elemental Skylands Mega Shard",

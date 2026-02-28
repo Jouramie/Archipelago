@@ -34,7 +34,7 @@
     ]
   },
   {
-    "item_count": 1,
+    "name": "Catacombs - Key locations",
     "children": [
       {
         "sections": [
@@ -72,6 +72,7 @@
     ]
   },
   {
+    "name": "Catacombs - Power Seals",
     "children": [
       {
         "name": "Catacombs Seal",
@@ -121,6 +122,7 @@
     ]
   },
   {
+    "name": "Catacombs - Mega Shards",
     "children": [
       {
         "name": "Catacombs Mega Shard",
