@@ -108,5 +108,3 @@ def create_tracker_transition_exits() -> dict[str, str]:
         for source in chain(RANDOMIZED_CONNECTIONS.keys(),
                             [f"{portal_region} - Portal" for portal_region in PORTALS])
     }
-
-# Glacial Peak - Left
