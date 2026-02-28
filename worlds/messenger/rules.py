@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from BaseClasses import CollectionState
+from BaseClasses import CollectionState, DEFAULT_COLLECTION_RULE
 from worlds.generic.Rules import CollectionRule, add_rule, allow_self_locking_items
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
@@ -379,8 +379,11 @@ class MessengerRules:
     def add_glitched_rules(self) -> None:
         multiworld = self.world.multiworld
 
-        for entrance_name, rule in self.connection_rules.items():
-            entrance = multiworld.get_entrance(entrance_name, self.player)
+        for entrance in multiworld.get_entrances(self.player):
+            try:
+                rule = self.connection_rules[entrance.name]
+            except KeyError:
+                rule = DEFAULT_COLLECTION_RULE
 
             if entrance.access_rule == rule:
                 continue
@@ -394,7 +397,7 @@ class MessengerRules:
             try:
                 rule = self.location_rules[loc.name]
             except KeyError:
-                continue
+                rule = DEFAULT_COLLECTION_RULE
 
             if loc.access_rule == rule:
                 continue

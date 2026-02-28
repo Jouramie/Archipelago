@@ -283,13 +283,12 @@ class MessengerWorld(World):
         logic = self.options.logic_level
         if logic == Logic.option_normal:
             MessengerRules(self).set_messenger_rules()
+
             if hasattr(self.multiworld, "re_gen_passthrough"):
                 MessengerHardRules(self).add_glitched_rules()
 
         elif logic == Logic.option_hard:
             MessengerHardRules(self).set_messenger_rules()
-            if hasattr(self.multiworld, "re_gen_passthrough"):
-                MessengerOOBRules(self).add_glitched_rules()
 
         else:
             raise ValueError(f"Somehow you have a logic option that's currently invalid."
