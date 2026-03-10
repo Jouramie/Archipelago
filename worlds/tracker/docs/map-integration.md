@@ -106,7 +106,7 @@ You can also use `poptracker_name_mapping` to map non-matching location names fr
 
 ### Hybrid pack (JSONs internal, images external)
 
-If you define both `external_pack_key` and `map_page_folder`, UT will load the JSON files (maps.json and locations.json) from your apworld while using the images from the external pack.
+If you define both `external_pack_key` and `map_page_folder`, UT will load the JSON files (`maps.json` and `locations.json`) from your apworld while using the images from the external pack.
 
 **Recommended when**: 
 - The existing poptracker pack's location names don't match your AP location names exactly (and you want to fix them)
@@ -140,6 +140,7 @@ Tracker_Pack.zip
 -images
 --map1.png
 --map2.png
+-maybe other files
 ```
 
 ### Internal pack (full internal)
@@ -222,6 +223,8 @@ This allows the map tab to show entrance connections and randomization informati
 
 In the case of an internal or hybrid integration, you can directly add sections in the `locations.json` matching the entrances name, without additionnal mapping.  
 
+For data storage keys and world-side handling of discovered entrances, see [Deferred Entrances](apworld-integration.md#deferred-entrances).
+
 ## Hiding locations on specific maps
 
 You can define locations that should not be displayed on certain maps using the `ut_map_page_hidden_locations` class attribute.
@@ -244,7 +247,7 @@ The keys are the map names as they appear in your `maps.json` file, and the valu
 
 UT also supports rendering an icon based on a datastorage key, that the world can choose to implement that can be used to show where the player is on the current map.
 
-`location_icon_coords` can be defined with the following template, and will be passed in the current map tab index and the content of the datastorage value under `location_setting_key`:
+`location_icon_coords` can be defined with the following template, and will be passed in the current map tab index and the content of the datastorage value under `location_setting_key`
 
 ```py
 def location_icon_coords(index: int, data: Any) -> tuple[int, int, str] | None
