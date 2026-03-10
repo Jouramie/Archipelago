@@ -10,7 +10,7 @@ There are three approaches for integrating map support. Each has different trade
 
 | Approach | Use Case | Pros | Cons |
 |----------|----------|------|------|
-| **External** | Rely on existing poptracker packs | Smaller apworld, use existing community packs | Requires external pack management and maybe additionnal location mapping |
+| **External** | Rely on existing poptracker packs | Smaller apworld, use existing community packs | Requires external pack management and maybe additional location mapping |
 | **Hybrid** | Fixing existing poptracker packs | Update JSONs and logic without changing the tracker pack | Requires both apworld and external pack |
 | **Internal** | Add the maps and locations directly in the apworld | No external dependencies, easier distribution | Larger apworld file |
 
@@ -28,9 +28,9 @@ class MyWorld(World):
     tracker_world: ClassVar = {
         "map_page_folder": <Name of the folder inside the apworld that has all of the poptracker files in it, used for internal poptracker packs>
         "external_pack_key": <optional string that is the name of the setting string that UT reads in order to find the external pop tracker pack, takes priority over internal packs>
-        "map_page_maps": <Location(s) of the maps.json file(s) relative to the root folder of the pack, may be a list if more then one file exists>
-        "map_page_locations": <Location(s) of the locations.json file(s) relative to the root folder of the pack, may be a list if more then one file exists>
-        "map_page_layouts": <Location(s) of the layout.json relative to the root folder of the pack, may be a list if more then one file exists. Mutually exclusive with map_page_groups>
+        "map_page_maps": <Location(s) of the maps.json file(s) relative to the root folder of the pack, may be a list if more than one file exists>
+        "map_page_locations": <Location(s) of the locations.json file(s) relative to the root folder of the pack, may be a list if more than one file exists>
+        "map_page_layouts": <Location(s) of the layout.json relative to the root folder of the pack, may be a list if more than one file exists. Mutually exclusive with map_page_groups>
         "map_page_groups": <optional list that manually defines the map navigation dropdown structure. Mutually exclusive with map_page_layouts>
         "map_page_setting_key": <optional tag that informs which data storage key will be watched for auto tabbing>
         "map_page_index": <optional function that will control the auto tabbing>
@@ -41,14 +41,14 @@ class MyWorld(World):
     }
 ```
 
-The setting key values have two special keys that UT will replace with the correct values in run time (because the struct needs to be a static class var)
+The setting key values have two special keys that UT will replace with the correct values at runtime (because the struct needs to be a static class var)
 
 * `{player}` : replaced with the external player slot number
 * `{team}` : replaced with the external team number (almost always going to be 1)
 
 *Note*: These are not f string values, these are literal string values on the world side
 
-The contents of `maps.json` and `locations.json` are the same as poptracker format with the exception that all logic is derived from UT's internal world, and the location names must match exactly with AP location names. With the obvious exception that access and visability rules are handled by UT and can be safely ommited.
+The contents of `maps.json` and `locations.json` are the same as poptracker format with the exception that all logic is derived from UT's internal world, and the location names must match exactly with AP location names. With the obvious exception that access and visibility rules are handled by UT and can be safely omitted.
 
 ## Pack configuration approaches
 
@@ -175,7 +175,7 @@ tracker_world: ClassVar = {
 
 ## Implementing Auto tabbing
 
-UT can support automatically changing the loaded map tab via data storage keys, to do so you need to define the key in `map_page_setting_key` who's value will be passed to the function defined in `map_page_index`. 
+UT can support automatically changing the loaded map tab via data storage keys, to do so you need to define the key in `map_page_setting_key` whose value will be passed to the function defined in `map_page_index`.
 
 `map_page_index` is a function with the following template
 
@@ -221,7 +221,7 @@ poptracker_entrance_mapping: dict[str, str] = {
 
 This allows the map tab to show entrance connections and randomization information alongside location tracking.
 
-In the case of an internal or hybrid integration, you can directly add sections in the `locations.json` matching the entrances name, without additionnal mapping.  
+In the case of an internal or hybrid integration, you can directly add sections in the `locations.json` matching the entrance names, without additional mapping.
 
 For data storage keys and world-side handling of discovered entrances, see [Deferred Entrances](apworld-integration.md#deferred-entrances).
 
@@ -257,4 +257,4 @@ def location_icon_coords(index: int, data: Any) -> tuple[int, int, str] | None
 
 The coordinates returned are relative to the map page itself. The icon path to be loaded is relative to the pack definition in either `external_pack_key` or `map_page_folder`.
 
-If either the y or x coord are returned as negative, or if the function returns None, the icon will be hidden.
+If either the x or y coord is returned as negative, or if the function returns None, the icon will be hidden.
