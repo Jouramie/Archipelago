@@ -10,13 +10,14 @@ enough benefits to UT's integrated tab that it might be worth adding support eve
 
 There are three approaches for integrating map support. Each has different trade-offs:
 
-| Approach | Use Case | Pros | Cons |
-|----------|----------|------|------|
-| **External** | Rely on existing poptracker packs | Smaller apworld, use existing community packs | Requires external pack management and maybe additionnal location mapping |
-| **Hybrid** | Fixing existing poptracker packs | Update JSONs and logic without changing the tracker pack | Requires both apworld and external pack |
-| **Internal** | Add the maps and locations directly in the apworld | No external dependencies, easier distribution | Larger apworld file |
+| Approach     | Use Case                                           | Pros                                                     | Cons                                                                     |
+|--------------|----------------------------------------------------|----------------------------------------------------------|--------------------------------------------------------------------------|
+| **External** | Rely on existing poptracker packs                  | Smaller apworld, use existing community packs            | Requires external pack management and maybe additionnal location mapping |
+| **Hybrid**   | Fixing existing poptracker packs                   | Update JSONs and logic without changing the tracker pack | Requires both apworld and external pack                                  |
+| **Internal** | Add the maps and locations directly in the apworld | No external dependencies, easier distribution            | Larger apworld file                                                      |
 
-**Recommendation**: Avoid including map images in the apworld due to copyright and file size concerns. Use either the external or hybrid approach depending on whether your pack's JSON names need adjustment.
+**Recommendation**: Avoid including map images in the apworld due to copyright and file size concerns. Use either the external or hybrid approach depending on
+whether your pack's JSON names need adjustment.
 
 ## The Basics of adding a map page
 
@@ -28,18 +29,194 @@ from typing import ClassVar
 
 class MyWorld(World):
     tracker_world: ClassVar = {
-        "map_page_folder": <Name of the folder inside the apworld that has all of the poptracker files in it, used for internal poptracker packs>
-        "external_pack_key": <optional string that is the name of the setting string that UT reads in order to find the external pop tracker pack, takes priority over internal packs>
-        "map_page_maps": <Location(s) of the maps.json file(s) relative to the root folder of the pack, may be a list if more then one file exists>
-        "map_page_locations": <Location(s) of the locations.json file(s) relative to the root folder of the pack, may be a list if more then one file exists>
-        "map_page_layouts": <Location(s) of the layout.json relative to the root folder of the pack, may be a list if more then one file exists. Mutually exclusive with map_page_groups>
-        "map_page_groups": <optional list that manually defines the map navigation dropdown structure. Mutually exclusive with map_page_layouts>
-        "map_page_setting_key": <optional tag that informs which data storage key will be watched for auto tabbing>
-        "map_page_index": <optional function that will control the auto tabbing>
-        "poptracker_name_mapping": <optional Dict that maps the poptracker section names to the location id as they exist in the datapackage> 
-        "poptracker_entrance_mapping": <optional Dict that maps poptracker section names to AP entrance names for entrance tracking>
-        "location_setting_key": <optional data storage key used to determine where to place the location indicator>
-        "location_icon_coords": <optional function used to convert between the map and the value in data storage into coords>
+                                  "map_page_folder": < Name
+    of
+    the
+    folder
+    inside
+    the
+    apworld
+    that
+    has
+    all
+    of
+    the
+    poptracker
+    files in it, used
+    for internal poptracker packs >
+    "external_pack_key": <
+        optional
+    string
+    that is the
+    name
+    of
+    the
+    setting
+    string
+    that
+    UT
+    reads in order
+    to
+    find
+    the
+    external
+    pop
+    tracker
+    pack, takes
+    priority
+    over
+    internal
+    packs >
+    "map_page_maps": < Location(s)
+    of
+    the
+    maps.json
+    file(s)
+    relative
+    to
+    the
+    root
+    folder
+    of
+    the
+    pack, may
+    be
+    a
+    list if more
+    then
+    one
+    file
+    exists >
+    "map_page_locations": < Location(s)
+    of
+    the
+    locations.json
+    file(s)
+    relative
+    to
+    the
+    root
+    folder
+    of
+    the
+    pack, may
+    be
+    a
+    list if more
+    then
+    one
+    file
+    exists >
+    "map_page_layouts": < Location(s)
+    of
+    the
+    layout.json
+    relative
+    to
+    the
+    root
+    folder
+    of
+    the
+    pack, may
+    be
+    a
+    list if more
+    then
+    one
+    file
+    exists.Mutually
+    exclusive
+    with map_page_groups >
+         "map_page_groups":
+        <
+        optional
+    list
+    that
+    manually
+    defines
+    the
+    map
+    navigation
+    dropdown
+    structure.Mutually
+    exclusive
+    with map_page_layouts >
+         "map_page_setting_key":
+        <
+        optional
+    tag
+    that
+    informs
+    which
+    data
+    storage
+    key
+    will
+    be
+    watched
+    for auto tabbing >
+             "map_page_index": <
+        optional
+    function
+    that
+    will
+    control
+    the
+    auto
+    tabbing >
+    "poptracker_name_mapping": < optional
+    Dict
+    that
+    maps
+    the
+    poptracker
+    section
+    names
+    to
+    the
+    location
+    id as they
+    exist in the
+    datapackage >
+    "poptracker_entrance_mapping": < optional
+    Dict
+    that
+    maps
+    poptracker
+    section
+    names
+    to
+    AP
+    entrance
+    names
+    for entrance tracking >
+                 "location_setting_key": <
+        optional
+    data
+    storage
+    key
+    used
+    to
+    determine
+    where
+    to
+    place
+    the
+    location
+    indicator >
+    "location_icon_coords": < optional
+    function
+    used
+    to
+    convert
+    between
+    the
+    map and the
+    value in data
+    storage
+    into
+    coords >
     }
 ```
 
@@ -83,10 +260,12 @@ ut_pack_path: Union[UTPackPath, str] = UTPackPath()
 ```
 
 **Behavior**:
+
 - If the key resolves to `""` (empty string), the user will be prompted to select the pack. If they fail to select one, the map tab won't be rendered.
 - If the key resolves to `None`, the user won't be prompted and the map won't be rendered.
 
 Pack structure (as a `.zip` file):
+
 ```
 Tracker_Pack.zip
 -maps
@@ -99,6 +278,7 @@ Tracker_Pack.zip
 ```
 
 Configuration:
+
 ```py
 tracker_world: ClassVar = {
     "external_pack_key": "ut_pack_path",
@@ -107,17 +287,20 @@ tracker_world: ClassVar = {
 }
 ```
 
-You can also use `poptracker_name_mapping` in the hybrid approach to map non-matching location names from the external pack's JSON files to your AP location names.
+You can also use `poptracker_name_mapping` to map non-matching location names from the external pack's JSON files to your AP location names.
 
 ### Hybrid pack (JSONs internal, images external)
 
-If you define both `external_pack_key` and `map_page_folder`, UT will load the JSON files (maps.json and locations.json) from your apworld while using the images from the external pack.
+If you define both `external_pack_key` and `map_page_folder`, UT will load the JSON files (maps.json and locations.json) from your apworld while using the
+images from the external pack.
 
-**Recommended when**: 
+**Recommended when**:
+
 - The existing poptracker pack's location names don't match your AP location names exactly (and you want to fix them)
 - Your logic changes more frequently than the map visuals
 
 Configuration:
+
 ```py
 tracker_world: ClassVar = {
     "map_page_folder": "tracker",  # JSONs loaded from here in the apworld
@@ -128,6 +311,7 @@ tracker_world: ClassVar = {
 ```
 
 Your apworld structure:
+
 ```
 Game.apworld
 -game
@@ -140,6 +324,7 @@ Game.apworld
 ```
 
 External pack (`.zip`) structure:
+
 ```
 Tracker_Pack.zip
 -images
@@ -154,6 +339,7 @@ For internal packs, embed the entire poptracker pack into the apworld and define
 **Recommended when**: You want a self-contained apworld without external dependencies.
 
 Structure:
+
 ```
 Game.apworld
 -game
@@ -169,6 +355,7 @@ Game.apworld
 ```
 
 Configuration:
+
 ```py
 tracker_world: ClassVar = {
     "map_page_folder": "tracker",
@@ -180,8 +367,7 @@ tracker_world: ClassVar = {
 ## Implementing Auto tabbing
 
 UT can support automatically changing the loaded map tab via data storage keys, to do so you need to define the key in `map_page_setting_key` who's value will
-be passed to the function defined in `map_page_index`
-to the function defined in `map_page_index`.
+be passed to the function defined in `map_page_index`.
 
 `map_page_index` is a function with the following template
 
@@ -214,11 +400,13 @@ poptracker_name_mapping: dict[str, int] = {
 ![Example of poptracker with group and location name](image.jpg)
 
 Locations will first check if they match a key in the mapping before the literal name matching allowing for some locations to be mapped, while others are just
-simple matching. If a mapping is incomplete and doesn't cover all locations in the poptracker pack, UT will still try to match the remaining locations to AP location names by their exact names.
+simple matching. If a mapping is incomplete and doesn't cover all locations in the poptracker pack, UT will still try to match the remaining locations to AP
+location names by their exact names.
 
 ## Entrance tracking
 
-If your world supports entrance randomization and you want to display it in the map tab, you can create a mapping between poptracker entrance/section names and AP entrance names using `poptracker_entrance_mapping`:
+If your world supports entrance randomization and you want to display it in the map tab, you can create a mapping between poptracker entrance/section names and
+AP entrance names using `poptracker_entrance_mapping`:
 
 ```py
 poptracker_entrance_mapping: dict[str, str] = {
@@ -230,7 +418,8 @@ poptracker_entrance_mapping: dict[str, str] = {
 
 This allows the map tab to show entrance connections and randomization information alongside location tracking.
 
-In the case of an internal or hybrid integration, you can directly add sections in the `locations.json` matching the entrances name, without additionnal mapping.  
+In the case of an internal or hybrid integration, you can directly add sections in the `locations.json` matching the entrances name, without additionnal
+mapping.
 
 ## Hiding locations on specific maps
 
@@ -242,7 +431,7 @@ class MyWorld(World):
         "Map Name 1": [location_id_1, location_id_2],
         "Map Name 2": [location_id_3],
     }
-    
+
     tracker_world: ClassVar = {
         # ... tracker configuration ...
     }
@@ -261,7 +450,7 @@ under `location_setting_key`
 
 ```py
 def location_icon_coords(index: int, data: Any) -> tuple[int, int, str] | None
-    #do code here
+    # do code here
     return x_coord, y_coord, internal_path_to_icon
 ```
 
