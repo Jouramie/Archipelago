@@ -173,7 +173,7 @@ class MessengerRules:
                 lambda state: self.has_wingsuit(state) and self.can_dboost(state),
             # Underworld
             "Underworld - Left -> Underworld - Left Shop":
-                self.has_tabi,
+                lambda state: self.has_tabi(state) or self.has_vertical(state),
             "Underworld - Left Shop -> Underworld - Left":
                 self.has_tabi,
             "Underworld - Hot Dip Checkpoint -> Underworld - Lava Run Checkpoint":
@@ -198,7 +198,7 @@ class MessengerRules:
             # Riviere Turquoise
             "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) or (
-                            self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
+                        self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
             "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) and self.can_dboost(state),
             "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
@@ -314,7 +314,7 @@ class MessengerRules:
             "Riviere Turquoise Seal - Launch of Faith":
                 lambda state: self.has_vertical(state),
             # elemental skylands
-            "Elemental Skylands - Key of Symbiosis":
+            "Elemental Skylands - Key of Symbiosis":  # How does this requires dart, but not going into earth skylands? Region should be blocked as a whole before having dart. Not needing dart is hard logic.
                 self.has_dart,
             "Elemental Skylands Seal - Air":
                 self.has_wingsuit,
@@ -502,7 +502,7 @@ class MessengerHardRules(MessengerRules):
 
     def can_dboost(self, state: CollectionState) -> bool:
         return state.has("Second Wind", self.player)  # who really needs meditation
-    
+
     def can_destroy_projectiles(self, state: CollectionState) -> bool:
         return super().can_destroy_projectiles(state) or self.has_windmill(state)
 

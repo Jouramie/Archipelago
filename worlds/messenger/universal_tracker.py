@@ -1,17 +1,44 @@
-from typing import TYPE_CHECKING
+import logging
+from itertools import chain
+from typing import TYPE_CHECKING, Callable
 
-from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionState
+from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionState, Region, Entrance, Location
 from Options import PlandoConnection
 from .connections import RANDOMIZED_CONNECTIONS
-from .portals import REGION_ORDER, SHOP_POINTS, CHECKPOINTS
+from .portals import REGION_ORDER, SHOP_POINTS, CHECKPOINTS, PORTALS
 from .rules import MessengerHardRules
 from .transitions import TRANSITIONS
 
 if TYPE_CHECKING:
     from . import MessengerWorld
 
+logger = logging.getLogger(__name__)
+
 REVERSED_RANDOMIZED_CONNECTIONS = {v: k for k, v in RANDOMIZED_CONNECTIONS.items()}
 GLITCHED_ITEM = "Glitched Item"
+
+ONE_WAY_EXITS = {
+    "Glacial Peak - Left exit",
+    "Artificer's Challenge",
+    "Dark Cave - Left exit",
+    "Elemental Skylands - Right exit"
+}
+
+ONE_WAY_ENTRANCES = {
+    "Elemental Skylands - Air Shmup",
+    "Tower of Time - Left",
+    "Riviere Turquoise - Right",
+    "Glacial Peak - Left"
+}
+
+COUPLED_EXITS = {
+    one_way + " exit": other_way + " exit"
+    for one_way, other_way in RANDOMIZED_CONNECTIONS.items()
+    if one_way != "Tower HQ"
+    if one_way != "Artificer"
+    if one_way + " exit" not in ONE_WAY_EXITS
+}
+COUPLED_EXITS["Artificer's Portal"] = "Corrupted Future Portal"
 
 
 def handle_auto_tabbing(data: str) -> int:
@@ -132,3 +159,96 @@ def add_glitched_rules(world: "MessengerWorld", hard_logic: MessengerHardRules) 
             return (state.has(GLITCHED_ITEM, world.player) and glitched_rule(state)) or previous_rule(state)
 
         loc.access_rule = glitch_aware_rule
+
+
+def _transition_region_to_exit_name(region_name: str) -> str:
+    if region_name == "Artificer":
+        return "HQ - Artificer's Portal"
+
+    if region_name == "Tower HQ":
+        return "HQ - Artificer's Challenge"
+
+    # Maybe add Corrupted Future portal? Does it work decoupled?
+
+    return f"{region_name} exit"
+
+
+def _create_tracker_transition_exits() -> dict[str, str]:
+    transitions = {
+        source: _transition_region_to_exit_name(source) for source in
+        chain(RANDOMIZED_CONNECTIONS.keys())
+    }
+    return transitions
+
+
+def disconnect_deferred_exits(transitions: list[PlandoConnection], get_region: Callable[[str], Region]) -> dict[str, str]:
+    """Disconnect the exits, but save their destinations in a map to reconnect when it is visited."""
+
+    deferred_connections = {}
+
+    def disconnect_exit(transition: Entrance, tracker_name_override: str):
+        transition.name = tracker_name_override
+        deferred_connections[tracker_name_override] = transition.connected_region.name
+        transition.connected_region.entrances.remove(transition)
+        transition.connected_region = None
+
+    for region_name, transition_exit in _create_tracker_transition_exits().items():
+        if region_name == "Artificer":
+            tower = get_region("Tower HQ")
+            artificer_portal: Entrance = next(e for e in tower.exits if e.name == "Artificer's Portal")
+            disconnect_exit(artificer_portal, "HQ - Artificer's Portal")
+            continue
+
+        try:
+            region = get_region(region_name)
+        except KeyError:
+            logger.warning(f"Unable to find region {region_name} for transition exit {transition_exit}, skipping.")
+            continue
+
+        real_connection = next((transition for transition in transitions if transition.entrance == region_name), None)
+        if real_connection is not None:
+            actual_exit_name = f"{real_connection.entrance} -> {real_connection.exit}"
+        else:
+            real_connection = next((con for con in transitions if con.exit == region_name), None)
+            if real_connection is None:
+                continue
+            actual_exit_name = f"{real_connection.exit} -> {real_connection.entrance}"
+
+        try:
+            actual_exit: Entrance = next(e for e in region.exits if e.name == actual_exit_name)
+        except StopIteration:
+            logger.warning(f"Unable to find exit {actual_exit_name} in region {region_name} for transition exit {transition_exit}, skipping.")
+            continue
+
+        disconnect_exit(actual_exit, transition_exit)
+
+    tower = get_region("Tower HQ")
+    for portal in PORTALS:
+        actual_exit: Entrance = next(e for e in tower.exits if e.name == f"ToTHQ {portal} Portal")
+        disconnect_exit(actual_exit, "HQ - " + portal + " Portal")
+
+        # FIXME those do not really work since they're events and not hooked on actual datastorage...
+        unlock_region = get_region(portal + " - Portal")
+        unlock_event: Location = next(e for e in unlock_region.locations if e.name == f"{portal} Portal")
+        unlock_event.name = portal + " - Portal unlock"
+
+    return deferred_connections
+
+
+def connect_visited_entrances(connections_map: dict[str, str], get_region: Callable[[str], Region], get_entrance: Callable[[str], Entrance],
+                              visited_exits: list[str], decoupled: bool = False) -> None:
+    def connect_exit_to_destination(visited_exit: str) -> Region:
+        transition = get_entrance(visited_exit)
+        _destination = get_region(connections_map[visited_exit])
+        transition.connect(_destination)
+        return _destination
+
+    for e in visited_exits:
+        try:
+            destination = connect_exit_to_destination(e)
+            if not decoupled:
+                coupled_exit = _transition_region_to_exit_name(destination.name)
+                connect_exit_to_destination(coupled_exit)
+        except KeyError:
+            logger.warning(f"Unable to find region/entrance for visited exit {e}, skipping connection.")
+            continue

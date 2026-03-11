@@ -3,7 +3,7 @@ from typing import Any, ClassVar, TextIO
 
 from BaseClasses import CollectionState, Entrance, EntranceType, Item, ItemClassification, MultiWorld, Tutorial, \
     PlandoOptions
-from Options import Accessibility
+from Options import Accessibility, PlandoConnection
 from Utils import output_path
 from settings import FilePath, Group
 from worlds.AutoWorld import WebWorld, World
@@ -19,8 +19,8 @@ from .rules import MessengerHardRules, MessengerOOBRules, MessengerRules
 from .shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS, shuffle_shop_prices
 from .subclasses import MessengerItem, MessengerRegion, MessengerShopLocation
 from .transitions import disconnect_entrances, shuffle_transitions
-from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACKER_PACK_CONFIG, GLITCHED_ITEM, \
-    add_glitched_rules
+from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACKER_PACK_CONFIG, \
+    GLITCHED_ITEM, add_glitched_rules, disconnect_deferred_exits, connect_visited_entrances
 
 components.append(
     Component(
@@ -91,6 +91,7 @@ class MessengerWorld(World):
 
     tracker_world: ClassVar = TRACKER_PACK_CONFIG
     glitches_item_name: ClassVar[str] = GLITCHED_ITEM
+    found_entrances_datastorage_key: ClassVar[str] = "Slot:{player}:VisitedEntrances"
 
     base_offset = 0xADD_000
     item_name_to_id = {item: item_id
@@ -162,9 +163,18 @@ class MessengerWorld(World):
     reachable_locs: bool = False
     filler: dict[str, int]
 
+    deferred_connections = dict[str, str]
+
+    def __init__(self, multiworld: "MultiWorld", player: int):
+        super().__init__(multiworld, player)
+
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
         return slot_data
+
+    @property
+    def is_ut(self) -> bool:
+        return bool(getattr(self.multiworld, "re_gen_passthrough", False))
 
     def generate_early(self) -> None:
         if self.options.goal == Goal.option_power_seal_hunt:
@@ -203,8 +213,8 @@ class MessengerWorld(World):
         self.spoiler_portal_mapping = {}
         self.transitions = []
 
-        if hasattr(self.multiworld, "re_gen_passthrough"):
-            slot_data = self.multiworld.re_gen_passthrough.get(self.game)
+        if self.is_ut:
+            slot_data = getattr(self.multiworld, "re_gen_passthrough").get(self.game)
             if slot_data:
                 self.starting_portals = slot_data["starting_portals"]
 
@@ -290,7 +300,7 @@ class MessengerWorld(World):
         if logic == Logic.option_normal:
             MessengerRules(self).set_messenger_rules()
 
-            if hasattr(self.multiworld, "re_gen_passthrough"):
+            if self.is_ut:
                 add_glitched_rules(self, MessengerHardRules(self))
 
         elif logic == Logic.option_hard:
@@ -305,8 +315,8 @@ class MessengerWorld(World):
             disconnect_entrances(self)
             keep_entrance_logic = False
 
-        if hasattr(self.multiworld, "re_gen_passthrough"):
-            slot_data = self.multiworld.re_gen_passthrough.get(self.game)
+        if self.is_ut:
+            slot_data = getattr(self.multiworld, "re_gen_passthrough").get(self.game)
             if slot_data:
                 self.multiworld.plando_options |= PlandoOptions.connections
                 if slot_data["portal_exits"]:
@@ -332,6 +342,26 @@ class MessengerWorld(World):
 
         if self.options.shuffle_transitions:
             shuffle_transitions(self, keep_entrance_logic)
+
+    def generate_basic(self) -> None:
+        if self.is_ut and (getattr(self.multiworld, "enforce_deferred_connections", "off") != "off"):
+            plando_connections = self.options.plando_connections.value
+
+            slot_data = getattr(self.multiworld, "re_gen_passthrough").get(self.game)
+
+            # Seems like the Artificer portal is not included in the plando connections... Adding it here, but clearly
+            # should figure out why it's not there in the first place.
+            if "Artificer" not in {con.entrance for con in plando_connections}:
+                artificer_portal_destination = next(t[1] for t in (slot_data["transitions"]) if t[0] == TRANSITIONS.index("Corrupted Future"))
+                plando_connections.append(PlandoConnection("Artificer", TRANSITIONS[artificer_portal_destination], "both"))
+
+            self.deferred_connections = disconnect_deferred_exits(plando_connections, lambda region_name: self.multiworld.get_region(region_name, self.player))
+
+            # Need to reset the entrance cache here, because the entrance names are changed for the tracker.
+            self.multiworld.regions.entrance_cache[self.player] = {
+                entrance.name: entrance
+                for entrance in self.multiworld.regions.entrance_cache[self.player].values()
+            }
 
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         if self.options.available_portals < 6:
@@ -503,3 +533,10 @@ class MessengerWorld(World):
         output = orjson.dumps(data, option=orjson.OPT_NON_STR_KEYS)
         with open(out_path, "wb") as f:
             f.write(output)
+
+    def reconnect_found_entrances(self, _: str, visited_exits: list[str] | None) -> None:
+        if getattr(self.multiworld, "enforce_deferred_connections", "off") == "off" or not visited_exits:
+            return
+
+        connect_visited_entrances(self.deferred_connections, lambda region_name: self.multiworld.get_region(region_name, self.player),
+                                  lambda entrance_name: self.multiworld.get_entrance(entrance_name, self.player), visited_exits)
