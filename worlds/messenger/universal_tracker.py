@@ -1,19 +1,28 @@
+import logging
+from collections.abc import Callable, Collection, Iterable
 from typing import TYPE_CHECKING
 
+from BaseClasses import Entrance, Location, Region
 from Options import PlandoConnection
 from rule_builder.rules import Has
 
-from .connections import RANDOMIZED_CONNECTIONS
+from .connections import ONE_WAY_EXITS, RANDOMIZED_CONNECTIONS
 from .options import ShuffleTransitions
-from .portals import CHECKPOINTS, REGION_ORDER, SHOP_POINTS
+from .portals import CHECKPOINTS, PORTALS, REGION_ORDER, SHOP_POINTS
 from .rules import MessengerHardRules, MessengerRules
 from .transitions import TRANSITIONS
 
 if TYPE_CHECKING:
     from . import MessengerWorld
 
+logger = logging.getLogger(__name__)
+
 REVERSED_RANDOMIZED_CONNECTIONS = {v: k for k, v in RANDOMIZED_CONNECTIONS.items()}
 GLITCHED_ITEM = "Glitched Item"
+
+TRACKER_ONE_WAY_DEFERRED_EXITS = [
+    exit_name if exit_name.endswith("exit") else "HQ - " + exit_name for exit_name in ONE_WAY_EXITS
+] + ["HQ - " + portal_name + " Portal" for portal_name in PORTALS]
 
 
 def handle_auto_tabbing(data: str) -> int:
@@ -57,11 +66,25 @@ TRACKER_PACK_CONFIG = {
     "map_page_folder": "tracker",
     "map_page_maps": "maps/maps.json",
     "map_page_locations": [
-        "locations/AutumnHills.json", "locations/BambooCreek.json", "locations/Catacombs.json", "locations/CloudRuins.json",
-        "locations/CorruptedFuture.json", "locations/ElementalSkylands.json", "locations/ForlornTemple.json", "locations/GlacialPeak.json",
-        "locations/HowlingGrotto.json", "locations/MusicBox.json", "locations/NinjaVillage.json", "locations/QuillshroomMarsh.json",
-        "locations/RiviereTurquoise.json", "locations/SearingCrags.json", "locations/SunkenShrine.json", "locations/TheShop.json",
-        "locations/TowerOfTime.json", "locations/Underworld.json"
+        "locations/AutumnHills.json",
+        "locations/BambooCreek.json",
+        "locations/Catacombs.json",
+        "locations/CloudRuins.json",
+        "locations/CorruptedFuture.json",
+        "locations/DarkCave.json",
+        "locations/ElementalSkylands.json",
+        "locations/ForlornTemple.json",
+        "locations/GlacialPeak.json",
+        "locations/HowlingGrotto.json",
+        "locations/MusicBox.json",
+        "locations/NinjaVillage.json",
+        "locations/QuillshroomMarsh.json",
+        "locations/RiviereTurquoise.json",
+        "locations/SearingCrags.json",
+        "locations/SunkenShrine.json",
+        "locations/TheShop.json",
+        "locations/TowerOfTime.json",
+        "locations/Underworld.json",
     ],
     "map_page_setting_key": "Slot:{player}:CurrentRegion",
     "map_page_index": handle_auto_tabbing,
@@ -122,3 +145,85 @@ class MessengerGlitchedRules(MessengerRules):
             normal_rule = self.location_rules[location]
             if normal_rule != hard_rule:
                 self.location_rules[location] = (has_glitched & hard_rule) | normal_rule
+
+
+def disconnect_deferred_exits(
+    transition_shuffled: bool,
+    portal_shuffled: bool,
+    starting_portals: Collection[str],
+    get_entrance: Callable[[str], Entrance],
+    get_location: Callable[[str], Location],
+) -> dict[str, str]:
+    """Disconnect the exits, but save their destinations in a map to reconnect when it is visited."""
+
+    deferred_connections = {}
+
+    def disconnect_exit(transition: Entrance, tracker_name_override: str | None) -> None:
+        if tracker_name_override is not None:
+            transition.name = tracker_name_override
+
+        deferred_connections[transition.name] = transition.connected_region.name
+        transition.connected_region.entrances.remove(transition)
+        transition.connected_region = None
+
+    if transition_shuffled:
+        for exit_name in RANDOMIZED_CONNECTIONS.keys():
+            exit_ = get_entrance(exit_name)
+
+            if exit_.parent_region.name == "Tower HQ":
+                name_override = "HQ - " + exit_.name
+            else:
+                name_override = None
+
+            disconnect_exit(exit_, name_override)
+
+    for portal in PORTALS:
+        actual_exit = get_entrance(f"ToTHQ {portal} Portal")
+        if portal_shuffled:
+            disconnect_exit(actual_exit, "HQ - " + portal + " Portal")
+
+        event_name = f"{portal} Portal"
+        unlock_event = get_location(event_name)
+
+        hq = actual_exit.parent_region
+        if event_name in starting_portals:
+            unlock_event.parent_region.locations.remove(unlock_event)
+            hq.locations.append(unlock_event)
+            unlock_event.parent_region = hq
+
+        unlock_event.name = portal + " - Portal unlock"
+        unlock_event.access_rule = lambda _: False
+
+    return deferred_connections
+
+
+def connect_visited_entrances(
+    connections_map: dict[str, str],
+    visited_exits: list[str],
+    get_region: Callable[[str], Region],
+    get_entrance: Callable[[str], Entrance],
+    decoupled: bool = False,
+) -> None:
+    def connect_exit_to_destination(visited_exit: str) -> tuple[Entrance, Region]:
+        _transition = get_entrance(visited_exit)
+        _destination = get_region(connections_map[visited_exit])
+        _transition.connect(_destination)
+        return _transition, _destination
+
+    for e in visited_exits:
+        try:
+            transition, destination = connect_exit_to_destination(e)
+            if not decoupled and transition.name not in TRACKER_ONE_WAY_DEFERRED_EXITS:
+                coupled_exit = f"{destination.name} exit"
+                connect_exit_to_destination(coupled_exit)
+        except KeyError:
+            logger.warning(f"Unable to find region/entrance for visited exit {e}, skipping connection.")
+            continue
+
+
+def unlock_portals(unlocked_portals: Iterable[str], get_location: Callable[[str], Location]) -> None:
+    for p in unlocked_portals:
+        event_name = p.replace(" Portal", " - Portal unlock")
+        unlock_event = get_location(event_name)
+        # This assumes the events have no requirements in itself. If an item is required, it's handled by the region.
+        unlock_event.access_rule = lambda _: True

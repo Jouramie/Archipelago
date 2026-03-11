@@ -48,9 +48,14 @@ from .universal_tracker import (
     GLITCHED_ITEM,
     TRACKER_PACK_CONFIG,
     MessengerGlitchedRules,
+    connect_visited_entrances,
+    disconnect_deferred_exits,
     reverse_portal_exits_into_portal_plando,
     reverse_transitions_into_plando_connections,
+    unlock_portals,
 )
+
+logger = logging.getLogger(__name__)
 
 components.append(
     Component(
@@ -121,6 +126,10 @@ class MessengerWorld(World):
 
     tracker_world: ClassVar = TRACKER_PACK_CONFIG
     glitches_item_name: ClassVar[str] = GLITCHED_ITEM
+    found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = (
+        "Slot:{player}:VisitedEntrances",
+        "Slot:{player}:UnlockedPortals",
+    )
 
     base_offset = 0xADD_000
     item_name_to_id = {item: item_id
@@ -195,6 +204,8 @@ class MessengerWorld(World):
     transitions: list[Entrance]
     reachable_locs: bool = False
     filler: dict[str, int]
+
+    deferred_connections: dict[str, str]
 
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
@@ -363,7 +374,6 @@ class MessengerWorld(World):
                     self.options.plando_connections.value = reverse_transitions_into_plando_connections(self.options.shuffle_transitions,
                                                                                                         slot_data["transitions"])
 
-
         add_closed_portal_reqs(self)
         # i need portal shuffle to happen after rules exist so i can validate it
         attempts = 20
@@ -381,6 +391,24 @@ class MessengerWorld(World):
 
         if self.options.shuffle_transitions:
             shuffle_transitions(self)
+
+    def generate_basic(self) -> None:
+        if self.is_ut and (getattr(self.multiworld, "enforce_deferred_connections", "off") != "off"):
+            self.deferred_connections = disconnect_deferred_exits(
+                bool(self.transitions),
+                bool(self.portal_mapping),
+                self.starting_portals,
+                self.get_entrance,
+                self.get_location,
+            )
+
+            # Need to reset the entrance cache here, because the entrance names are changed for the tracker.
+            self.multiworld.regions.entrance_cache[self.player] = {
+                e.name: e for e in self.multiworld.regions.entrance_cache[self.player].values()
+            }
+            self.multiworld.regions.location_cache[self.player] = {
+                l.name: l for l in self.multiworld.regions.location_cache[self.player].values()
+            }
 
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         if self.options.available_portals < 6:
@@ -560,3 +588,33 @@ class MessengerWorld(World):
         output = orjson.dumps(data, option=orjson.OPT_NON_STR_KEYS)
         with open(out_path, "wb") as f:
             f.write(output)
+
+    def reconnect_found_entrances(self, storage_key: str, storage_value: list[str] | None) -> None:
+        if getattr(self.multiworld, "enforce_deferred_connections", "off") == "off":
+            return
+
+        if storage_key.endswith("VisitedEntrances") and self.transitions:
+            logger.info(
+                f"Reconnecting visited entrances for player {self.player_name} with storage value {storage_value}"
+            )
+
+            if not storage_value:
+                return
+
+            connect_visited_entrances(
+                self.deferred_connections,
+                storage_value,
+                self.get_region,
+                self.get_entrance,
+                decoupled=self.options.shuffle_transitions == ShuffleTransitions.option_decoupled,
+            )
+
+        if storage_key.endswith("UnlockedPortals"):
+            logger.info(f"Unlocking portals for player {self.player_name} with storage value {storage_value}")
+
+            if storage_value is None:
+                storage_value = []
+            unlock_portals(
+                set(self.starting_portals + storage_value),
+                lambda location_name: self.multiworld.get_location(location_name, self.player),
+            )
