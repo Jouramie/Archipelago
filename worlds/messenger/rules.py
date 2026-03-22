@@ -209,9 +209,9 @@ class MessengerRules:
             "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
                 self.has_wingsuit,
             "Elemental Skylands - Air Generator Shop -> Elemental Skylands - Air Intro Shop":
-                self.has_progressive_generator_shutdown,
+                lambda state: self.has_wingsuit(state) and self.has_progressive_generator_shutdown(state),
             "Elemental Skylands - Fire Generator Shop -> Elemental Skylands - Fire Intro Shop":
-                lambda state: self.has_progressive_generator_shutdown(state, count=4),
+                self.false,
             # Sunken Shrine
             "Sunken Shrine - Portal -> Sunken Shrine - Sun Path Shop":
                 self.has_tabi,
@@ -446,6 +446,10 @@ class MessengerHardRules(MessengerRules):
                 # Elemental Skylands
                 "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
                     self.true,
+                "Elemental Skylands - Air Generator Shop -> Elemental Skylands - Air Intro Shop":
+                    self.has_progressive_generator_shutdown,
+                "Elemental Skylands - Fire Generator Shop -> Elemental Skylands - Fire Intro Shop":
+                    lambda state: self.has_progressive_generator_shutdown(state, count=4),
                 # Riviere Turquoise
                 "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                     self.true,

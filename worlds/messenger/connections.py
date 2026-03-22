@@ -567,7 +567,6 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
             "Elemental Skylands - Earth Generator Shop",
         ],
         "Earth Generator Shop": [
-            "Elemental Skylands - Earth Intro Shop",
             "Elemental Skylands - Water Shmup",
         ],
         "Water Shmup": [
@@ -577,7 +576,6 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
             "Elemental Skylands - Water Generator Shop",
         ],
         "Water Generator Shop": [
-            "Elemental Skylands - Water Intro Shop",
             "Elemental Skylands - Fire Shmup",
         ],
         "Fire Shmup": [
