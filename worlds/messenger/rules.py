@@ -198,7 +198,7 @@ class MessengerRules:
             # Riviere Turquoise
             "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) or (
-                            self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
+                        self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
             "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) and self.can_dboost(state),
             "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
@@ -208,6 +208,10 @@ class MessengerRules:
                 self.has_wingsuit,
             "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
                 self.has_wingsuit,
+            "Elemental Skylands - Air Generator Shop -> Elemental Skylands - Air Intro Shop":
+                self.has_progressive_generator_shutdown,
+            "Elemental Skylands - Fire Generator Shop -> Elemental Skylands - Fire Intro Shop":
+                lambda state: self.has_progressive_generator_shutdown(state, count=4),
             # Sunken Shrine
             "Sunken Shrine - Portal -> Sunken Shrine - Sun Path Shop":
                 self.has_tabi,
@@ -359,6 +363,9 @@ class MessengerRules:
     def is_aerobatic(self, state: CollectionState) -> bool:
         return self.has_wingsuit(state) and state.has("Aerobatics Warrior", self.player)
 
+    def has_progressive_generator_shutdown(self, state: CollectionState, count: int = 1) -> bool:
+        return state.has("Progressive Generator Shutdown", self.player, count)
+
     def true(self, state: CollectionState) -> bool:
         """I know this is stupid, but it's easier to read in the dicts."""
         return True
@@ -502,7 +509,7 @@ class MessengerHardRules(MessengerRules):
 
     def can_dboost(self, state: CollectionState) -> bool:
         return state.has("Second Wind", self.player)  # who really needs meditation
-    
+
     def can_destroy_projectiles(self, state: CollectionState) -> bool:
         return super().can_destroy_projectiles(state) or self.has_windmill(state)
 

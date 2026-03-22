@@ -95,6 +95,10 @@ class MessengerWorld(World):
                                *[f"The Shop - {shop_loc}" for shop_loc in SHOP_ITEMS],
                                *FIGURINES,
                                "Money Wrench",
+                               "Elemental Skylands - Shutdown Air Generator",
+                               "Elemental Skylands - Shutdown Earth Generator",
+                               "Elemental Skylands - Shutdown Water Generator",
+                               "Elemental Skylands - Shutdown Fire Generator",
                            ], base_offset)}
     item_name_groups = {
         "Notes": set(NOTES),

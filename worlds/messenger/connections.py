@@ -556,6 +556,8 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
             "Elemental Skylands - Air Generator Shop",
         ],
         "Air Generator Shop": [
+            "Elemental Skylands - Air Intro Shop",
+            "Elemental Skylands - Air Seal Checkpoint",
             "Elemental Skylands - Earth Shmup",
         ],
         "Earth Shmup": [
@@ -565,6 +567,7 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
             "Elemental Skylands - Earth Generator Shop",
         ],
         "Earth Generator Shop": [
+            "Elemental Skylands - Earth Intro Shop",
             "Elemental Skylands - Water Shmup",
         ],
         "Water Shmup": [
@@ -574,6 +577,7 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
             "Elemental Skylands - Water Generator Shop",
         ],
         "Water Generator Shop": [
+            "Elemental Skylands - Water Intro Shop",
             "Elemental Skylands - Fire Shmup",
         ],
         "Fire Shmup": [
@@ -583,6 +587,7 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
             "Elemental Skylands - Fire Generator Shop",
         ],
         "Fire Generator Shop": [
+            "Elemental Skylands - Fire Intro Shop",
             "Elemental Skylands - Right",
         ],
         "Right": [
@@ -639,6 +644,7 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
     },
 }
 
+# @formatter:off
 RANDOMIZED_CONNECTIONS: dict[str, str] = {
     "Ninja Village - Right":            "Autumn Hills - Left",
     "Autumn Hills - Left":              "Ninja Village - Right",
@@ -678,6 +684,7 @@ RANDOMIZED_CONNECTIONS: dict[str, str] = {
     "Dark Cave - Left":                 "Riviere Turquoise - Right",
     "Sunken Shrine - Left":             "Howling Grotto - Bottom",
 }
+# @formatter:on
 
 TRANSITIONS: list[str] = [
     "Ninja Village - Right",
