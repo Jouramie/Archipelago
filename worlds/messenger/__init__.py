@@ -5,10 +5,10 @@ from BaseClasses import CollectionState, Entrance, EntranceType, Item, ItemClass
     PlandoOptions
 from Options import Accessibility
 from Utils import output_path
+from rule_builder.cached_world import CachedRuleBuilderWorld
 from settings import FilePath, Group
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, icon_paths
-from rule_builder.cached_world import CachedRuleBuilderWorld
 from .client_setup import launch_game
 from .connections import CONNECTIONS, RANDOMIZED_CONNECTIONS, TRANSITIONS
 from .constants import ALL_ITEMS, ALWAYS_LOCATIONS, BOSS_LOCATIONS, FILLER, NOTES, PHOBEKINS, PROG_ITEMS, TRAPS, \
@@ -160,7 +160,7 @@ class MessengerWorld(CachedRuleBuilderWorld):
         "Time Shard (100)": "Time Shard",
         "Time Shard (300)": "Time Shard",
         "Time Shard (500)": "Time Shard"
-        }
+    }
 
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:

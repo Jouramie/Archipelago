@@ -368,12 +368,11 @@ class MessengerRules:
         multiworld = self.world.multiworld
 
         for entrance_name, rule in self.connection_rules.items():
-            entrance = multiworld.get_entrance(entrance_name, self.player)
-            entrance.access_rule = rule.resolve(self.world)
+            self.world.set_rule(multiworld.get_entrance(entrance_name, self.player), rule)
 
         for loc in multiworld.get_locations(self.player):
             if loc.name in self.location_rules:
-                loc.access_rule = self.location_rules[loc.name].resolve(self.world)
+                self.world.set_rule(loc, self.location_rules[loc.name])
 
         multiworld.completion_condition[self.player] = lambda state: state.has("Do the Thing!", self.player)
         if self.world.options.accessibility:  # not locations accessibility
