@@ -1,7 +1,10 @@
+from collections import defaultdict
+from functools import cached_property
 from typing import TYPE_CHECKING
 
-from BaseClasses import CollectionState, CollectionRule
-from worlds.generic.Rules import add_rule, allow_self_locking_items
+from BaseClasses import CollectionState
+from rule_builder.rules import Rule, Has, HasAny, HasAll, True_, False_, CanReachRegion, CanReachLocation
+from worlds.generic.Rules import allow_self_locking_items
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
 
@@ -12,9 +15,9 @@ if TYPE_CHECKING:
 class MessengerRules:
     player: int
     world: "MessengerWorld"
-    connection_rules: dict[str, CollectionRule]
-    region_rules: dict[str, CollectionRule]
-    location_rules: dict[str, CollectionRule]
+    connection_rules: "dict[str, Rule[MessengerWorld]]"
+    region_rules: "dict[str, Rule[MessengerWorld]]"
+    location_rules: "dict[str, Rule[MessengerWorld]]"
     maximum_price: int
     required_seals: int
 
@@ -29,195 +32,186 @@ class MessengerRules:
         self.required_seals = world.required_seals
 
         # dict of connection names and requirements to traverse the exit
-        self.connection_rules = {
-            # from ToTHQ
-            "Artificer's Portal":
-                lambda state: state.has("Demon King Crown", self.player),
-            "Shrink Down":
-                lambda state: state.has_all(NOTES, self.player),
-            # the shop
-            "Money Sink":
-                lambda state: state.has("Money Wrench", self.player) and self.can_shop(state),
-            # Autumn Hills
-            "Autumn Hills - Portal -> Autumn Hills - Dimension Climb Shop":
-                lambda state: self.has_wingsuit(state) and self.has_dart(state),
-            "Autumn Hills - Dimension Climb Shop -> Autumn Hills - Portal":
-                self.has_vertical,
-            "Autumn Hills - Climbing Claws Shop -> Autumn Hills - Hope Path Shop":
-                self.has_dart,
-            "Autumn Hills - Climbing Claws Shop -> Autumn Hills - Key of Hope Checkpoint":
-                self.false,  # hard logic only
-            "Autumn Hills - Hope Path Shop -> Autumn Hills - Hope Latch Checkpoint":
-                self.has_dart,
-            "Autumn Hills - Hope Path Shop -> Autumn Hills - Climbing Claws Shop":
-                lambda state: self.has_dart(state) and self.can_dboost(state),
-            "Autumn Hills - Hope Path Shop -> Autumn Hills - Lakeside Checkpoint":
-                lambda state: self.has_dart(state) and self.can_dboost(state),
-            "Autumn Hills - Hope Latch Checkpoint -> Autumn Hills - Hope Path Shop":
-                self.can_dboost,
-            "Autumn Hills - Hope Latch Checkpoint -> Autumn Hills - Key of Hope Checkpoint":
-                lambda state: self.has_dart(state) and self.has_wingsuit(state),
-            # Forlorn Temple
-            "Forlorn Temple - Outside Shop -> Forlorn Temple - Entrance Shop":
-                lambda state: state.has_all(PHOBEKINS, self.player),
-            "Forlorn Temple - Entrance Shop -> Forlorn Temple - Outside Shop":
-                lambda state: state.has_all(PHOBEKINS, self.player),
-            "Forlorn Temple - Entrance Shop -> Forlorn Temple - Sunny Day Checkpoint":
-                lambda state: self.has_vertical(state) and self.can_dboost(state),
-            "Forlorn Temple - Sunny Day Checkpoint -> Forlorn Temple - Rocket Maze Checkpoint":
-                self.has_vertical,
-            "Forlorn Temple - Rocket Sunset Shop -> Forlorn Temple - Descent Shop":
-                lambda state: self.has_dart(state) and (self.can_dboost(state) or self.has_wingsuit(state)),
-            "Forlorn Temple - Saw Gauntlet Shop -> Forlorn Temple - Demon King Shop":
-                self.has_vertical,
-            "Forlorn Temple - Demon King Shop -> Forlorn Temple - Saw Gauntlet Shop":
-                self.has_vertical,
-            # Howling Grotto
-            "Howling Grotto - Portal -> Howling Grotto - Crushing Pits Shop":
-                self.has_wingsuit,
-            "Howling Grotto - Wingsuit Shop -> Howling Grotto - Left":
-                self.has_wingsuit,
-            "Howling Grotto - Wingsuit Shop -> Howling Grotto - Lost Woods Checkpoint":
-                self.has_wingsuit,
-            "Howling Grotto - Lost Woods Checkpoint -> Howling Grotto - Bottom":
-                lambda state: state.has("Seashell", self.player),
-            "Howling Grotto - Crushing Pits Shop -> Howling Grotto - Portal":
-                lambda state: self.has_wingsuit(state) or self.can_dboost(state),
-            "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Emerald Golem Shop":
-                self.has_wingsuit,
-            "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Crushing Pits Shop":
-                lambda state: (self.has_wingsuit(state) or self.can_dboost(
-                    state
-                ) or self.can_destroy_projectiles(state))
-                              and state.multiworld.get_region(
-                    "Howling Grotto - Emerald Golem Shop", self.player
-                ).can_reach(state),
-            "Howling Grotto - Emerald Golem Shop -> Howling Grotto - Right":
-                self.has_wingsuit,
-            # Searing Crags
-            "Searing Crags - Rope Dart Shop -> Searing Crags - Triple Ball Spinner Checkpoint":
-                self.has_vertical,
-            "Searing Crags - Portal -> Searing Crags - Right":
-                self.has_tabi,
-            "Searing Crags - Portal -> Searing Crags - Before Final Climb Shop":
-                self.has_wingsuit,
-            "Searing Crags - Portal -> Searing Crags - Colossuses Shop":
-                self.has_wingsuit,
-            "Searing Crags - Bottom -> Searing Crags - Portal":
-                self.has_wingsuit,
-            "Searing Crags - Right -> Searing Crags - Portal":
-                lambda state: self.has_tabi(state) and self.has_wingsuit(state),
-            "Searing Crags - Colossuses Shop -> Searing Crags - Key of Strength Shop":
-                lambda state: state.has("Power Thistle", self.player)
-                              and (self.has_dart(state)
-                                   or (self.has_wingsuit(state)
-                                       and self.can_destroy_projectiles(state))),
-            "Searing Crags - Falling Rocks Shop -> Searing Crags - Searing Mega Shard Shop":
-                self.has_dart,
-            "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Before Final Climb Shop":
-                lambda state: self.has_dart(state) or self.can_destroy_projectiles(state),
-            "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Falling Rocks Shop":
-                self.has_dart,
-            "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Key of Strength Shop":
-                self.false,
-            "Searing Crags - Before Final Climb Shop -> Searing Crags - Colossuses Shop":
-                self.has_dart,
-            # Glacial Peak
-            "Glacial Peak - Portal -> Glacial Peak - Tower Entrance Shop":
-                self.has_vertical,
-            "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
-                lambda state: state.has("Magic Firefly", self.player)
-                              and state.multiworld.get_location("Quillshroom Marsh - Queen of Quills", self.player)
-                              .can_reach(state),
-            "Glacial Peak - Tower Entrance Shop -> Glacial Peak - Top":
-                lambda state: state.has("Ruxxtin's Amulet", self.player),
-            "Glacial Peak - Projectile Spike Pit Checkpoint -> Glacial Peak - Left":
-                lambda state: self.has_dart(state) or (self.can_dboost(state) and self.has_wingsuit(state)),
-            # Tower of Time
-            "Tower of Time - Left -> Tower of Time - Final Chance Shop":
-                self.has_dart,
-            "Tower of Time - Second Checkpoint -> Tower of Time - Third Checkpoint":
-                lambda state: self.has_wingsuit(state) and (self.has_dart(state) or self.can_dboost(state)),
-            "Tower of Time - Third Checkpoint -> Tower of Time - Fourth Checkpoint":
-                lambda state: self.has_wingsuit(state) or self.can_dboost(state),
-            "Tower of Time - Fourth Checkpoint -> Tower of Time - Fifth Checkpoint":
-                lambda state: self.has_wingsuit(state) and self.has_dart(state),
-            "Tower of Time - Fifth Checkpoint -> Tower of Time - Sixth Checkpoint":
-                self.has_wingsuit,
-            # Cloud Ruins
-            "Cloud Ruins - Cloud Entrance Shop -> Cloud Ruins - Spike Float Checkpoint":
-                self.has_wingsuit,
-            "Cloud Ruins - Spike Float Checkpoint -> Cloud Ruins - Cloud Entrance Shop":
-                lambda state: self.has_vertical(state) or self.can_dboost(state),
-            "Cloud Ruins - Spike Float Checkpoint -> Cloud Ruins - Pillar Glide Shop":
-                lambda state: self.has_vertical(state) or self.can_dboost(state),
-            "Cloud Ruins - Pillar Glide Shop -> Cloud Ruins - Spike Float Checkpoint":
-                lambda state: self.has_vertical(state) and self.can_double_dboost(state),
-            "Cloud Ruins - Pillar Glide Shop -> Cloud Ruins - Ghost Pit Checkpoint":
-                lambda state: self.has_dart(state) and self.has_wingsuit(state),
-            "Cloud Ruins - Pillar Glide Shop -> Cloud Ruins - Crushers' Descent Shop":
-                lambda state: self.has_wingsuit(state) and (self.has_dart(state) or self.can_dboost(state)),
-            "Cloud Ruins - Toothbrush Alley Checkpoint -> Cloud Ruins - Seeing Spikes Shop":
-                self.has_vertical,
-            "Cloud Ruins - Seeing Spikes Shop -> Cloud Ruins - Sliding Spikes Shop":
-                self.has_wingsuit,
-            "Cloud Ruins - Sliding Spikes Shop -> Cloud Ruins - Seeing Spikes Shop":
-                self.has_wingsuit,
-            "Cloud Ruins - Sliding Spikes Shop -> Cloud Ruins - Saw Pit Checkpoint":
-                self.has_vertical,
-            "Cloud Ruins - Final Flight Shop -> Cloud Ruins - Manfred's Shop":
-                lambda state: self.has_wingsuit(state) and self.has_dart(state),
-            "Cloud Ruins - Manfred's Shop -> Cloud Ruins - Final Flight Shop":
-                lambda state: self.has_wingsuit(state) and self.can_dboost(state),
-            # Underworld
-            "Underworld - Left -> Underworld - Left Shop":
-                self.has_tabi,
-            "Underworld - Left Shop -> Underworld - Left":
-                self.has_tabi,
-            "Underworld - Hot Dip Checkpoint -> Underworld - Lava Run Checkpoint":
-                self.has_tabi,
-            "Underworld - Fireball Wave Shop -> Underworld - Long Climb Shop":
-                lambda state: self.can_destroy_projectiles(state) or self.has_tabi(state) or self.has_vertical(state),
-            "Underworld - Long Climb Shop -> Underworld - Hot Tub Checkpoint":
-                lambda state: self.has_tabi(state)
-                              and (self.can_destroy_projectiles(state)
-                                   or self.has_wingsuit(state))
-                              or (self.has_wingsuit(state)
-                                  and (self.has_dart(state)
-                                       or self.can_dboost(state)
-                                       or self.can_destroy_projectiles(state))),
-            "Underworld - Hot Tub Checkpoint -> Underworld - Long Climb Shop":
-                lambda state: self.has_tabi(state)
-                              or self.can_destroy_projectiles(state)
-                              or (self.has_dart(state) and self.has_wingsuit(state)),
-            # Dark Cave
-            "Dark Cave - Right -> Dark Cave - Left":
-                lambda state: state.has("Candle", self.player) and self.has_dart(state),
-            # Riviere Turquoise
-            "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
-                lambda state: self.has_dart(state) or (
-                            self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
-            "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
-                lambda state: self.has_dart(state) and self.can_dboost(state),
-            "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
-                lambda state: False,
-            # Elemental Skylands
-            "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Seal Checkpoint":
-                self.has_wingsuit,
-            "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
-                self.has_wingsuit,
-            # Sunken Shrine
-            "Sunken Shrine - Portal -> Sunken Shrine - Sun Path Shop":
-                self.has_tabi,
-            "Sunken Shrine - Portal -> Sunken Shrine - Moon Path Shop":
-                self.has_tabi,
-            "Sunken Shrine - Moon Path Shop -> Sunken Shrine - Waterfall Paradise Checkpoint":
-                self.has_tabi,
-            "Sunken Shrine - Waterfall Paradise Checkpoint -> Sunken Shrine - Moon Path Shop":
-                self.has_tabi,
-            "Sunken Shrine - Tabi Gauntlet Shop -> Sunken Shrine - Sun Path Shop":
-                lambda state: self.can_dboost(state) or self.has_dart(state),
-        }
+        self.connection_rules = defaultdict(True_,
+                                            **{
+                                                # from ToTHQ
+                                                "Artificer's Portal":
+                                                    Has("Demon King Crown"),
+                                                "Shrink Down":
+                                                    HasAll(*NOTES),
+                                                # the shop
+                                                "Money Sink":
+                                                    Has("Money Wrench") & self.can_shop,
+                                                # Autumn Hills
+                                                "Autumn Hills - Portal -> Autumn Hills - Dimension Climb Shop":
+                                                    self.has_wingsuit & self.has_dart,
+                                                "Autumn Hills - Dimension Climb Shop -> Autumn Hills - Portal":
+                                                    self.has_vertical,
+                                                "Autumn Hills - Climbing Claws Shop -> Autumn Hills - Hope Path Shop":
+                                                    self.has_dart,
+                                                "Autumn Hills - Climbing Claws Shop -> Autumn Hills - Key of Hope Checkpoint":
+                                                    self.false,  # hard logic only
+                                                "Autumn Hills - Hope Path Shop -> Autumn Hills - Hope Latch Checkpoint":
+                                                    self.has_dart,
+                                                "Autumn Hills - Hope Path Shop -> Autumn Hills - Climbing Claws Shop":
+                                                    self.has_dart & self.can_dboost,
+                                                "Autumn Hills - Hope Path Shop -> Autumn Hills - Lakeside Checkpoint":
+                                                    self.has_dart & self.can_dboost,
+                                                "Autumn Hills - Hope Latch Checkpoint -> Autumn Hills - Hope Path Shop":
+                                                    self.can_dboost,
+                                                "Autumn Hills - Hope Latch Checkpoint -> Autumn Hills - Key of Hope Checkpoint":
+                                                    self.has_dart & self.has_wingsuit,
+                                                # Forlorn Temple
+                                                "Forlorn Temple - Outside Shop -> Forlorn Temple - Entrance Shop":
+                                                    HasAll(*PHOBEKINS),
+                                                "Forlorn Temple - Entrance Shop -> Forlorn Temple - Outside Shop":
+                                                    HasAll(*PHOBEKINS),
+                                                "Forlorn Temple - Entrance Shop -> Forlorn Temple - Sunny Day Checkpoint":
+                                                    self.has_vertical & self.can_dboost,
+                                                "Forlorn Temple - Sunny Day Checkpoint -> Forlorn Temple - Rocket Maze Checkpoint":
+                                                    self.has_vertical,
+                                                "Forlorn Temple - Rocket Sunset Shop -> Forlorn Temple - Descent Shop":
+                                                    self.has_dart & (self.can_dboost | self.has_wingsuit),
+                                                "Forlorn Temple - Saw Gauntlet Shop -> Forlorn Temple - Demon King Shop":
+                                                    self.has_vertical,
+                                                "Forlorn Temple - Demon King Shop -> Forlorn Temple - Saw Gauntlet Shop":
+                                                    self.has_vertical,
+                                                # Howling Grotto
+                                                "Howling Grotto - Portal -> Howling Grotto - Crushing Pits Shop":
+                                                    self.has_wingsuit,
+                                                "Howling Grotto - Wingsuit Shop -> Howling Grotto - Left":
+                                                    self.has_wingsuit,
+                                                "Howling Grotto - Wingsuit Shop -> Howling Grotto - Lost Woods Checkpoint":
+                                                    self.has_wingsuit,
+                                                "Howling Grotto - Lost Woods Checkpoint -> Howling Grotto - Bottom":
+                                                    Has("Seashell"),
+                                                "Howling Grotto - Crushing Pits Shop -> Howling Grotto - Portal":
+                                                    self.has_wingsuit | self.can_dboost,
+                                                "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Emerald Golem Shop":
+                                                    self.has_wingsuit,
+                                                "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Crushing Pits Shop":
+                                                    (self.has_wingsuit | self.can_dboost | self.can_destroy_projectiles)
+                                                    & CanReachRegion("Howling Grotto - Emerald Golem Shop"),
+                                                "Howling Grotto - Emerald Golem Shop -> Howling Grotto - Right":
+                                                    self.has_wingsuit,
+                                                # Searing Crags
+                                                "Searing Crags - Rope Dart Shop -> Searing Crags - Triple Ball Spinner Checkpoint":
+                                                    self.has_vertical,
+                                                "Searing Crags - Portal -> Searing Crags - Right":
+                                                    self.has_tabi,
+                                                "Searing Crags - Portal -> Searing Crags - Before Final Climb Shop":
+                                                    self.has_wingsuit,
+                                                "Searing Crags - Portal -> Searing Crags - Colossuses Shop":
+                                                    self.has_wingsuit,
+                                                "Searing Crags - Bottom -> Searing Crags - Portal":
+                                                    self.has_wingsuit,
+                                                "Searing Crags - Right -> Searing Crags - Portal":
+                                                    self.has_tabi & self.has_wingsuit,
+                                                "Searing Crags - Colossuses Shop -> Searing Crags - Key of Strength Shop":
+                                                    Has("Power Thistle") & (self.has_dart | (self.has_wingsuit & self.can_destroy_projectiles)),
+                                                "Searing Crags - Falling Rocks Shop -> Searing Crags - Searing Mega Shard Shop":
+                                                    self.has_dart,
+                                                "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Before Final Climb Shop":
+                                                    self.has_dart | self.can_destroy_projectiles,
+                                                "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Falling Rocks Shop":
+                                                    self.has_dart,
+                                                "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Key of Strength Shop":
+                                                    self.false,
+                                                "Searing Crags - Before Final Climb Shop -> Searing Crags - Colossuses Shop":
+                                                    self.has_dart,
+                                                # Glacial Peak
+                                                "Glacial Peak - Portal -> Glacial Peak - Tower Entrance Shop":
+                                                    self.has_vertical,
+                                                "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
+                                                    Has("Magic Firefly") & CanReachLocation("Quillshroom Marsh - Queen of Quills"),
+                                                "Glacial Peak - Tower Entrance Shop -> Glacial Peak - Top":
+                                                    Has("Ruxxtin's Amulet"),
+                                                "Glacial Peak - Projectile Spike Pit Checkpoint -> Glacial Peak - Left":
+                                                    self.has_dart | (self.can_dboost & self.has_wingsuit),
+                                                # Tower of Time
+                                                "Tower of Time - Left -> Tower of Time - Final Chance Shop":
+                                                    self.has_dart,
+                                                "Tower of Time - Second Checkpoint -> Tower of Time - Third Checkpoint":
+                                                    self.has_wingsuit & (self.has_dart | self.can_dboost),
+                                                "Tower of Time - Third Checkpoint -> Tower of Time - Fourth Checkpoint":
+                                                    self.has_wingsuit | self.can_dboost,
+                                                "Tower of Time - Fourth Checkpoint -> Tower of Time - Fifth Checkpoint":
+                                                    self.has_wingsuit & self.has_dart,
+                                                "Tower of Time - Fifth Checkpoint -> Tower of Time - Sixth Checkpoint":
+                                                    self.has_wingsuit,
+                                                # Cloud Ruins
+                                                "Cloud Ruins - Cloud Entrance Shop -> Cloud Ruins - Spike Float Checkpoint":
+                                                    self.has_wingsuit,
+                                                "Cloud Ruins - Spike Float Checkpoint -> Cloud Ruins - Cloud Entrance Shop":
+                                                    self.has_vertical | self.can_dboost,
+                                                "Cloud Ruins - Spike Float Checkpoint -> Cloud Ruins - Pillar Glide Shop":
+                                                    self.has_vertical | self.can_dboost,
+                                                "Cloud Ruins - Pillar Glide Shop -> Cloud Ruins - Spike Float Checkpoint":
+                                                    self.has_vertical & self.can_double_dboost,
+                                                "Cloud Ruins - Pillar Glide Shop -> Cloud Ruins - Ghost Pit Checkpoint":
+                                                    self.has_dart & self.has_wingsuit,
+                                                "Cloud Ruins - Pillar Glide Shop -> Cloud Ruins - Crushers' Descent Shop":
+                                                    self.has_wingsuit & (self.has_dart | self.can_dboost),
+                                                "Cloud Ruins - Toothbrush Alley Checkpoint -> Cloud Ruins - Seeing Spikes Shop":
+                                                    self.has_vertical,
+                                                "Cloud Ruins - Seeing Spikes Shop -> Cloud Ruins - Sliding Spikes Shop":
+                                                    self.has_wingsuit,
+                                                "Cloud Ruins - Sliding Spikes Shop -> Cloud Ruins - Seeing Spikes Shop":
+                                                    self.has_wingsuit,
+                                                "Cloud Ruins - Sliding Spikes Shop -> Cloud Ruins - Saw Pit Checkpoint":
+                                                    self.has_vertical,
+                                                "Cloud Ruins - Final Flight Shop -> Cloud Ruins - Manfred's Shop":
+                                                    self.has_wingsuit & self.has_dart,
+                                                "Cloud Ruins - Manfred's Shop -> Cloud Ruins - Final Flight Shop":
+                                                    self.has_wingsuit & self.can_dboost,
+                                                # Underworld
+                                                "Underworld - Left -> Underworld - Left Shop":
+                                                    self.has_tabi,
+                                                "Underworld - Left Shop -> Underworld - Left":
+                                                    self.has_tabi,
+                                                "Underworld - Hot Dip Checkpoint -> Underworld - Lava Run Checkpoint":
+                                                    self.has_tabi,
+                                                "Underworld - Fireball Wave Shop -> Underworld - Long Climb Shop":
+                                                    self.can_destroy_projectiles | self.has_tabi | self.has_vertical,
+                                                "Underworld - Long Climb Shop -> Underworld - Hot Tub Checkpoint":
+                                                    self.has_tabi
+                                                    & (self.can_destroy_projectiles
+                                                       | self.has_wingsuit)
+                                                    | (self.has_wingsuit
+                                                       & (self.has_dart
+                                                          | self.can_dboost
+                                                          | self.can_destroy_projectiles)),
+                                                "Underworld - Hot Tub Checkpoint -> Underworld - Long Climb Shop":
+                                                    self.has_tabi
+                                                    | self.can_destroy_projectiles
+                                                    | (self.has_dart & self.has_wingsuit),
+                                                # Dark Cave
+                                                "Dark Cave - Right -> Dark Cave - Left":
+                                                    Has("Candle") & self.has_dart,
+                                                # Riviere Turquoise
+                                                "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
+                                                    self.has_dart | (self.has_wingsuit & self.can_destroy_projectiles),
+                                                "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
+                                                    self.has_dart & self.can_dboost,
+                                                "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
+                                                    self.false,
+                                                # Elemental Skylands
+                                                "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Seal Checkpoint":
+                                                    self.has_wingsuit,
+                                                "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
+                                                    self.has_wingsuit,
+                                                # Sunken Shrine
+                                                "Sunken Shrine - Portal -> Sunken Shrine - Sun Path Shop":
+                                                    self.has_tabi,
+                                                "Sunken Shrine - Portal -> Sunken Shrine - Moon Path Shop":
+                                                    self.has_tabi,
+                                                "Sunken Shrine - Moon Path Shop -> Sunken Shrine - Waterfall Paradise Checkpoint":
+                                                    self.has_tabi,
+                                                "Sunken Shrine - Waterfall Paradise Checkpoint -> Sunken Shrine - Moon Path Shop":
+                                                    self.has_tabi,
+                                                "Sunken Shrine - Tabi Gauntlet Shop -> Sunken Shrine - Sun Path Shop":
+                                                    self.can_dboost | self.has_dart,
+                                            })
 
         self.location_rules = {
             # hq
@@ -226,8 +220,7 @@ class MessengerRules:
             "Ninja Village Seal - Tree House":
                 self.has_dart,
             "Ninja Village - Candle":
-                lambda state: state.multiworld.get_location("Searing Crags - Astral Tea Leaves", self.player).can_reach(
-                    state),
+                CanReachLocation("Searing Crags - Astral Tea Leaves"),
             # autumn hills
             "Autumn Hills Seal - Spike Ball Darts":
                 self.is_aerobatic,
@@ -240,21 +233,21 @@ class MessengerRules:
                 self.has_vertical,
             # bamboo creek
             "Bamboo Creek - Claustro":
-                lambda state: self.has_wingsuit(state) and (self.has_dart(state) or self.can_dboost(state)),
+                self.has_wingsuit & (self.has_dart | self.can_dboost),
             "Above Entrance Mega Shard":
-                lambda state: self.has_dart(state) or self.can_dboost(state),
+                self.has_dart | self.can_dboost,
             "Bamboo Creek Seal - Spike Ball Pits":
                 self.has_wingsuit,
             # howling grotto
             "Howling Grotto Seal - Windy Saws and Balls":
                 self.has_wingsuit,
             "Howling Grotto Seal - Crushing Pits":
-                lambda state: self.has_wingsuit(state) and self.has_dart(state),
+                self.has_wingsuit & self.has_dart,
             "Howling Grotto - Emerald Golem":
                 self.has_wingsuit,
             # searing crags
             "Searing Crags - Astral Tea Leaves":
-                lambda state: state.multiworld.get_location("Ninja Village - Astral Seed", self.player).can_reach(state),
+                CanReachLocation("Ninja Village - Astral Seed"),
             "Searing Crags Seal - Triple Ball Spinner":
                 self.can_dboost,
             "Searing Crags - Pyro":
@@ -268,10 +261,11 @@ class MessengerRules:
             "Tower of Time Seal - Time Waster":
                 self.has_dart,
             # corrupted future
-            "Corrupted Future - Key of Courage": lambda state: state.has("Magic Firefly", self.player),
+            "Corrupted Future - Key of Courage":
+                Has("Magic Firefly"),
             # cloud ruins
             "Time Warp Mega Shard":
-                lambda state: self.has_vertical(state) or self.can_dboost(state),
+                self.has_vertical | self.can_dboost,
             "Cloud Ruins Seal - Ghost Pit":
                 self.has_vertical,
             "Cloud Ruins Seal - Toothbrush Alley":
@@ -286,10 +280,10 @@ class MessengerRules:
             "Underworld Seal - Rising Fanta":
                 self.has_dart,
             "Hot Tub Mega Shard":
-                lambda state: self.has_tabi(state) or self.has_dart(state),
+                self.has_tabi | self.has_dart,
             # sunken shrine
             "Sunken Shrine - Key of Love":
-                lambda state: state.has_all({"Sun Crest", "Moon Crest"}, self.player),
+                HasAll("Sun Crest", "Moon Crest"),
             "Sunken Shrine Seal - Waterfall Paradise":
                 self.has_tabi,
             "Sunken Shrine Seal - Tabi Gauntlet":
@@ -300,16 +294,16 @@ class MessengerRules:
             "Riviere Turquoise Seal - Bounces and Balls":
                 self.can_dboost,
             "Riviere Turquoise Seal - Launch of Faith":
-                lambda state: self.has_vertical(state),
+                self.has_vertical,
             # elemental skylands
             "Elemental Skylands - Key of Symbiosis":
                 self.has_dart,
             "Elemental Skylands Seal - Air":
                 self.has_wingsuit,
             "Elemental Skylands Seal - Water":
-                lambda state: self.has_dart(state) and state.has("Currents Master", self.player),
+                self.has_dart & Has("Currents Master"),
             "Elemental Skylands Seal - Fire":
-                lambda state: self.has_dart(state) and self.can_destroy_projectiles(state) and self.is_aerobatic(state),
+                self.has_dart & self.can_destroy_projectiles & self.is_aerobatic,
             "Earth Mega Shard":
                 self.has_dart,
             "Water Mega Shard":
@@ -317,59 +311,70 @@ class MessengerRules:
         }
 
         if self.required_seals:
-            self.connection_rules["Shrink Down"] = self.has_enough_seals
+            self.connection_rules["Shrink Down"] &= self.has_enough_seals
 
-    def has_wingsuit(self, state: CollectionState) -> bool:
-        return state.has("Wingsuit", self.player)
+        if self.world.options.music_box and not self.world.options.limited_movement:
+            self.connection_rules["Shrink Down"] &= self.has_dart
 
-    def has_dart(self, state: CollectionState) -> bool:
-        return state.has("Rope Dart", self.player)
+    @cached_property
+    def has_wingsuit(self) -> "Rule[MessengerWorld]":
+        return Has("Wingsuit")
 
-    def has_tabi(self, state: CollectionState) -> bool:
-        return state.has("Lightfoot Tabi", self.player)
+    @cached_property
+    def has_dart(self) -> "Rule[MessengerWorld]":
+        return Has("Rope Dart")
 
-    def has_vertical(self, state: CollectionState) -> bool:
-        return self.has_wingsuit(state) or self.has_dart(state)
+    @cached_property
+    def has_tabi(self) -> "Rule[MessengerWorld]":
+        return Has("Lightfoot Tabi")
 
-    def has_enough_seals(self, state: CollectionState) -> bool:
-        return state.has("Power Seal", self.player, self.required_seals)
+    @cached_property
+    def has_vertical(self) -> "Rule[MessengerWorld]":
+        return self.has_wingsuit | self.has_dart
 
-    def can_destroy_projectiles(self, state: CollectionState) -> bool:
-        return state.has("Strike of the Ninja", self.player)
+    @cached_property
+    def has_enough_seals(self) -> "Rule[MessengerWorld]":
+        return Has("Power Seal", self.required_seals)
 
-    def can_dboost(self, state: CollectionState) -> bool:
-        return state.has_any({"Path of Resilience", "Meditation"}, self.player) and \
-            state.has("Second Wind", self.player)
+    @cached_property
+    def can_destroy_projectiles(self) -> "Rule[MessengerWorld]":
+        return Has("Strike of the Ninja")
 
-    def can_double_dboost(self, state: CollectionState) -> bool:
-        return state.has_all({"Path of Resilience", "Meditation", "Second Wind"}, self.player)
+    @cached_property
+    def can_dboost(self) -> "Rule[MessengerWorld]":
+        return HasAny("Path of Resilience", "Meditation") & Has("Second Wind")
 
-    def is_aerobatic(self, state: CollectionState) -> bool:
-        return self.has_wingsuit(state) and state.has("Aerobatics Warrior", self.player)
+    @cached_property
+    def can_double_dboost(self) -> "Rule[MessengerWorld]":
+        return HasAll("Path of Resilience", "Meditation", "Second Wind")
 
-    def true(self, state: CollectionState) -> bool:
-        """I know this is stupid, but it's easier to read in the dicts."""
-        return True
+    @cached_property
+    def is_aerobatic(self) -> "Rule[MessengerWorld]":
+        return self.has_wingsuit & Has("Aerobatics Warrior")
 
-    def false(self, state: CollectionState) -> bool:
-        """It's a bit easier to just always create the connections that are only possible in hard or higher logic."""
-        return False
+    @cached_property
+    def true(self) -> "Rule[MessengerWorld]":
+        return True_()
 
-    def can_shop(self, state: CollectionState) -> bool:
-        return state.has("Shards", self.player, self.maximum_price)
+    @cached_property
+    def false(self) -> "Rule[MessengerWorld]":
+        return False_()
+
+    @cached_property
+    def can_shop(self) -> "Rule[MessengerWorld]":
+        return Has("Shards", self.maximum_price)
 
     def set_messenger_rules(self) -> None:
         multiworld = self.world.multiworld
 
         for entrance_name, rule in self.connection_rules.items():
             entrance = multiworld.get_entrance(entrance_name, self.player)
-            entrance.access_rule = rule
+            entrance.access_rule = rule.resolve(self.world)
+
         for loc in multiworld.get_locations(self.player):
             if loc.name in self.location_rules:
-                loc.access_rule = self.location_rules[loc.name]
+                loc.access_rule = self.location_rules[loc.name].resolve(self.world)
 
-        if self.world.options.music_box and not self.world.options.limited_movement:
-            add_rule(multiworld.get_entrance("Shrink Down", self.player), self.has_dart)
         multiworld.completion_condition[self.player] = lambda state: state.has("Do the Thing!", self.player)
         if self.world.options.accessibility:  # not locations accessibility
             set_self_locking_items(self.world)
@@ -488,7 +493,7 @@ class MessengerHardRules(MessengerRules):
 
     def can_dboost(self, state: CollectionState) -> bool:
         return state.has("Second Wind", self.player)  # who really needs meditation
-    
+
     def can_destroy_projectiles(self, state: CollectionState) -> bool:
         return super().can_destroy_projectiles(state) or self.has_windmill(state)
 
