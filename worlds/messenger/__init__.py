@@ -161,6 +161,7 @@ class MessengerWorld(CachedRuleBuilderWorld):
         "Time Shard (300)": "Time Shard",
         "Time Shard (500)": "Time Shard"
     }
+    rule_caching_enabled = False
 
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
