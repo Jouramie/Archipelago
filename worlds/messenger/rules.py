@@ -3,21 +3,24 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 from BaseClasses import CollectionState
-from rule_builder.rules import Rule, Has, HasAny, HasAll, True_, False_, CanReachRegion, CanReachLocation
 from worlds.generic.Rules import allow_self_locking_items
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
+from ..stardew_valley.stardew_rule import true_, True_, false_, StardewRule, Received, And, Or, Reach
 
 if TYPE_CHECKING:
     from . import MessengerWorld
 
 
 class MessengerRules:
+    true_ = true_
+    false_ = false_
+
     player: int
     world: "MessengerWorld"
-    connection_rules: "dict[str, Rule[MessengerWorld]]"
-    region_rules: "dict[str, Rule[MessengerWorld]]"
-    location_rules: "dict[str, Rule[MessengerWorld]]"
+    connection_rules: "dict[str, StardewRule]"
+    region_rules: "dict[str, StardewRule]"
+    location_rules: "dict[str, StardewRule]"
     maximum_price: int
     required_seals: int
 
@@ -36,12 +39,12 @@ class MessengerRules:
                                             **{
                                                 # from ToTHQ
                                                 "Artificer's Portal":
-                                                    Has("Demon King Crown"),
+                                                    self.received("Demon King Crown"),
                                                 "Shrink Down":
-                                                    HasAll(*NOTES),
+                                                    self.received_all(*NOTES),
                                                 # the shop
                                                 "Money Sink":
-                                                    Has("Money Wrench") & self.can_shop,
+                                                    self.received("Money Wrench") & self.can_shop,
                                                 # Autumn Hills
                                                 "Autumn Hills - Portal -> Autumn Hills - Dimension Climb Shop":
                                                     self.has_wingsuit & self.has_dart,
@@ -50,7 +53,7 @@ class MessengerRules:
                                                 "Autumn Hills - Climbing Claws Shop -> Autumn Hills - Hope Path Shop":
                                                     self.has_dart,
                                                 "Autumn Hills - Climbing Claws Shop -> Autumn Hills - Key of Hope Checkpoint":
-                                                    self.false,  # hard logic only
+                                                    self.false_,  # hard logic only
                                                 "Autumn Hills - Hope Path Shop -> Autumn Hills - Hope Latch Checkpoint":
                                                     self.has_dart,
                                                 "Autumn Hills - Hope Path Shop -> Autumn Hills - Climbing Claws Shop":
@@ -63,9 +66,9 @@ class MessengerRules:
                                                     self.has_dart & self.has_wingsuit,
                                                 # Forlorn Temple
                                                 "Forlorn Temple - Outside Shop -> Forlorn Temple - Entrance Shop":
-                                                    HasAll(*PHOBEKINS),
+                                                    self.received_all(*PHOBEKINS),
                                                 "Forlorn Temple - Entrance Shop -> Forlorn Temple - Outside Shop":
-                                                    HasAll(*PHOBEKINS),
+                                                    self.received_all(*PHOBEKINS),
                                                 "Forlorn Temple - Entrance Shop -> Forlorn Temple - Sunny Day Checkpoint":
                                                     self.has_vertical & self.can_dboost,
                                                 "Forlorn Temple - Sunny Day Checkpoint -> Forlorn Temple - Rocket Maze Checkpoint":
@@ -84,14 +87,14 @@ class MessengerRules:
                                                 "Howling Grotto - Wingsuit Shop -> Howling Grotto - Lost Woods Checkpoint":
                                                     self.has_wingsuit,
                                                 "Howling Grotto - Lost Woods Checkpoint -> Howling Grotto - Bottom":
-                                                    Has("Seashell"),
+                                                    self.received("Seashell"),
                                                 "Howling Grotto - Crushing Pits Shop -> Howling Grotto - Portal":
                                                     self.has_wingsuit | self.can_dboost,
                                                 "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Emerald Golem Shop":
                                                     self.has_wingsuit,
                                                 "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Crushing Pits Shop":
                                                     (self.has_wingsuit | self.can_dboost | self.can_destroy_projectiles)
-                                                    & CanReachRegion("Howling Grotto - Emerald Golem Shop"),
+                                                    & self.can_reach("Howling Grotto - Emerald Golem Shop"),
                                                 "Howling Grotto - Emerald Golem Shop -> Howling Grotto - Right":
                                                     self.has_wingsuit,
                                                 # Searing Crags
@@ -108,7 +111,7 @@ class MessengerRules:
                                                 "Searing Crags - Right -> Searing Crags - Portal":
                                                     self.has_tabi & self.has_wingsuit,
                                                 "Searing Crags - Colossuses Shop -> Searing Crags - Key of Strength Shop":
-                                                    Has("Power Thistle") & (self.has_dart | (self.has_wingsuit & self.can_destroy_projectiles)),
+                                                    self.received("Power Thistle") & (self.has_dart | (self.has_wingsuit & self.can_destroy_projectiles)),
                                                 "Searing Crags - Falling Rocks Shop -> Searing Crags - Searing Mega Shard Shop":
                                                     self.has_dart,
                                                 "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Before Final Climb Shop":
@@ -116,16 +119,16 @@ class MessengerRules:
                                                 "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Falling Rocks Shop":
                                                     self.has_dart,
                                                 "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Key of Strength Shop":
-                                                    self.false,
+                                                    self.false_,
                                                 "Searing Crags - Before Final Climb Shop -> Searing Crags - Colossuses Shop":
                                                     self.has_dart,
                                                 # Glacial Peak
                                                 "Glacial Peak - Portal -> Glacial Peak - Tower Entrance Shop":
                                                     self.has_vertical,
                                                 "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
-                                                    Has("Magic Firefly") & CanReachLocation("Quillshroom Marsh - Queen of Quills"),
+                                                    self.received("Magic Firefly") & self.can_reach_location("Quillshroom Marsh - Queen of Quills"),
                                                 "Glacial Peak - Tower Entrance Shop -> Glacial Peak - Top":
-                                                    Has("Ruxxtin's Amulet"),
+                                                    self.received("Ruxxtin's Amulet"),
                                                 "Glacial Peak - Projectile Spike Pit Checkpoint -> Glacial Peak - Left":
                                                     self.has_dart | (self.can_dboost & self.has_wingsuit),
                                                 # Tower of Time
@@ -187,14 +190,14 @@ class MessengerRules:
                                                     | (self.has_dart & self.has_wingsuit),
                                                 # Dark Cave
                                                 "Dark Cave - Right -> Dark Cave - Left":
-                                                    Has("Candle") & self.has_dart,
+                                                    self.received("Candle") & self.has_dart,
                                                 # Riviere Turquoise
                                                 "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                                                     self.has_dart | (self.has_wingsuit & self.can_destroy_projectiles),
                                                 "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                                                     self.has_dart & self.can_dboost,
                                                 "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
-                                                    self.false,
+                                                    self.false_,
                                                 # Elemental Skylands
                                                 "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Seal Checkpoint":
                                                     self.has_wingsuit,
@@ -220,7 +223,7 @@ class MessengerRules:
             "Ninja Village Seal - Tree House":
                 self.has_dart,
             "Ninja Village - Candle":
-                CanReachLocation("Searing Crags - Astral Tea Leaves"),
+                self.can_reach_location("Searing Crags - Astral Tea Leaves"),
             # autumn hills
             "Autumn Hills Seal - Spike Ball Darts":
                 self.is_aerobatic,
@@ -247,7 +250,7 @@ class MessengerRules:
                 self.has_wingsuit,
             # searing crags
             "Searing Crags - Astral Tea Leaves":
-                CanReachLocation("Ninja Village - Astral Seed"),
+                self.can_reach_location("Ninja Village - Astral Seed"),
             "Searing Crags Seal - Triple Ball Spinner":
                 self.can_dboost,
             "Searing Crags - Pyro":
@@ -262,7 +265,7 @@ class MessengerRules:
                 self.has_dart,
             # corrupted future
             "Corrupted Future - Key of Courage":
-                Has("Magic Firefly"),
+                self.received("Magic Firefly"),
             # cloud ruins
             "Time Warp Mega Shard":
                 self.has_vertical | self.can_dboost,
@@ -283,7 +286,7 @@ class MessengerRules:
                 self.has_tabi | self.has_dart,
             # sunken shrine
             "Sunken Shrine - Key of Love":
-                HasAll("Sun Crest", "Moon Crest"),
+                self.received_all("Sun Crest", "Moon Crest"),
             "Sunken Shrine Seal - Waterfall Paradise":
                 self.has_tabi,
             "Sunken Shrine Seal - Tabi Gauntlet":
@@ -301,7 +304,7 @@ class MessengerRules:
             "Elemental Skylands Seal - Air":
                 self.has_wingsuit,
             "Elemental Skylands Seal - Water":
-                self.has_dart & Has("Currents Master"),
+                self.has_dart & self.received("Currents Master"),
             "Elemental Skylands Seal - Fire":
                 self.has_dart & self.can_destroy_projectiles & self.is_aerobatic,
             "Earth Mega Shard":
@@ -316,64 +319,116 @@ class MessengerRules:
         if self.world.options.music_box and not self.world.options.limited_movement:
             self.connection_rules["Shrink Down"] &= self.has_dart
 
-    @cached_property
-    def has_wingsuit(self) -> "Rule[MessengerWorld]":
-        return Has("Wingsuit")
+    def received(self, item: str, count: int | None = 1) -> StardewRule:
+        assert count >= 0, "Can't receive a negative amount of item."
+
+        if count == 0:
+            return True_()
+
+        return Received(item, self.player, count)
+
+    def received_all(self, *items: str):
+        assert items, "Can't receive all of no items."
+
+        return self.and_(*(self.received(item) for item in items))
+
+    def received_any(self, *items: str):
+        assert items, "Can't receive any of no items."
+
+        return self.or_(*(self.received(item) for item in items))
+
+    @staticmethod
+    def and_(*rules: StardewRule, allow_empty: bool = False) -> StardewRule:
+        """
+        :param rules: The rules to combine
+        :param allow_empty: If True, return true_ when no rules are given. Otherwise, raise an error.
+        """
+        if not rules:
+            assert allow_empty, "Can't create a And conditions without rules"
+            return true_
+
+        if len(rules) == 1:
+            return rules[0]
+
+        return And(*rules)
+
+    @staticmethod
+    def or_(*rules: StardewRule, allow_empty: bool = False) -> StardewRule:
+        """
+          :param rules: The rules to combine
+          :param allow_empty: If True, return false_ when no rules are given. Otherwise, raise an error.
+          """
+        if not rules:
+            assert allow_empty, "Can't create a Or conditions without rules"
+            return false_
+
+        if len(rules) == 1:
+            return rules[0]
+
+        return Or(*rules)
 
     @cached_property
-    def has_dart(self) -> "Rule[MessengerWorld]":
-        return Has("Rope Dart")
+    def has_wingsuit(self) -> "StardewRule":
+        return self.received("Wingsuit")
 
     @cached_property
-    def has_tabi(self) -> "Rule[MessengerWorld]":
-        return Has("Lightfoot Tabi")
+    def has_dart(self) -> "StardewRule":
+        return self.received("Rope Dart")
 
     @cached_property
-    def has_vertical(self) -> "Rule[MessengerWorld]":
+    def has_tabi(self) -> "StardewRule":
+        return self.received("Lightfoot Tabi")
+
+    @cached_property
+    def has_vertical(self) -> "StardewRule":
         return self.has_wingsuit | self.has_dart
 
     @cached_property
-    def has_enough_seals(self) -> "Rule[MessengerWorld]":
-        return Has("Power Seal", self.required_seals)
+    def has_enough_seals(self) -> "StardewRule":
+        return self.received("Power Seal", self.required_seals)
 
     @cached_property
-    def can_destroy_projectiles(self) -> "Rule[MessengerWorld]":
-        return Has("Strike of the Ninja")
+    def can_destroy_projectiles(self) -> "StardewRule":
+        return self.received("Strike of the Ninja")
 
     @cached_property
-    def can_dboost(self) -> "Rule[MessengerWorld]":
-        return HasAny("Path of Resilience", "Meditation") & Has("Second Wind")
+    def can_dboost(self) -> "StardewRule":
+        return self.received_any("Path of Resilience", "Meditation") & self.received("Second Wind")
 
     @cached_property
-    def can_double_dboost(self) -> "Rule[MessengerWorld]":
-        return HasAll("Path of Resilience", "Meditation", "Second Wind")
+    def can_double_dboost(self) -> "StardewRule":
+        return self.received_all("Path of Resilience", "Meditation", "Second Wind")
 
     @cached_property
-    def is_aerobatic(self) -> "Rule[MessengerWorld]":
-        return self.has_wingsuit & Has("Aerobatics Warrior")
+    def is_aerobatic(self) -> "StardewRule":
+        return self.has_wingsuit & self.received("Aerobatics Warrior")
 
     @cached_property
-    def true(self) -> "Rule[MessengerWorld]":
-        return True_()
+    def can_shop(self) -> "StardewRule":
+        return self.received("Shards", self.maximum_price)
 
-    @cached_property
-    def false(self) -> "Rule[MessengerWorld]":
-        return False_()
+    def can_reach(self, region_name: str) -> StardewRule:
+        return Reach(region_name, "Region", self.player)
 
-    @cached_property
-    def can_shop(self) -> "Rule[MessengerWorld]":
-        return Has("Shards", self.maximum_price)
+    def can_reach_any(self, *region_names: str) -> StardewRule:
+        return self.or_(*(self.can_reach(spot) for spot in region_names))
+
+    def can_reach_all(self, *region_names: str) -> StardewRule:
+        return self.and_(*(self.can_reach(spot) for spot in region_names))
+
+    def can_reach_location(self, location_name: str) -> StardewRule:
+        return Reach(location_name, "Location", self.player)
 
     def set_messenger_rules(self) -> None:
         multiworld = self.world.multiworld
 
         for entrance_name, rule in self.connection_rules.items():
             entrance = multiworld.get_entrance(entrance_name, self.player)
-            entrance.access_rule = rule.resolve(self.world)
+            entrance.access_rule = rule
 
         for loc in multiworld.get_locations(self.player):
             if loc.name in self.location_rules:
-                loc.access_rule = self.location_rules[loc.name].resolve(self.world)
+                loc.access_rule = self.location_rules[loc.name]
 
         multiworld.completion_condition[self.player] = lambda state: state.has("Do the Thing!", self.player)
         if self.world.options.accessibility:  # not locations accessibility
@@ -390,14 +445,14 @@ class MessengerHardRules(MessengerRules):
                 "Autumn Hills - Portal -> Autumn Hills - Dimension Climb Shop":
                     self.has_dart,
                 "Autumn Hills - Climbing Claws Shop -> Autumn Hills - Key of Hope Checkpoint":
-                    self.true,  # super easy normal clip - also possible with moderately difficult cloud stepping
+                    self.true_,  # super easy normal clip - also possible with moderately difficult cloud stepping
                 # Howling Grotto
                 "Howling Grotto - Portal -> Howling Grotto - Crushing Pits Shop":
-                    self.true,
+                    self.true_,
                 "Howling Grotto - Lost Woods Checkpoint -> Howling Grotto - Bottom":
-                    self.true,  # just memorize the pattern :)
+                    self.true_,  # just memorize the pattern :)
                 "Howling Grotto - Crushing Pits Shop -> Howling Grotto - Portal":
-                    self.true,
+                    self.true_,
                 "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Emerald Golem Shop":
                     lambda state: self.has_wingsuit(state) or  # there's a very easy normal clip here but it's 16-bit only
                                   "Howling Grotto - Breezy Crushers Checkpoint" in self.world.spoiler_portal_mapping.values(),
@@ -414,7 +469,7 @@ class MessengerHardRules(MessengerRules):
                 "Searing Crags - Searing Mega Shard Shop -> Searing Crags - Key of Strength Shop":
                     lambda state: self.can_leash(state) or self.has_windmill(state),
                 "Searing Crags - Before Final Climb Shop -> Searing Crags - Colossuses Shop":
-                    self.true,
+                    self.true_,
                 # Glacial Peak
                 "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
                     lambda state: self.has_windmill(state) or
@@ -426,13 +481,13 @@ class MessengerHardRules(MessengerRules):
                     lambda state: self.has_vertical(state) or self.has_windmill(state),
                 # Cloud Ruins
                 "Cloud Ruins - Sliding Spikes Shop -> Cloud Ruins - Saw Pit Checkpoint":
-                    self.true,
+                    self.true_,
                 # Elemental Skylands
                 "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
-                    self.true,
+                    self.true_,
                 # Riviere Turquoise
                 "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
-                    self.true,
+                    self.true_,
                 "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                     self.can_dboost,
                 "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
