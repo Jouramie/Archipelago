@@ -8,6 +8,7 @@ from Utils import output_path
 from settings import FilePath, Group
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, icon_paths
+from rule_builder.cached_world import CachedRuleBuilderWorld
 from .client_setup import launch_game
 from .connections import CONNECTIONS, RANDOMIZED_CONNECTIONS, TRANSITIONS
 from .constants import ALL_ITEMS, ALWAYS_LOCATIONS, BOSS_LOCATIONS, FILLER, NOTES, PHOBEKINS, PROG_ITEMS, TRAPS, \
@@ -71,7 +72,7 @@ class MessengerWeb(WebWorld):
     option_groups = option_groups
 
 
-class MessengerWorld(World):
+class MessengerWorld(CachedRuleBuilderWorld):
     """
     As a demon army besieges his village, a young ninja ventures through a cursed world, to deliver a scroll paramount
     to his clan’s survival. What begins as a classic action platformer soon unravels into an expansive time-traveling
@@ -152,6 +153,14 @@ class MessengerWorld(World):
     transitions: list[Entrance]
     reachable_locs: bool = False
     filler: dict[str, int]
+
+    item_mapping = {
+        "Time Shard (10)": "Time Shard",
+        "Time Shard (50)": "Time Shard",
+        "Time Shard (100)": "Time Shard",
+        "Time Shard (300)": "Time Shard",
+        "Time Shard (500)": "Time Shard"
+        }
 
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
