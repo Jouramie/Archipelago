@@ -2,15 +2,14 @@ import typing
 from random import Random
 from typing import List
 
-from .bundle import Bundle
 from .bundle_room import BundleRoom, BundleRoomTemplate
-from ..data.bundles_data.remixed_anywhere_bundles import community_center_remixed_anywhere
 from ..data.game_item import ItemTag
 from ..data.recipe_data import all_cooking_recipes
 from ..options import BundleRandomization, StardewValleyOptions
 from ..strings.bundle_names import CCRoom
 
 if typing.TYPE_CHECKING:
+    from .bundle import Bundle
     from ..content import StardewContent
 
 
@@ -60,9 +59,9 @@ def get_remixed_bundles(random: "Random", content: "StardewContent", options: "S
 
 
 def get_remixed_bundles_anywhere(random: "Random", content: "StardewContent", options: "StardewValleyOptions") -> "list[BundleRoom]":
-    from ..data.bundles_data import remixed_bundles
+    from ..data.bundles_data import remixed_bundles, remixed_anywhere_bundles
 
-    big_room = community_center_remixed_anywhere.create_bundle_room(random, content, options, is_entire_cc=True)
+    big_room = remixed_anywhere_bundles.community_center_remixed_anywhere.create_bundle_room(random, content, options, is_entire_cc=True)
     all_chosen_bundles = big_room.bundles
     random.shuffle(all_chosen_bundles)
 

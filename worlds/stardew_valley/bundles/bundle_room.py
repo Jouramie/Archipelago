@@ -1,19 +1,22 @@
+import typing
 from dataclasses import dataclass
 from random import Random
-from typing import List
 
-from .bundle import Bundle, BundleTemplate
-from ..content import StardewContent
-from ..options import StardewValleyOptions
 from ..strings.bundle_names import CCRoom
+
+if typing.TYPE_CHECKING:
+    from .bundle import Bundle, BundleTemplate
+    from .. import StardewValleyWorld
+    from ..content import StardewContent
+    from ..options import StardewValleyOptions
 
 
 @dataclass
 class BundleRoom:
     name: str
-    bundles: List[Bundle]
+    bundles: "list[Bundle]"
 
-    def special_behavior(self, world):
+    def special_behavior(self, world: "StardewValleyWorld") -> None:
         for bundle in self.bundles:
             bundle.special_behavior(world)
 
@@ -24,7 +27,7 @@ def simplify_name(name: str) -> str:
 
 # In the context of meme bundles, some of the bundles are directly references to specific people, mostly content creators.
 # This ensures that they roll their own bundle as part of their community center.
-def is_bundle_related_to_player(bundle: BundleTemplate, player_name: str) -> bool:
+def is_bundle_related_to_player(bundle: "BundleTemplate", player_name: str) -> bool:
     if player_name == "":
         return False
     simple_bundle = simplify_name(bundle.name)
@@ -35,11 +38,11 @@ def is_bundle_related_to_player(bundle: BundleTemplate, player_name: str) -> boo
 @dataclass
 class BundleRoomTemplate:
     name: str
-    bundles: List[BundleTemplate]
+    bundles: "list[BundleTemplate]"
     number_bundles: int
 
-    def create_bundle_room(self, random: Random, content: StardewContent, options: StardewValleyOptions, player_name: str = "",
-                           is_entire_cc: bool = False) -> BundleRoom:
+    def create_bundle_room(self, random: "Random", content: "StardewContent", options: "StardewValleyOptions", player_name: str = "",
+                           is_entire_cc: bool = False) -> "BundleRoom":
         filtered_bundles = [bundle for bundle in self.bundles if bundle.can_appear(options)]
 
         whitelist_bundles = []
