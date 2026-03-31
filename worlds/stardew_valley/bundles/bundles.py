@@ -1,18 +1,21 @@
+import typing
 from random import Random
-from typing import List, Tuple, Dict
+from typing import List
 
 from .bundle import Bundle
 from .bundle_room import BundleRoom, BundleRoomTemplate
-from ..content import StardewContent
 from ..data.bundles_data.remixed_anywhere_bundles import community_center_remixed_anywhere
 from ..data.game_item import ItemTag
 from ..data.recipe_data import all_cooking_recipes
-from ..logic.logic import StardewLogic
 from ..options import BundleRandomization, StardewValleyOptions
 from ..strings.bundle_names import CCRoom
 
+if typing.TYPE_CHECKING:
+    from ..content import StardewContent
 
-def get_all_bundles(random: Random, logic: StardewLogic, content: StardewContent, options: StardewValleyOptions, player_name: str) -> List[BundleRoom]:
+
+def get_all_bundles(random: "Random", content: "StardewContent", options: "StardewValleyOptions",
+                    player_name: str) -> "list[BundleRoom]":
     if options.bundle_randomization == BundleRandomization.option_vanilla:
         return get_vanilla_bundles(random, content, options)
     elif options.bundle_randomization == BundleRandomization.option_thematic:
@@ -22,14 +25,14 @@ def get_all_bundles(random: Random, logic: StardewLogic, content: StardewContent
     elif options.bundle_randomization == BundleRandomization.option_remixed_anywhere:
         return get_remixed_bundles_anywhere(random, content, options)
     elif options.bundle_randomization == BundleRandomization.option_shuffled:
-        return get_shuffled_bundles(random, logic, content, options)
+        return get_shuffled_bundles(random, content, options)
     elif options.bundle_randomization == BundleRandomization.option_meme:
         return get_meme_bundles(random, content, options, player_name)
 
     raise NotImplementedError
 
 
-def get_vanilla_bundles(random: Random, content: StardewContent, options: StardewValleyOptions) -> List[BundleRoom]:
+def get_vanilla_bundles(random: "Random", content: "StardewContent", options: "StardewValleyOptions") -> "list[BundleRoom]":
     from ..data.bundles_data import bundle_set
 
     generated_bundle_rooms = {room_name: bundle_set.vanilla_bundles.bundles_by_room[room_name].create_bundle_room(random, content, options) for room_name in
@@ -38,7 +41,7 @@ def get_vanilla_bundles(random: Random, content: StardewContent, options: Starde
     return list(generated_bundle_rooms.values())
 
 
-def get_thematic_bundles(random: Random, content: StardewContent, options: StardewValleyOptions) -> List[BundleRoom]:
+def get_thematic_bundles(random: "Random", content: "StardewContent", options: "StardewValleyOptions") -> "list[BundleRoom]":
     from ..data.bundles_data import bundle_set
 
     generated_bundle_rooms = {room_name: bundle_set.thematic_bundles.bundles_by_room[room_name].create_bundle_room(random, content, options) for room_name in
@@ -47,7 +50,7 @@ def get_thematic_bundles(random: Random, content: StardewContent, options: Stard
     return list(generated_bundle_rooms.values())
 
 
-def get_remixed_bundles(random: Random, content: StardewContent, options: StardewValleyOptions) -> List[BundleRoom]:
+def get_remixed_bundles(random: "Random", content: "StardewContent", options: "StardewValleyOptions") -> "list[BundleRoom]":
     from ..data.bundles_data import bundle_set
 
     generated_bundle_rooms = {room_name: bundle_set.remixed_bundles.bundles_by_room[room_name].create_bundle_room(random, content, options) for room_name in
@@ -56,7 +59,7 @@ def get_remixed_bundles(random: Random, content: StardewContent, options: Starde
     return list(generated_bundle_rooms.values())
 
 
-def get_remixed_bundles_anywhere(random: Random, content: StardewContent, options: StardewValleyOptions) -> List[BundleRoom]:
+def get_remixed_bundles_anywhere(random: "Random", content: "StardewContent", options: "StardewValleyOptions") -> "list[BundleRoom]":
     from ..data.bundles_data import remixed_bundles
 
     big_room = community_center_remixed_anywhere.create_bundle_room(random, content, options, is_entire_cc=True)
@@ -78,7 +81,7 @@ def get_remixed_bundles_anywhere(random: Random, content: StardewContent, option
     return [pantry, crafts_room, fish_tank, boiler_room, bulletin_board, vault, abandoned_joja_mart, raccoon]
 
 
-def get_meme_bundles(random: Random, content: StardewContent, options: StardewValleyOptions, player_name: str) -> List[BundleRoom]:
+def get_meme_bundles(random: "Random", content: "StardewContent", options: "StardewValleyOptions", player_name: str) -> "List[BundleRoom]":
     from ..data.bundles_data import remixed_bundles, meme_bundles
 
     big_room = meme_bundles.community_center_meme_bundles.create_bundle_room(random, content, options, player_name, is_entire_cc=True)
@@ -100,13 +103,14 @@ def get_meme_bundles(random: Random, content: StardewContent, options: StardewVa
     return [pantry, crafts_room, fish_tank, boiler_room, bulletin_board, vault, abandoned_joja_mart, raccoon]
 
 
-def create_room_from_bundles(template: BundleRoomTemplate, all_bundles: List[Bundle], options: StardewValleyOptions, end_index: int) -> Tuple[BundleRoom, int]:
+def create_room_from_bundles(template: "BundleRoomTemplate", all_bundles: "list[Bundle]", options: "StardewValleyOptions",
+                             end_index: int) -> "tuple[BundleRoom, int]":
     start_index = end_index
     end_index += template.number_bundles + options.bundle_per_room.value
     return BundleRoom(template.name, all_bundles[start_index:end_index]), end_index
 
 
-def get_shuffled_bundles(random: Random, logic: StardewLogic, content: StardewContent, options: StardewValleyOptions) -> List[BundleRoom]:
+def get_shuffled_bundles(random: "Random", content: "StardewContent", options: "StardewValleyOptions") -> "list[BundleRoom]":
     from ..data.bundles_data.shuffled_bundles import all_bundle_items_except_money
     from ..data.bundles_data.remixed_bundles import vault_remixed
 
@@ -134,13 +138,13 @@ def get_shuffled_bundles(random: Random, logic: StardewLogic, content: StardewCo
     return [*rooms, vault]
 
 
-def fix_raccoon_bundle_names(raccoon):
+def fix_raccoon_bundle_names(raccoon: "BundleRoom") -> None:
     for i in range(len(raccoon.bundles)):
         raccoon_bundle = raccoon.bundles[i]
         raccoon_bundle.name = f"Raccoon Request {i + 1}"
 
 
-def get_trash_bear_requests(random: Random, content: StardewContent, options: StardewValleyOptions) -> Dict[str, List[str]]:
+def get_trash_bear_requests(random: "Random", content: "StardewContent", options: "StardewValleyOptions") -> "dict[str, list[str]]":
     trash_bear_requests = dict()
     num_per_type = 2
     if options.bundle_price < 0:
@@ -163,6 +167,6 @@ def get_trash_bear_requests(random: Random, content: StardewContent, options: St
     return trash_bear_requests
 
 
-def pick_trash_bear_items(item_tag: ItemTag, content: StardewContent, number_items: int, random: Random):
+def pick_trash_bear_items(item_tag: "ItemTag", content: "StardewContent", number_items: int, random: "Random") -> list[str]:
     forage_items = [item.name for item in content.find_tagged_items(item_tag)]
     return random.sample(forage_items, number_items)

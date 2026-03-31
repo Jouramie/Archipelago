@@ -1,9 +1,7 @@
+import typing
 from functools import cached_property
-from typing import List
 
 from .base_logic import BaseLogicMixin, BaseLogic
-from ..bundles.bundle import Bundle
-from ..stardew_rule import StardewRule, True_
 from ..strings.ap_names.community_upgrade_names import CommunityUpgrade
 from ..strings.building_names import Building
 from ..strings.bundle_names import MemeBundleName
@@ -12,6 +10,10 @@ from ..strings.machine_names import Machine
 from ..strings.quality_names import CropQuality, ForageQuality, FishQuality, ArtisanQuality
 from ..strings.quest_names import Quest
 from ..strings.region_names import Region
+
+if typing.TYPE_CHECKING:
+    from ..bundles.bundle import Bundle
+    from ..stardew_rule import StardewRule
 
 
 class BundleLogicMixin(BaseLogicMixin):
@@ -22,7 +24,7 @@ class BundleLogicMixin(BaseLogicMixin):
 
 class BundleLogic(BaseLogic):
     # Should be cached
-    def can_complete_bundle(self, bundle: Bundle) -> StardewRule:
+    def can_complete_bundle(self, bundle: "Bundle") -> "StardewRule":
         item_rules = []
         qualities = []
         time_to_grind = 0
@@ -47,12 +49,12 @@ class BundleLogic(BaseLogic):
         special_rule = self.get_special_bundle_requirement(bundle)
         return can_speak_junimo & item_rules & quality_rules & time_rule & building_rule & special_rule
 
-    def get_special_bundle_requirement(self, bundle: Bundle) -> StardewRule:
+    def get_special_bundle_requirement(self, bundle: "Bundle") -> "StardewRule":
         if bundle.name == MemeBundleName.pomnut:
             return self.logic.building.has_building(Building.stable)
         return self.logic.true_
 
-    def get_quality_rules(self, qualities: List[str]) -> StardewRule:
+    def get_quality_rules(self, qualities: "list[str]") -> "StardewRule":
         crop_quality = CropQuality.get_highest(qualities)
         fish_quality = FishQuality.get_highest(qualities)
         forage_quality = ForageQuality.get_highest(qualities)
@@ -67,11 +69,11 @@ class BundleLogic(BaseLogic):
         if artisan_quality != ArtisanQuality.basic:
             quality_rules.append(self.logic.has(Machine.cask))
         if not quality_rules:
-            return True_()
+            return self.logic.true_
         return self.logic.and_(*quality_rules)
 
     @cached_property
-    def can_complete_community_center(self) -> StardewRule:
+    def can_complete_community_center(self) -> "StardewRule":
         return (self.logic.region.can_reach_location("Complete Crafts Room") &
                 self.logic.region.can_reach_location("Complete Pantry") &
                 self.logic.region.can_reach_location("Complete Fish Tank") &
@@ -79,7 +81,7 @@ class BundleLogic(BaseLogic):
                 self.logic.region.can_reach_location("Complete Vault") &
                 self.logic.region.can_reach_location("Complete Boiler Room"))
 
-    def can_access_raccoon_bundles(self) -> StardewRule:
+    def can_access_raccoon_bundles(self) -> "StardewRule":
         if self.options.quest_locations.has_no_story_quests():
             return self.logic.received(CommunityUpgrade.raccoon, 1) & self.logic.quest.can_complete_quest(Quest.giant_stump)
 
@@ -87,7 +89,7 @@ class BundleLogic(BaseLogic):
         # 2 - Build the house, which summons the bundle racoon. This one is done manually if quests are turned off
         return self.logic.received(CommunityUpgrade.raccoon, 2)
 
-    def can_feed_trash_bear(self, *items: str) -> StardewRule:
+    def can_feed_trash_bear(self, *items: str) -> "StardewRule":
         return (self.logic.received("Trash Bear Arrival") &
                 self.logic.region.can_reach(Region.forest) &
                 self.logic.has_all(*items))

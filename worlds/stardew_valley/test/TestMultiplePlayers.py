@@ -1,6 +1,6 @@
 from .bases import SVTestCase, setup_multiworld
-from .. import True_
 from ..options import FestivalLocations, StartingMoney
+from ..stardew_rule import true_
 from ..strings.festival_check_names import FestivalCheck
 
 
@@ -84,7 +84,7 @@ class TestDifferentSettings(SVTestCase):
             self.assertIn(location_name, locations_names)
             access_rule = get_access_rule(multiworld, player, location_name)
             if should_be_true:
-                self.assertEqual(access_rule, True_())
+                self.assertEqual(access_rule, true_)
             else:
-                self.assertNotEqual(access_rule, True_())
+                self.assertNotEqual(access_rule, true_)
             return access_rule

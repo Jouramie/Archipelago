@@ -1,6 +1,7 @@
 from ..bases import SVTestBase
-from ... import HasProgressionPercent, StardewLogic
+from ...logic.logic import StardewLogic
 from ...options import ToolProgression, SkillProgression, Mods, all_mods_except_invalid_combinations
+from ...stardew_rule import HasProgressionPercent
 from ...strings.skill_names import all_skills, all_vanilla_skills, Skill
 
 

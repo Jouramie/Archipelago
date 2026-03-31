@@ -11,9 +11,8 @@ from BaseClasses import Region, Location, Item, Tutorial, ItemClassification, Mu
 from Options import PerGameCommonOptions
 from worlds.AutoWorld import World, WebWorld
 from worlds.LauncherComponents import components, Component, icon_paths, Type
-from .bundles.bundle_room import BundleRoom
 from .bundles.bundles import get_all_bundles, get_trash_bear_requests
-from .content import StardewContent, create_content
+from .content import create_content
 from .content.feature.special_order_locations import get_qi_gem_amount
 from .content.feature.walnutsanity import get_walnut_amount
 from .items import item_table, ItemData, Group, items_by_group, create_items, generate_filler_choice_pool, \
@@ -21,7 +20,6 @@ from .items import item_table, ItemData, Group, items_by_group, create_items, ge
 from .items.item_data import FILLER_GROUPS
 from .locations import location_table, create_locations, LocationData, locations_by_tag
 from .logic.combat_logic import valid_weapons
-from .logic.logic import StardewLogic
 from .options import StardewValleyOptions, SeasonRandomization, Goal, BundleRandomization, EnabledFillerBuffs, \
     NumberOfMovementBuffs, BuildingProgression, EntranceRandomization, ToolProgression, BackpackProgression, TrapDistribution, BundlePrice, \
     BundleWhitelist, BundleBlacklist, BundlePerRoom, FarmType
@@ -33,11 +31,16 @@ from .options.settings import StardewSettings
 from .options.worlds_group import apply_most_restrictive_options
 from .regions import create_regions, prepare_mod_data
 from .rules import set_rules
-from .stardew_rule import True_, StardewRule, HasProgressionPercent
 from .strings.ap_names.ap_option_names import StartWithoutOptionName
 from .strings.ap_names.ap_weapon_names import APWeapon
 from .strings.ap_names.event_names import Event
 from .strings.goal_names import Goal as GoalName
+
+if typing.TYPE_CHECKING:
+    from .bundles.bundle_room import BundleRoom
+    from .content import StardewContent
+    from .logic.logic import StardewLogic
+    from .stardew_rule import StardewRule
 
 logger = logging.getLogger(__name__)
 
@@ -134,18 +137,19 @@ class StardewValleyWorld(World):
     required_client_version = (0, 4, 0)
 
     options_dataclass = StardewValleyOptions
-    options: StardewValleyOptions
-    settings: ClassVar[StardewSettings]
-    content: StardewContent
-    logic: StardewLogic
+
+    options: "StardewValleyOptions"
+    settings: "ClassVar[StardewSettings]"
+    content: "StardewContent"
+    logic: "StardewLogic"
 
     web = StardewWebWorld()
-    modified_bundles: List[BundleRoom]
-    randomized_entrances: Dict[str, str]
-    trash_bear_requests: Dict[str, List[str]]
+    modified_bundles: "list[BundleRoom]"
+    randomized_entrances: "dict[str, str]"
+    trash_bear_requests: "dict[str, list[str]]"
 
     total_progression_items: int
-    classifications_to_override_post_fill: list[tuple[StardewItem, ItemClassification]]
+    classifications_to_override_post_fill: "list[tuple[StardewItem, ItemClassification]]"
 
     @classmethod
     def create_group(cls, multiworld: MultiWorld, new_player_id: int, players: set[int]) -> World:
@@ -196,13 +200,15 @@ class StardewValleyWorld(World):
         self.content = create_content(self.options)
 
     def create_regions(self):
+        from .logic.logic import StardewLogic
+
         def create_region(name: str) -> Region:
             return Region(name, self.player, self.multiworld)
 
         world_regions = create_regions(create_region, self.options, self.content)
 
         self.logic = StardewLogic(self.player, self.options, self.content, world_regions.keys())
-        self.modified_bundles = get_all_bundles(self.random, self.logic, self.content, self.options, self.player_name)
+        self.modified_bundles = get_all_bundles(self.random, self.content, self.options, self.player_name)
         self.trash_bear_requests = get_trash_bear_requests(self.random, self.content, self.options)
 
         for bundle_room in self.modified_bundles:
@@ -327,7 +333,7 @@ class StardewValleyWorld(World):
                 self.multiworld.push_precollected(self.create_item("Progressive Backpack"))
 
     def setup_logic_events(self):
-        def register_event(name: str, region: str, rule: StardewRule, location_name: str | None = None) -> None:
+        def register_event(name: str, region: str, rule: "StardewRule", location_name: str | None = None) -> None:
             if location_name is None:
                 location_name = name
             event_location = LocationData(None, region, location_name)
@@ -440,7 +446,7 @@ class StardewValleyWorld(World):
 
         return stardew_item
 
-    def create_event_location(self, location_data: LocationData, rule: StardewRule, item: str):
+    def create_event_location(self, location_data: "LocationData", rule: "StardewRule", item: str):
         region = self.multiworld.get_region(location_data.region, self.player)
         item = typing.cast(StardewItem, region.add_event(location_data.name, item, rule, StardewLocation, StardewItem))
         item.events_to_collect[Event.received_progression_item] = 1

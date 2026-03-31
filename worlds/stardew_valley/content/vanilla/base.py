@@ -5,9 +5,8 @@ from ...data.harvest import HarvestFruitTreeSource, HarvestCropSource
 from ...data.hats_data import Hats
 from ...data.requirement import ToolRequirement, TotalEarningsRequirement, ShipOneCropRequirement, CraftedItemsRequirement, CookedRecipesRequirement, \
     CaughtFishRequirement
-from ...data.shop import HatMouseSource
+from ...data.shop import HatMouseSource, TailoringSource
 from ...data.skill import Skill
-from ...logic.tailoring_logic import TailoringSource
 from ...strings.animal_product_names import AnimalProduct
 from ...strings.artisan_good_names import ArtisanGood
 from ...strings.craftable_names import WildSeeds, Edible, Consumable, Lighting
@@ -161,7 +160,8 @@ base_game = BaseGameContentPack(
         Fruit.sweet_gem_berry: (HarvestCropSource(seed=Seed.rare_seed, seasons=(Season.fall,)),),
         Fruit.ancient_fruit: (HarvestCropSource(seed=WildSeeds.ancient, seasons=(Season.spring, Season.summer, Season.fall,)),),
 
-        Seed.coffee_starter: (CustomRuleSource(create_rule=lambda logic: logic.traveling_merchant.has_days(3) & logic.monster.can_kill_many(Monster.dust_sprite)),),
+        Seed.coffee_starter: (
+            CustomRuleSource(create_rule=lambda logic: logic.traveling_merchant.has_days(3) & logic.monster.can_kill_many(Monster.dust_sprite)),),
         Seed.coffee: (HarvestCropSource(seed=Seed.coffee_starter, seasons=(Season.spring, Season.summer,)),),
 
         Vegetable.tea_leaves: (
@@ -219,8 +219,8 @@ base_game = BaseGameContentPack(
         Hats.white_turban: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(Fruit.sweet_gem_berry,)),),
         Hats.witch_hat: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(Gift.golden_pumpkin,)),),
         Hats.totem_mask: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(Consumable.rain_totem, Consumable.warp_totem_farm,
-                                                                                  Consumable.warp_totem_mountains, Consumable.warp_totem_beach,
-                                                                                  Consumable.warp_totem_desert, Consumable.treasure_totem)),),
+                                                                             Consumable.warp_totem_mountains, Consumable.warp_totem_beach,
+                                                                             Consumable.warp_totem_desert, Consumable.treasure_totem)),),
 
         Hats.copper_pan_hat: (Tag(ItemTag.HAT), CustomRuleSource(create_rule=lambda logic: logic.tool.has_pan(ToolMaterial.copper)),),
         Hats.steel_pan_hat: (Tag(ItemTag.HAT), CustomRuleSource(create_rule=lambda logic: logic.tool.has_pan(ToolMaterial.iron)),),

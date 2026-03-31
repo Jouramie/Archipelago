@@ -6,7 +6,7 @@ from ...data.harvest import ForagingSource
 from ...data.hats_data import Hats
 from ...data.monster_data import MonsterSource
 from ...data.requirement import ToolRequirement, RegionRequirement
-from ...logic.tailoring_logic import TailoringSource
+from ...data.shop import TailoringSource
 from ...logic.time_logic import MAX_MONTHS
 from ...strings.fish_names import Fish
 from ...strings.forageable_names import Forageable, Mushroom
@@ -45,12 +45,12 @@ the_mines = ContentPack(
     hat_sources={
         Hats.logo_cap: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(Fish.lava_eel,)),),
         Hats.hard_hat: (Tag(ItemTag.HAT), MonsterSource(monsters=(Monster.duggy, Monster.duggy_dangerous, Monster.magma_duggy,),
-                                                             amount_tier=3,
-                                                             other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
+                                                        amount_tier=3,
+                                                        other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
         Hats.skeleton_mask: (Tag(ItemTag.HAT), MonsterSource(monsters=(Monster.skeleton, Monster.skeleton_mage, Monster.skeleton_dangerous,),
-                                                                  amount_tier=MAX_MONTHS,
-                                                                  other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
+                                                             amount_tier=MAX_MONTHS,
+                                                             other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
         Hats.squires_helmet: (Tag(ItemTag.HAT), MonsterSource(monsters=(Monster.metal_head,),
-                                                                   amount_tier=MAX_MONTHS),),
+                                                              amount_tier=MAX_MONTHS),),
     },
 )

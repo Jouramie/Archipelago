@@ -49,3 +49,8 @@ class HatMouseSource(Source):
     @property
     def all_requirements(self) -> Iterable[Requirement]:
         return self.other_requirements + (self.unlock_requirements or ())
+
+
+@dataclass(frozen=True, kw_only=True)
+class TailoringSource(Source):
+    tailoring_items: tuple[str, ...]

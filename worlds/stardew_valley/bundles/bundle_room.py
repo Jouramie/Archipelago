@@ -38,7 +38,8 @@ class BundleRoomTemplate:
     bundles: List[BundleTemplate]
     number_bundles: int
 
-    def create_bundle_room(self, random: Random, content: StardewContent, options: StardewValleyOptions, player_name: str = "", is_entire_cc: bool = False):
+    def create_bundle_room(self, random: Random, content: StardewContent, options: StardewValleyOptions, player_name: str = "",
+                           is_entire_cc: bool = False) -> BundleRoom:
         filtered_bundles = [bundle for bundle in self.bundles if bundle.can_appear(options)]
 
         whitelist_bundles = []

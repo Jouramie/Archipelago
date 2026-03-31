@@ -6,8 +6,7 @@ from ...data.harvest import ForagingSource, HarvestCropSource
 from ...data.hats_data import Hats
 from ...data.monster_data import MonsterSource
 from ...data.requirement import RegionRequirement, MeetRequirement, MonsterKillRequirement
-from ...data.shop import ShopSource
-from ...logic.tailoring_logic import TailoringSource
+from ...data.shop import ShopSource, TailoringSource
 from ...logic.time_logic import MAX_MONTHS
 from ...strings.crop_names import Fruit, Vegetable
 from ...strings.currency_names import Currency
@@ -60,20 +59,20 @@ the_desert = ContentPack(
     hat_sources={
         Hats.top_hat: (Tag(ItemTag.HAT), ShopSource(price=8000, shop_region=Region.casino, currency=Currency.qi_coin),),
         Hats.gils_hat: (Tag(ItemTag.HAT), ShopSource(price=10000, shop_region=LogicRegion.lost_items_shop,
-                                                          other_requirements=(
-                                                              RegionRequirement(Region.skull_cavern_100), RegionRequirement(LogicRegion.desert_festival),)),),
+                                                     other_requirements=(
+                                                         RegionRequirement(Region.skull_cavern_100), RegionRequirement(LogicRegion.desert_festival),)),),
         Hats.abigails_bow: (Tag(ItemTag.HAT), ShopSource(price=60, currency=Currency.calico_egg, shop_region=LogicRegion.desert_festival,
-                                                              other_requirements=(MeetRequirement(NPC.abigail),)),),
+                                                         other_requirements=(MeetRequirement(NPC.abigail),)),),
         Hats.tricorn: (Tag(ItemTag.HAT), ShopSource(price=100, currency=Currency.calico_egg, shop_region=LogicRegion.desert_festival,
-                                                              other_requirements=(MeetRequirement(NPC.elliott),)),),
+                                                    other_requirements=(MeetRequirement(NPC.elliott),)),),
         Hats.blue_bow: (Tag(ItemTag.HAT), ShopSource(price=60, currency=Currency.calico_egg, shop_region=LogicRegion.desert_festival),),
         Hats.dark_velvet_bow: (Tag(ItemTag.HAT), ShopSource(price=75, currency=Currency.calico_egg, shop_region=LogicRegion.desert_festival),),
         Hats.mummy_mask: (Tag(ItemTag.HAT), ShopSource(price=120, currency=Currency.calico_egg, shop_region=LogicRegion.desert_festival),),
         Hats.arcane_hat: (Tag(ItemTag.HAT), ShopSource(price=20000, shop_region=Region.adventurer_guild,
-                                                            other_requirements=(MonsterKillRequirement((Monster.mummy,), 100),)),),
-        Hats.green_turban: (Tag(ItemTag.HAT), ShopSource(price=50, currency=Geode.omni, shop_region=Region.desert,),),
-        Hats.magic_cowboy_hat: (Tag(ItemTag.HAT), ShopSource(price=333, currency=Geode.omni, shop_region=Region.desert,),),
-        Hats.magic_turban: (Tag(ItemTag.HAT), ShopSource(price=333, currency=Geode.omni, shop_region=Region.desert,),),
+                                                       other_requirements=(MonsterKillRequirement((Monster.mummy,), 100),)),),
+        Hats.green_turban: (Tag(ItemTag.HAT), ShopSource(price=50, currency=Geode.omni, shop_region=Region.desert, ),),
+        Hats.magic_cowboy_hat: (Tag(ItemTag.HAT), ShopSource(price=333, currency=Geode.omni, shop_region=Region.desert, ),),
+        Hats.magic_turban: (Tag(ItemTag.HAT), ShopSource(price=333, currency=Geode.omni, shop_region=Region.desert, ),),
 
         Hats.laurel_wreath_crown: (Tag(ItemTag.HAT), CustomRuleSource(create_rule=lambda logic: logic.hat.can_get_unlikely_hat_at_outfit_services),),
         Hats.joja_cap: (Tag(ItemTag.HAT), CustomRuleSource(create_rule=lambda logic: logic.hat.can_get_unlikely_hat_at_outfit_services),),
@@ -84,6 +83,6 @@ the_desert = ContentPack(
         Hats.golden_mask: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(Artifact.golden_mask,)),),
         Hats.white_turban: (Tag(ItemTag.HAT), ForagingSource(regions=(Region.skull_cavern_100,))),
         Hats.knights_helmet: (Tag(ItemTag.HAT), MonsterSource(monsters=(Monster.pepper_rex,), amount_tier=MAX_MONTHS,
-                                                                   other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
+                                                              other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
     }
 )

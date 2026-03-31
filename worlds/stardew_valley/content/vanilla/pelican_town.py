@@ -11,8 +11,7 @@ from ...data.requirement import ToolRequirement, BookRequirement, SkillRequireme
     ReceivedRaccoonsRequirement, \
     PrizeMachineRequirement, SpecificFriendRequirement, RegionRequirement, CatalogueRequirement
 from ...data.shop import ShopSource, MysteryBoxSource, ArtifactTroveSource, PrizeMachineSource, \
-    FishingTreasureChestSource, HatMouseSource
-from ...logic.tailoring_logic import TailoringSource
+    FishingTreasureChestSource, HatMouseSource, TailoringSource
 from ...logic.time_logic import MAX_MONTHS
 from ...strings.artisan_good_names import ArtisanGood
 from ...strings.book_names import Book
@@ -336,7 +335,8 @@ pelican_town = ContentPack(
 
         # Catalogues
         Catalogue.wizard: (ShopSource(price=150000, shop_region=Region.sewer, other_requirements=(CatalogueRequirement(Catalogue.wizard),)),),
-        Catalogue.furniture: (ShopSource(price=200000, shop_region=Region.carpenter, other_requirements=(CatalogueRequirement(Catalogue.furniture),BuildingRequirement(BuildingNames.kitchen),)),),
+        Catalogue.furniture: (ShopSource(price=200000, shop_region=Region.carpenter,
+                                         other_requirements=(CatalogueRequirement(Catalogue.furniture), BuildingRequirement(BuildingNames.kitchen),)),),
 
         # Furniture
         Furniture.single_bed: (ShopSource(price=500, shop_region=Region.carpenter),),
@@ -735,7 +735,7 @@ pelican_town = ContentPack(
 
         Hats.leprechaun_hat: (Tag(ItemTag.HAT), ForagingSource(regions=(Region.forest,), seasons=(Season.spring,), ),),
         Hats.mushroom_cap: (Tag(ItemTag.HAT), ForagingSource(regions=(Region.farm,), seasons=(Season.fall,),
-                                                             other_requirements=(ToolRequirement(Tool.axe),),),),
+                                                             other_requirements=(ToolRequirement(Tool.axe),), ),),
 
         Hats.raccoon_hat: (Tag(ItemTag.HAT), CustomRuleSource(create_rule=lambda logic: logic.quest.has_raccoon_shop(3) &
                                                                                         logic.region.can_reach(LogicRegion.raccoon_shop_3)),),

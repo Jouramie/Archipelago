@@ -6,8 +6,7 @@ from ...data.game_item import GenericSource, ItemTag, Tag
 from ...data.harvest import HarvestCropSource
 from ...data.hats_data import Hats
 from ...data.requirement import DangerousMinesRequirement, CraftedItemsRequirement
-from ...data.shop import HatMouseSource
-from ...logic.tailoring_logic import TailoringSource
+from ...data.shop import HatMouseSource, TailoringSource
 from ...strings.crop_names import Fruit
 from ...strings.metal_names import MetalBar
 from ...strings.region_names import Region

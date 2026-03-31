@@ -4,9 +4,10 @@ from unittest.mock import patch
 
 from ..bases import SVTestBase
 from ..options import presets
-from ... import options, StardewLogic, StardewRule
+from ... import options
+from ...logic.logic import StardewLogic
 from ...logic.museum_logic import MuseumLogic
-from ...stardew_rule import true_, LiteralStardewRule
+from ...stardew_rule import StardewRule, true_, LiteralStardewRule
 
 
 class TestMuseumMilestones(SVTestBase):
@@ -65,7 +66,7 @@ class TestMuseumsanityDisabledExcludesMuseumDonationsFromOtherLocations(SVTestBa
             random = Random(seed)
             all_locations = self.get_real_locations()
             # We test 1% of all locations, to be fast
-            locations_to_test = random.sample(all_locations, k=len(all_locations)//100)
+            locations_to_test = random.sample(all_locations, k=len(all_locations) // 100)
             for location in locations_to_test:
                 with self.subTest(location.name):
                     self.assert_can_reach_location(location)

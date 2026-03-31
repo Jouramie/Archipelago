@@ -10,8 +10,7 @@ from ...data.monster_data import MonsterSource
 from ...data.requirement import WalnutRequirement, ForgeInfinityWeaponRequirement, CookedRecipesRequirement, \
     CaughtFishRequirement, FullShipmentRequirement, RegionRequirement, \
     AllAchievementsRequirement, PerfectionPercentRequirement, ReadAllBooksRequirement, HasItemRequirement, ToolRequirement
-from ...data.shop import ShopSource, HatMouseSource
-from ...logic.tailoring_logic import TailoringSource
+from ...data.shop import ShopSource, HatMouseSource, TailoringSource
 from ...logic.time_logic import MAX_MONTHS
 from ...strings.animal_product_names import AnimalProduct
 from ...strings.book_names import Book
@@ -128,9 +127,11 @@ ginger_island_content_pack = GingerIslandContentPack(
         Hats.pageboy_cap: (Tag(ItemTag.HAT), HatMouseSource(price=5000, unlock_requirements=(ReadAllBooksRequirement(),)),),
 
         Hats.concerned_ape_mask: (Tag(ItemTag.HAT), ShopSource(price=10000, shop_region=LogicRegion.lost_items_shop,
-                                                                    other_requirements=(PerfectionPercentRequirement(100), RegionRequirement(Region.volcano_floor_10))),),
+                                                               other_requirements=(PerfectionPercentRequirement(100),
+                                                                                   RegionRequirement(Region.volcano_floor_10))),),
         Hats.golden_helmet: (Tag(ItemTag.HAT), ShopSource(price=10000, shop_region=LogicRegion.lost_items_shop,
-                                                               other_requirements=(RegionRequirement(Region.blacksmith), HasItemRequirement(Geode.golden_coconut),)),),
+                                                          other_requirements=(RegionRequirement(Region.blacksmith),
+                                                                              HasItemRequirement(Geode.golden_coconut),)),),
         Hats.bluebird_mask: (Tag(ItemTag.HAT), ShopSource(price=30, currency=Vegetable.taro_root, shop_region=Region.island_trader),),
         Hats.deluxe_cowboy_hat: (Tag(ItemTag.HAT), ShopSource(price=30, currency=Vegetable.taro_root, shop_region=Region.island_trader),),
         Hats.small_cap: (Tag(ItemTag.HAT), ShopSource(price=30, currency=Vegetable.taro_root, shop_region=Region.island_trader),),
@@ -138,9 +139,9 @@ ginger_island_content_pack = GingerIslandContentPack(
         Hats.pink_bow: (Tag(ItemTag.HAT), ShopSource(price=10000, shop_region=Region.volcano_dwarf_shop),),
 
         Hats.tiger_hat: (Tag(ItemTag.HAT), MonsterSource(monsters=(Monster.tiger_slime,), amount_tier=MAX_MONTHS,
-                                                              other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
+                                                         other_requirements=(RegionRequirement(region=Region.adventurer_guild),)),),
         Hats.deluxe_pirate_hat: (Tag(ItemTag.HAT), ForagingSource(regions=(Region.volcano, Region.volcano_floor_5, Region.volcano_floor_10,),
-                                                                       require_all_regions=True),),
+                                                                  require_all_regions=True),),
 
         Hats.foragers_hat: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(Forageable.ginger,)),),
         Hats.sunglasses: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(Material.cinder_shard,)),),
@@ -148,6 +149,6 @@ ginger_island_content_pack = GingerIslandContentPack(
         Hats.warrior_helmet: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(AnimalProduct.ostrich_egg,)),),
         Hats.star_helmet: (Tag(ItemTag.HAT), TailoringSource(tailoring_items=(TreeSeed.mushroom,)),),
 
-        Hats.frog_hat: (Tag(ItemTag.HAT), FishingSource(region=Region.gourmand_frog_cave,),),
+        Hats.frog_hat: (Tag(ItemTag.HAT), FishingSource(region=Region.gourmand_frog_cave, ),),
     },
 )

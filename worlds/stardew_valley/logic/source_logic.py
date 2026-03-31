@@ -2,7 +2,6 @@ import functools
 from typing import Any, Iterable
 
 from .base_logic import BaseLogicMixin, BaseLogic
-from .tailoring_logic import TailoringSource
 from ..data.animal import IncubatorSource, OstrichIncubatorSource
 from ..data.artisan import MachineSource
 from ..data.fish_data import FishingSource
@@ -10,7 +9,7 @@ from ..data.game_item import GenericSource, Source, GameItem, CustomRuleSource, 
 from ..data.harvest import ForagingSource, FruitBatsSource, MushroomCaveSource, SeasonalForagingSource, \
     HarvestCropSource, HarvestFruitTreeSource, ArtifactSpotSource
 from ..data.monster_data import MonsterSource
-from ..data.shop import ShopSource, MysteryBoxSource, ArtifactTroveSource, PrizeMachineSource, FishingTreasureChestSource, HatMouseSource
+from ..data.shop import ShopSource, MysteryBoxSource, ArtifactTroveSource, PrizeMachineSource, FishingTreasureChestSource, HatMouseSource, TailoringSource
 from ..strings.ap_names.ap_option_names import CustomLogicOptionName
 from ..strings.skill_names import Skill
 
@@ -130,4 +129,6 @@ class SourceLogic(BaseLogic):
 
     @has_access_to.register
     def _(self, source: FishingSource):
-        return self.logic.fishing.can_fish_at(source.region) & self.logic.skill.has_level(Skill.fishing, source.fishing_level) & self.logic.tool.has_fishing_rod(source.minimum_rod)
+        return self.logic.fishing.can_fish_at(source.region) & self.logic.skill.has_level(Skill.fishing,
+                                                                                          source.fishing_level) & self.logic.tool.has_fishing_rod(
+            source.minimum_rod)
