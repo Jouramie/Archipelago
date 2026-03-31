@@ -4,9 +4,10 @@ from typing import Dict, Optional
 from .bases import SVTestBase, SVTestCase
 from .. import BundleRandomization, location_table
 from ..bundles.bundle import Bundle
-from ..data.bundles_data.bundle_data import all_bundle_items_except_money, quality_crops_items_thematic, \
-    quality_foraging_items, quality_fish_items
 from ..data.bundles_data.meme_bundles import all_cc_meme_bundles
+from ..data.bundles_data.remixed_bundles import quality_foraging_items, quality_fish_items
+from ..data.bundles_data.shuffled_bundles import all_bundle_items_except_money
+from ..data.bundles_data.thematic_bundles import quality_crops_items_thematic
 from ..locations import LocationTags
 from ..options import BundleWhitelist, BundleBlacklist, BundlePrice
 from ..strings.bundle_names import BundleName, MemeBundleName, all_meme_bundle_names

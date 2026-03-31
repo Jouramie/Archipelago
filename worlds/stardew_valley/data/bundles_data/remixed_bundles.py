@@ -216,7 +216,7 @@ calico_items = [calico_egg.as_amount(200), calico_egg.as_amount(200), calico_egg
                 magic_rock_candy, mega_bomb.as_amount(10), mystery_box.as_amount(10), mixed_seeds.as_amount(50),
                 strawberry_seeds.as_amount(20),
                 spicy_eel.as_amount(5), crab_cakes.as_amount(5), eggplant_parmesan.as_amount(5),
-                pumpkin_soup.as_amount(5), lucky_lunch.as_amount(5) ]
+                pumpkin_soup.as_amount(5), lucky_lunch.as_amount(5)]
 calico_bundle = BundleTemplate(CCRoom.bulletin_board, BundleName.calico, calico_items, 2, 2)
 
 raccoon_bundle = BundleTemplate(CCRoom.bulletin_board, BundleName.raccoon, raccoon_foraging_items, 4, 4)
@@ -243,3 +243,13 @@ vault_qi_helper_bundle = CurrencyBundleTemplate(CCRoom.vault, BundleName.qi_help
 
 vault_bundles_remixed = [*vault_bundles_vanilla, vault_gambler_bundle, vault_qi_helper_bundle, vault_carnival_bundle]  # , vault_walnut_hunter_bundle
 vault_remixed = BundleRoomTemplate(CCRoom.vault, vault_bundles_remixed, 4)
+
+all_remixed_bundles = [
+    *crafts_room_bundles_remixed,
+    *pantry_bundles_remixed,
+    *fish_tank_bundles_remixed,
+    *boiler_room_bundles_remixed,
+    *bulletin_board_bundles_remixed,
+    missing_bundle_thematic,
+    *giant_stump_bundles_remixed
+]

@@ -1,6 +1,6 @@
-from .bundle_data import all_bundle_items_by_name
 from .meme_bundles_data.capitalist_bundle import capitalist_items
 from .remixed_bundles import *
+from .shuffled_bundles import all_bundle_items_by_name
 from ...bundles.bundle import BureaucracyBundleTemplate, RecursiveBundleTemplate, FixedPriceCurrencyBundleTemplate, \
     FixedPriceBundleTemplate, FixedPriceDeepBundleTemplate, FixedMultiplierBundleTemplate, FixedSlotsBundleTemplate
 from ...strings.bundle_names import MemeBundleName
@@ -230,7 +230,8 @@ ministry_bundle = BundleTemplate(CCRoom.bulletin_board, MemeBundleName.ministry_
 pomnut_items = [pomegranate, hazelnut, carrot]
 pomnut_bundle = BundleTemplate(CCRoom.bulletin_board, MemeBundleName.pomnut, pomnut_items, 3, 3)
 
-blossom_garden_items = [banana.as_amount(18), pizza.as_amount(32), spaghetti, single_bed, pink_cake, wood_floor, triple_shot_espresso, maple_bar, bug_steak, void_essence.as_amount(10), crystal_ball, solar_essence.as_amount(10)]
+blossom_garden_items = [banana.as_amount(18), pizza.as_amount(32), spaghetti, single_bed, pink_cake, wood_floor, triple_shot_espresso, maple_bar, bug_steak,
+                        void_essence.as_amount(10), crystal_ball, solar_essence.as_amount(10)]
 blossom_garden_bundle = FixedPriceBundleTemplate(CCRoom.bulletin_board, MemeBundleName.blossom_garden, blossom_garden_items, 12, 6)
 
 cooperation_items = [*all_simple_items]
@@ -245,14 +246,13 @@ very_sticky_bundle = FixedPriceBundleTemplate(CCRoom.crafts_room, MemeBundleName
 square_hole_items = [*all_simple_items]
 square_hole_bundle = FixedPriceBundleTemplate(CCRoom.bulletin_board, MemeBundleName.square_hole, square_hole_items, 6, 6)
 
-distracted_items = [*all_simple_items] # (If you bring more than one item for it, the rest get sent home)
+distracted_items = [*all_simple_items]  # (If you bring more than one item for it, the rest get sent home)
 distracted_bundle = BundleTemplate(CCRoom.bulletin_board, MemeBundleName.distracted, distracted_items, 4, 4)
 
-algorerhythm_items =[item.as_amount(2) for item in
-                     [midnight_squid_roe, tea_set, statue_of_endless_fortune, golden_bobber, dried_qi_fruit, cursed_mannequin,
-                      statue_of_blessings, crane_house_plant, book_of_mysteries, far_away_stone, void_ghost_pendant, trimmed_purple_shorts]]
+algorerhythm_items = [item.as_amount(2) for item in
+                      [midnight_squid_roe, tea_set, statue_of_endless_fortune, golden_bobber, dried_qi_fruit, cursed_mannequin,
+                       statue_of_blessings, crane_house_plant, book_of_mysteries, far_away_stone, void_ghost_pendant, trimmed_purple_shorts]]
 algorerhythm_bundle = BundleTemplate(CCRoom.bulletin_board, MemeBundleName.algorerhythm, algorerhythm_items, 12, 4)
-
 
 red_fish_items = [red_mullet, red_snapper, lava_eel, crimsonfish]
 blue_fish_items = [anchovy, tuna, sardine, bream, squid, ice_pip, albacore, blue_discus, midnight_squid, spook_fish, glacierfish]
@@ -338,7 +338,6 @@ sacrifice_bundle = CurrencyBundleTemplate(CCRoom.boiler_room, MemeBundleName.sac
 #   Change Cap Bundle to forgetting something at home
 
 
-
 # Bundles that need special Mod Handling:
 #     None
 
@@ -355,7 +354,7 @@ fish_tank_bundles_meme = [crab_rave_bundle, trout_bundle, doctor_angler_bundle, 
 fish_tank_meme = BundleRoomTemplate(CCRoom.fish_tank, fish_tank_bundles_meme, 6)
 
 boiler_room_bundles_meme = [amons_fall_bundle, screw_you_bundle, rick_bundle, minecraft_bundle, balls_bundle, tilesanity_bundle, obelisks_bundle,
-                            honorable_bundle, sisyphus_bundle, automation_bundle, crap_pot_bundle, deathlink_bundle, pool_bundle, # colored_crystals_bundle,
+                            honorable_bundle, sisyphus_bundle, automation_bundle, crap_pot_bundle, deathlink_bundle, pool_bundle,  # colored_crystals_bundle,
                             sacrifice_bundle]
 boiler_room_meme = BundleRoomTemplate(CCRoom.boiler_room, boiler_room_bundles_meme, 3)
 
