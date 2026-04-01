@@ -1,5 +1,5 @@
 from .feature import cropsanity, friendsanity, fishsanity, booksanity, building_progression, skill_progression, tool_progression, hatsanity, museumsanity
-from .game_content import StardewContent, StardewFeatures
+from .game_content import StardewContent, StardewFeatures, ContentPack
 from .. import options
 from ..strings.ap_names.ap_option_names import StartWithoutOptionName
 from ..strings.building_names import Building
@@ -7,7 +7,7 @@ from ..strings.building_names import Building
 
 def create_content(player_options: options.StardewValleyOptions) -> StardewContent:
     from .unpacking import unpack_content
-    
+
     active_packs = choose_content_packs(player_options)
     features = choose_features(player_options)
     return unpack_content(features, active_packs)
@@ -15,7 +15,7 @@ def create_content(player_options: options.StardewValleyOptions) -> StardewConte
 
 def choose_content_packs(player_options: options.StardewValleyOptions):
     from . import content_packs
-    
+
     active_packs = [content_packs.pelican_town, content_packs.the_desert, content_packs.the_farm, content_packs.the_mines]
 
     if player_options.exclude_ginger_island == options.ExcludeGingerIsland.option_false:
@@ -53,7 +53,7 @@ booksanity_by_option = {
 
 
 def choose_booksanity(booksanity_option: options.Booksanity) -> booksanity.BooksanityFeature:
-    booksanity_feature = booksanity_by_option.get(booksanity_option)
+    booksanity_feature = booksanity_by_option.get(booksanity_option.value)
 
     if booksanity_feature is None:
         raise ValueError(f"No booksanity feature mapped to {str(booksanity_option.value)}")
@@ -95,7 +95,7 @@ cropsanity_by_option = {
 
 
 def choose_cropsanity(cropsanity_option: options.Cropsanity) -> cropsanity.CropsanityFeature:
-    cropsanity_feature = cropsanity_by_option.get(cropsanity_option)
+    cropsanity_feature = cropsanity_by_option.get(cropsanity_option.value)
 
     if cropsanity_feature is None:
         raise ValueError(f"No cropsanity feature mapped to {str(cropsanity_option.value)}")
@@ -116,7 +116,7 @@ fishsanity_by_option = {
 
 
 def choose_fishsanity(fishsanity_option: options.Fishsanity) -> fishsanity.FishsanityFeature:
-    fishsanity_feature = fishsanity_by_option.get(fishsanity_option)
+    fishsanity_feature = fishsanity_by_option.get(fishsanity_option.value)
 
     if fishsanity_feature is None:
         raise ValueError(f"No fishsanity feature mapped to {str(fishsanity_option.value)}")
@@ -174,7 +174,7 @@ skill_progression_by_option = {
 
 
 def choose_skill_progression(skill_progression_option: options.SkillProgression) -> skill_progression.SkillProgressionFeature:
-    skill_progression_feature = skill_progression_by_option.get(skill_progression_option)
+    skill_progression_feature = skill_progression_by_option.get(skill_progression_option.value)
 
     if skill_progression_feature is None:
         raise ValueError(f"No skill progression feature mapped to {str(skill_progression_option.value)}")
@@ -182,7 +182,8 @@ def choose_skill_progression(skill_progression_option: options.SkillProgression)
     return skill_progression_feature
 
 
-def choose_tool_progression(tool_option: options.ToolProgression, skill_option: options.SkillProgression, start_without_option: options.StartWithout) -> tool_progression.ToolProgressionFeature:
+def choose_tool_progression(tool_option: options.ToolProgression, skill_option: options.SkillProgression,
+                            start_without_option: options.StartWithout) -> tool_progression.ToolProgressionFeature:
     if tool_option.is_vanilla:
         return tool_progression.ToolProgressionVanilla()
 
@@ -197,8 +198,14 @@ def choose_tool_progression(tool_option: options.ToolProgression, skill_option: 
 
     raise ValueError(f"No tool progression feature mapped to {str(tool_option.value)}")
 
+
 __all__ = [
-    "create_content",
+    "feature",
+    "mods",
+    "vanilla",
+    "unpacking",
+    "ContentPack",
     "StardewContent",
     "StardewFeatures",
+    "create_content",
 ]

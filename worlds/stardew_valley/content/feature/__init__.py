@@ -10,6 +10,7 @@ from .skill_progression import SkillProgressionFeature
 from .tool_progression import ToolProgressionFeature
 
 __all__ = [
+    "base",
     "booksanity",
     "BooksanityFeature",
     "building_progression",
