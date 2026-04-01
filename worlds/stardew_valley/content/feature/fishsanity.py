@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from .base import FeatureBase
-from ...data.fish_data import FishItem
 from ...strings.fish_names import Fish
+
+if TYPE_CHECKING:
+    from ...data.fish_data import FishItem
+
 
 location_prefix = "Fishsanity: "
 
@@ -34,21 +37,21 @@ class FishsanityFeature(FeatureBase, ABC):
         return self.randomization_ratio != 1
 
     @abstractmethod
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         ...
 
 
 class FishsanityNone(FishsanityFeature):
     is_enabled = False
 
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         return False
 
 
 class FishsanityLegendaries(FishsanityFeature):
     is_enabled = True
 
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         return fish.legendary
 
 
@@ -70,33 +73,33 @@ class FishsanitySpecial(FishsanityFeature):
         Fish.dorado
     }
 
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         return fish.name in self.included_fishes
 
 
 class FishsanityAll(FishsanityFeature):
     is_enabled = True
 
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         return True
 
 
 class FishsanityExcludeLegendaries(FishsanityFeature):
     is_enabled = True
 
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         return not fish.legendary
 
 
 class FishsanityExcludeHardFish(FishsanityFeature):
     is_enabled = True
 
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         return fish.difficulty < 80
 
 
 class FishsanityOnlyEasyFish(FishsanityFeature):
     is_enabled = True
 
-    def is_included(self, fish: FishItem) -> bool:
+    def is_included(self, fish: "FishItem") -> bool:
         return fish.difficulty < 50

@@ -6,6 +6,7 @@ from .base import FeatureBase
 from ...data.game_item import GameItem, ItemTag
 from ...strings.book_names import ordered_lost_books
 
+
 item_prefix = "Power: "
 location_prefix = "Read "
 

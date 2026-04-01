@@ -4,7 +4,6 @@ from typing import List
 
 from .bundle_room import BundleRoom, BundleRoomTemplate
 from ..data.game_item import ItemTag
-from ..data.recipe_data import all_cooking_recipes
 from ..options import BundleRandomization, StardewValleyOptions
 from ..strings.bundle_names import CCRoom
 
@@ -153,6 +152,7 @@ def get_trash_bear_requests(random: "Random", content: "StardewContent", options
 
     trash_bear_requests["Foraging"] = pick_trash_bear_items(ItemTag.FORAGE, content, num_per_type, random)
     if options.bundle_per_room >= 0:
+        from ..data.recipe_data import all_cooking_recipes
         # Cooking items are not in content packs yet. This can be simplified once they are
         # trash_bear_requests["Cooking"] = pick_trash_bear_items(ItemTag.COOKING, content, num_per_type, random)
         trash_bear_requests["Cooking"] = random.sample(

@@ -9,7 +9,7 @@ from .museumsanity import MuseumsanityFeature
 from .skill_progression import SkillProgressionFeature
 from .tool_progression import ToolProgressionFeature
 
-__exports__ = [
+__all__ = [
     "booksanity",
     "BooksanityFeature",
     "building_progression",
@@ -26,6 +26,6 @@ __exports__ = [
     "MuseumsanityFeature",
     "skill_progression",
     "SkillProgressionFeature",
-    "tool_progression"
+    "tool_progression",
     "ToolProgressionFeature",
 ]

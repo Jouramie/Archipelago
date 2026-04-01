@@ -1,15 +1,17 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from .base import FeatureBase
-from ...data.hats_data import HatItem
+    
+if TYPE_CHECKING:
+    from ...data.hats_data import HatItem
 
 wear_prefix = "Wear "
 
 
-def to_location_name(hat: str | HatItem) -> str:
-    if isinstance(hat, HatItem):
+def to_location_name(hat: "str | HatItem") -> str:
+    if not isinstance(hat, str):
         hat = hat.name
     return f"{wear_prefix}{hat}"
 
@@ -29,23 +31,24 @@ class HatsanityFeature(FeatureBase, ABC):
     extract_hat_from_location_name = staticmethod(extract_hat_from_location_name)
 
     @abstractmethod
-    def is_included(self, hat: HatItem) -> bool:
+    def is_included(self, hat: "HatItem") -> bool:
         ...
 
 
 class HatsanityNone(HatsanityFeature):
     is_enabled = False
 
-    def is_included(self, hat: HatItem) -> bool:
+    def is_included(self, hat: "HatItem") -> bool:
         return False
 
 
 @dataclass(frozen=True)
 class HatsanityHats(HatsanityFeature):
     is_enabled = True
+
     enabled_hats: frozenset[str]
 
-    def is_included(self, hat: HatItem) -> bool:
+    def is_included(self, hat: "HatItem") -> bool:
         for difficulty in hat.difficulty:
             if difficulty not in self.enabled_hats:
                 return False
