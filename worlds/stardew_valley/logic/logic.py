@@ -53,7 +53,6 @@ from .traveling_merchant_logic import TravelingMerchantLogicMixin
 from .wallet_logic import WalletLogicMixin
 from .walnut_logic import WalnutLogicMixin
 from ..content.game_content import StardewContent
-from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..data.craftable_data import all_crafting_recipes
 from ..data.museum_data import all_museum_items
 from ..data.recipe_data import all_cooking_recipes
@@ -68,6 +67,7 @@ from ..strings.artisan_good_names import ArtisanGood
 from ..strings.boot_names import tier_by_boots
 from ..strings.building_names import Building
 from ..strings.catalogue_names import items_by_catalogue
+from ..strings.content_pack_names import ContentPack
 from ..strings.craftable_names import Consumable, Ring, Fishing, Lighting, WildSeeds, Furniture
 from ..strings.crop_names import Fruit, Vegetable
 from ..strings.currency_names import Currency
@@ -419,7 +419,7 @@ class StardewLogic(ReceivedLogicMixin, HasLogicMixin, RegionLogicMixin, Travelin
         return self.has(Machine.furnace) & self.has(item)
 
     def has_island_trader(self) -> StardewRule:
-        if self.content.is_enabled(ginger_island_content_pack):
+        if self.content.is_enabled(ContentPack.ginger_island):
             return self.region.can_reach(Region.island_trader)
         return self.logic.false_
 

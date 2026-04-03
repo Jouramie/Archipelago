@@ -1,4 +1,4 @@
-from ..mod_data import ModNames
+from ..mod_names import Mod
 from ...data.craftable_data import all_crafting_recipes_by_name
 from ...logic.base_logic import BaseLogicMixin, BaseLogic
 from ...strings.ap_names.community_upgrade_names import CommunityUpgrade
@@ -25,7 +25,7 @@ class ModSpecialOrderLogicMixin(BaseLogicMixin):
 class ModSpecialOrderLogic(BaseLogic):
     def get_modded_special_orders_rules(self):
         special_orders = {}
-        if self.content.is_enabled(ModNames.juna):
+        if self.content.is_enabled(Mod.juna):
             special_orders.update({
                 ModSpecialOrder.junas_monster_mash: self.logic.relationship.has_hearts(ModNPC.juna, 4) &
                                                     self.registry.special_order_rules[SpecialOrder.a_curious_substance] &
@@ -34,7 +34,7 @@ class ModSpecialOrderLogic(BaseLogic):
                                                     self.logic.has("Energy Tonic") & self.logic.has(Material.sap) & self.logic.has(Loot.bug_meat) &
                                                     self.logic.has(Edible.oil_of_garlic) & self.logic.has(Meal.strange_bun)
             })
-        if self.content.is_enabled(ModNames.sve):
+        if self.content.is_enabled(Mod.sve):
             special_orders.update({
                 ModSpecialOrder.andys_cellar: self.logic.has(Material.stone) & self.logic.has(Material.wood) & self.logic.has(Material.hardwood) &
                                               self.logic.has(MetalBar.iron) & self.logic.received(CommunityUpgrade.movie_theater, 1) &
@@ -52,12 +52,13 @@ class ModSpecialOrderLogic(BaseLogic):
                                                      self.logic.region.can_reach(SVERegion.susans_house)  # quest requires you make the fertilizer
             })
 
-        if self.content.is_enabled(ModNames.jasper):
+        if self.content.is_enabled(Mod.jasper):
             special_orders.update({
                 ModSpecialOrder.dwarf_scroll: self.logic.has_all(*(Artifact.dwarf_scroll_i, Artifact.dwarf_scroll_ii, Artifact.dwarf_scroll_iii,
                                                                    Artifact.dwarf_scroll_iv,)),
                 ModSpecialOrder.geode_order: self.logic.has_all(*(Geode.geode, Geode.frozen, Geode.magma, Geode.omni,)) &
-                                             self.logic.relationship.has_hearts(ModNPC.jasper, 8) & self.logic.special_order.can_complete_special_order(SpecialOrder.fragments_of_the_past)
+                                             self.logic.relationship.has_hearts(ModNPC.jasper, 8) & self.logic.special_order.can_complete_special_order(
+                    SpecialOrder.fragments_of_the_past)
             })
 
         return special_orders

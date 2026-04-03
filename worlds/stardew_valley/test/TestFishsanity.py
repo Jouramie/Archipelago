@@ -4,7 +4,7 @@ from typing import ClassVar, Set
 from .assertion import WorldAssertMixin
 from .bases import SVTestBase
 from ..content.feature import fishsanity
-from ..mods.mod_data import ModNames
+from ..mods.mod_names import Mod
 from ..options import Fishsanity, ExcludeGingerIsland, Mods, SpecialOrderLocations, Goal, QuestLocations
 from ..strings.fish_names import Fish, SVEFish, DistantLandsFish
 
@@ -150,7 +150,7 @@ class TestFishsanityAll_ExcludeGingerIsland(SVFishsanityTestBase):
 class TestFishsanityAll_SVE(SVFishsanityTestBase):
     options = complete_options_with_default({
         Fishsanity: Fishsanity.option_all,
-        Mods: ModNames.sve,
+        Mods: Mod.sve,
     })
     expected_fishes = (
             pelican_town_legendary_fishes |
@@ -175,7 +175,7 @@ class TestFishsanityAll_ExcludeGingerIsland_SVE(SVFishsanityTestBase):
     options = complete_options_with_default({
         Fishsanity: Fishsanity.option_all,
         ExcludeGingerIsland: ExcludeGingerIsland.option_true,
-        Mods: ModNames.sve,
+        Mods: Mod.sve,
     })
     expected_fishes = (
             pelican_town_legendary_fishes |
@@ -194,7 +194,7 @@ class TestFishsanityAll_ExcludeGingerIsland_SVE(SVFishsanityTestBase):
 class TestFishsanityAll_DistantLands(SVFishsanityTestBase):
     options = complete_options_with_default({
         Fishsanity: Fishsanity.option_all,
-        Mods: ModNames.distant_lands,
+        Mods: Mod.distant_lands,
     })
     expected_fishes = (
             pelican_town_legendary_fishes |
@@ -298,7 +298,7 @@ class TestFishsanityExcludeHardFishes_Vanilla(SVFishsanityTestBase):
 class TestFishsanityExcludeHardFishes_SVE(SVFishsanityTestBase):
     options = complete_options_with_default({
         Fishsanity: Fishsanity.option_exclude_hard_fish,
-        Mods: ModNames.sve,
+        Mods: Mod.sve,
     })
     expected_fishes = (
             pelican_town_medium_special_fishes |
@@ -316,7 +316,7 @@ class TestFishsanityExcludeHardFishes_SVE(SVFishsanityTestBase):
 class TestFishsanityExcludeHardFishes_DistantLands(SVFishsanityTestBase):
     options = complete_options_with_default({
         Fishsanity: Fishsanity.option_exclude_hard_fish,
-        Mods: ModNames.distant_lands,
+        Mods: Mod.distant_lands,
     })
     expected_fishes = (
             pelican_town_medium_special_fishes |
@@ -356,7 +356,7 @@ class TestFishsanityOnlyEasyFishes_Vanilla(SVFishsanityTestBase):
 class TestFishsanityOnlyEasyFishes_SVE(SVFishsanityTestBase):
     options = complete_options_with_default({
         Fishsanity: Fishsanity.option_only_easy_fish,
-        Mods: ModNames.sve,
+        Mods: Mod.sve,
     })
     expected_fishes = (
             pelican_town_easy_normal_fishes |
@@ -369,7 +369,7 @@ class TestFishsanityOnlyEasyFishes_SVE(SVFishsanityTestBase):
 class TestFishsanityOnlyEasyFishes_DistantLands(SVFishsanityTestBase):
     options = complete_options_with_default({
         Fishsanity: Fishsanity.option_only_easy_fish,
-        Mods: ModNames.distant_lands,
+        Mods: Mod.distant_lands,
     })
     expected_fishes = (
             pelican_town_easy_normal_fishes |
@@ -395,7 +395,7 @@ class TestFishsanityMasterAnglerSVEWithoutQuests(WorldAssertMixin, SVTestBase):
         Fishsanity: Fishsanity.option_all,
         Goal: Goal.option_master_angler,
         QuestLocations: -1,
-        Mods: (ModNames.sve,),
+        Mods: (Mod.sve,),
     }
 
     @property

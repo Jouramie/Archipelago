@@ -1,10 +1,9 @@
 from typing import Dict
 
 from .base_logic import BaseLogicMixin, BaseLogic
-from ..content.vanilla.ginger_island import ginger_island_content_pack
-from ..content.vanilla.qi_board import qi_board_content_pack
 from ..options import SpecialOrderLocations
 from ..stardew_rule import StardewRule, Has, false_
+from ..strings.content_pack_names import ContentPack
 from ..strings.animal_product_names import AnimalProduct
 from ..strings.ap_names.transport_names import Transportation
 from ..strings.artisan_good_names import ArtisanGood
@@ -57,7 +56,7 @@ class SpecialOrderLogic(BaseLogic):
 
         })
 
-        if ginger_island_content_pack.name in self.content.registered_packs:
+        if ContentPack.ginger_island in self.content.registered_packs:
             self.update_rules({
                 SpecialOrder.island_ingredients: self.logic.relationship.can_meet(NPC.caroline) & self.logic.special_order.has_island_transport() &
                                                  self.logic.ability.can_farm_perfectly() & self.logic.shipping.can_ship(Vegetable.taro_root) &
@@ -72,7 +71,7 @@ class SpecialOrderLogic(BaseLogic):
                 SpecialOrder.tropical_fish: false_,
             })
 
-        if qi_board_content_pack.name in self.content.registered_packs:
+        if ContentPack.qi_board in self.content.registered_packs:
             self.update_rules({
                 SpecialOrder.qis_crop: self.logic.ability.can_farm_perfectly() & self.logic.region.can_reach(Region.greenhouse) &
                                        self.logic.region.can_reach(Region.island_west) & self.logic.skill.has_total_level(50) &

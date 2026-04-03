@@ -6,7 +6,7 @@ from typing import Protocol, ClassVar
 from Options import Range, NamedRange, Toggle, Choice, OptionSet, PerGameCommonOptions, DeathLink, OptionList, \
     Visibility, Removed, OptionCounter
 from .jojapocalypse_options import Jojapocalypse, JojaStartPrice, JojaEndPrice, JojaPricingPattern, JojaPurchasesForMembership, JojaAreYouSure
-from ..mods.mod_data import ModNames, invalid_mod_combinations
+from ..mods.mod_names import Mod, invalid_mod_combinations
 from ..strings.ap_names.ap_option_names import BuffOptionName, WalnutsanityOptionName, SecretsanityOptionName, EatsanityOptionName, ChefsanityOptionName, \
     StartWithoutOptionName, HatsanityOptionName, AllowedFillerOptionName, CustomLogicOptionName
 from ..strings.bundle_names import all_cc_bundle_names, MemeBundleName
@@ -1055,23 +1055,23 @@ class Gifting(Toggle):
     default = 1
 
 
-all_mods = {ModNames.deepwoods, ModNames.tractor, ModNames.big_backpack,
-            ModNames.luck_skill, ModNames.magic, ModNames.socializing_skill, ModNames.archaeology,
-            ModNames.cooking_skill, ModNames.binning_skill, ModNames.juna,
-            ModNames.jasper, ModNames.alec, ModNames.yoba, ModNames.eugene,
-            ModNames.wellwick, ModNames.ginger, ModNames.shiko, ModNames.delores,
-            ModNames.ayeisha, ModNames.riley, ModNames.skull_cavern_elevator, ModNames.sve, ModNames.distant_lands,
-            ModNames.alecto, ModNames.lacey, ModNames.boarding_house}
+all_mods = {Mod.deepwoods, Mod.tractor, Mod.big_backpack,
+            Mod.luck_skill, Mod.magic, Mod.socializing_skill, Mod.archaeology,
+            Mod.cooking_skill, Mod.binning_skill, Mod.juna,
+            Mod.jasper, Mod.alec, Mod.yoba, Mod.eugene,
+            Mod.wellwick, Mod.ginger, Mod.shiko, Mod.delores,
+            Mod.ayeisha, Mod.riley, Mod.skull_cavern_elevator, Mod.sve, Mod.distant_lands,
+            Mod.alecto, Mod.lacey, Mod.boarding_house}
 
 # These mods have been disabled because either they are not updated for the current supported version of Stardew Valley,
 # or we didn't find the time to validate that they work or fix compatibility issues if they do.
 # Once a mod is validated to be functional, it can simply be removed from this list
 # SVE specifically is disabled because their main version is significantly ahead of ours, with breaking changes, and nobody is maintaining our integration.
-disabled_mods = {ModNames.deepwoods, ModNames.magic,
-                 ModNames.cooking_skill,
-                 ModNames.yoba, ModNames.eugene,
-                 ModNames.wellwick, ModNames.shiko, ModNames.delores, ModNames.riley,
-                 ModNames.boarding_house, ModNames.sve}
+disabled_mods = {Mod.deepwoods, Mod.magic,
+                 Mod.cooking_skill,
+                 Mod.yoba, Mod.eugene,
+                 Mod.wellwick, Mod.shiko, Mod.delores, Mod.riley,
+                 Mod.boarding_house, Mod.sve}
 
 enabled_mods = all_mods.difference(disabled_mods)
 all_mods_except_invalid_combinations = set(all_mods)

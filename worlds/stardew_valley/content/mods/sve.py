@@ -1,13 +1,13 @@
 from ..game_content import ContentPack, StardewContent
 from ..mod_registry import register_mod_content_pack
 from ..override import override
-from ..vanilla.ginger_island import ginger_island_content_pack as ginger_island_content_pack
 from ...data import villagers_data, fish_data
 from ...data.game_item import ItemTag, Tag
 from ...data.harvest import ForagingSource, HarvestCropSource
 from ...data.requirement import YearRequirement, CombatRequirement, SpecificFriendRequirement, ToolRequirement, SkillRequirement, FishingRequirement
 from ...data.shop import ShopSource
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.craftable_names import ModEdible
 from ...strings.crop_names import Fruit, SVEVegetable, SVEFruit
 from ...strings.fish_names import WaterItem, SVEWaterItem
@@ -25,13 +25,13 @@ from ...strings.tool_names import Tool, ToolMaterial
 from ...strings.villager_names import ModNPC
 
 # Used to adapt content not yet moved to content packs to easily detect when SVE and Ginger Island are both enabled.
-SVE_GINGER_ISLAND_PACK = ModNames.sve + "+" + ginger_island_content_pack.name
+SVE_GINGER_ISLAND_PACK = Mod.sve + "+" + ContentPackNames.ginger_island
 
 
 class SVEContentPack(ContentPack):
 
     def fish_hook(self, content: StardewContent):
-        if ginger_island_content_pack.name not in content.registered_packs:
+        if ContentPackNames.ginger_island not in content.registered_packs:
             content.fishes.pop(fish_data.baby_lunaloo.name)
             content.fishes.pop(fish_data.clownfish.name)
             content.fishes.pop(fish_data.lunaloo.name)
@@ -48,7 +48,7 @@ class SVEContentPack(ContentPack):
             content.fishes.pop(fish_data.torpedo_trout.name)
 
     def villager_hook(self, content: StardewContent):
-        if ginger_island_content_pack.name not in content.registered_packs:
+        if ContentPackNames.ginger_island not in content.registered_packs:
             # Remove Lance if Ginger Island is not in content since he is first encountered in Volcano Forge
             content.villagers.pop(villagers_data.lance.name)
 
@@ -59,7 +59,7 @@ class SVEContentPack(ContentPack):
         content.untag_item(SVESeed.stalk, tag=ItemTag.CROPSANITY_SEED)
         content.untag_item(SVESeed.void, tag=ItemTag.CROPSANITY_SEED)
         content.untag_item(SVESeed.ancient_fern, tag=ItemTag.CROPSANITY_SEED)
-        if ginger_island_content_pack.name not in content.registered_packs:
+        if ContentPackNames.ginger_island not in content.registered_packs:
             # Remove Highlands seeds as these are behind Lance existing.
             content.game_items.pop(SVESeed.void)
             content.game_items.pop(SVEVegetable.void_root)
@@ -71,15 +71,15 @@ class SVEContentPack(ContentPack):
             content.game_items.pop(SVEFruit.slime_berry)
 
     def finalize_hook(self, content: StardewContent):
-        if ginger_island_content_pack.name in content.registered_packs:
+        if ContentPackNames.ginger_island in content.registered_packs:
             content.registered_packs.add(SVE_GINGER_ISLAND_PACK)
 
 
 register_mod_content_pack(SVEContentPack(
-    ModNames.sve,
+    Mod.sve,
     weak_dependencies=(
-        ginger_island_content_pack.name,
-        ModNames.jasper,  # To override Marlon and Gunther
+        ContentPackNames.ginger_island,
+        Mod.jasper,  # To override Marlon and Gunther
     ),
     shop_sources={
         SVEGift.aged_blue_moon_wine: (ShopSource(price=28000, shop_region=SVERegion.blue_moon_vineyard),),
@@ -216,6 +216,6 @@ register_mod_content_pack(SVEContentPack(
         villagers_data.scarlett,
         villagers_data.susan,
         villagers_data.morris,
-        override(villagers_data.wizard, bachelor=True, mod_name=ModNames.sve),
+        override(villagers_data.wizard, bachelor=True, mod_name=Mod.sve),
     )
 ))

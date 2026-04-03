@@ -8,6 +8,7 @@ from ...data.monster_data import MonsterSource
 from ...data.requirement import RegionRequirement, MeetRequirement, MonsterKillRequirement
 from ...data.shop import ShopSource, TailoringSource
 from ...logic.time_logic import MAX_MONTHS
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.crop_names import Fruit, Vegetable
 from ...strings.currency_names import Currency
 from ...strings.forageable_names import Forageable, Mushroom
@@ -20,7 +21,7 @@ from ...strings.seed_names import Seed
 from ...strings.villager_names import NPC
 
 the_desert = ContentPack(
-    "The Desert (Vanilla)",
+    ContentPackNames.the_desert,
     dependencies=(
         pelican_town_content_pack.name,
     ),

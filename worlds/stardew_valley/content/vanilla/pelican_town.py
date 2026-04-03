@@ -17,6 +17,7 @@ from ...strings.artisan_good_names import ArtisanGood
 from ...strings.book_names import Book
 from ...strings.building_names import Building as BuildingNames
 from ...strings.catalogue_names import Catalogue
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.craftable_names import Furniture
 from ...strings.crop_names import Fruit
 from ...strings.currency_names import Currency
@@ -36,7 +37,7 @@ from ...strings.tool_names import Tool, ToolMaterial
 from ...strings.villager_names import NPC
 
 pelican_town = ContentPack(
-    "Pelican Town (Vanilla)",
+    ContentPackNames.pelican_town,
     harvest_sources={
         # Spring
         Forageable.daffodil: (

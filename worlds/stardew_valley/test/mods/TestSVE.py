@@ -1,6 +1,6 @@
 from ..bases import SVTestBase
 from ... import options
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 from ...strings.ap_names.mods.mod_items import SVEQuestItem
 from ...strings.ap_names.transport_names import Transportation
 from ...strings.quest_names import ModQuest
@@ -10,7 +10,7 @@ from ...strings.region_names import SVERegion
 class TestAuroraVineyard(SVTestBase):
     options = {
         options.Cropsanity.internal_name: options.Cropsanity.option_enabled,
-        options.Mods.internal_name: frozenset({ModNames.sve}),
+        options.Mods.internal_name: frozenset({Mod.sve}),
     }
 
     def test_need_tablet_to_do_quest(self):

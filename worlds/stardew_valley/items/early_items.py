@@ -2,11 +2,11 @@ from random import Random
 
 from .. import options as stardew_options
 from ..content import StardewContent
-from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..strings.ap_names.ap_option_names import ChefsanityOptionName, StartWithoutOptionName
 from ..strings.ap_names.ap_weapon_names import APWeapon
 from ..strings.ap_names.transport_names import Transportation
 from ..strings.building_names import Building
+from ..strings.content_pack_names import ContentPack
 from ..strings.region_names import Region
 from ..strings.season_names import Season
 from ..strings.skill_names import Skill
@@ -60,7 +60,7 @@ def setup_early_items(multiworld, options: stardew_options.StardewValleyOptions,
     else:
         early_candidates.append(APWeapon.sword)
 
-    if content.is_enabled(ginger_island_content_pack):
+    if content.is_enabled(ContentPack.ginger_island):
         early_candidates.append(Transportation.island_obelisk)
         early_candidates.append(Transportation.boat_repair)
 

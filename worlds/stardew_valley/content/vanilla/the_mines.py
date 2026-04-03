@@ -8,6 +8,7 @@ from ...data.monster_data import MonsterSource
 from ...data.requirement import ToolRequirement, RegionRequirement
 from ...data.shop import TailoringSource
 from ...logic.time_logic import MAX_MONTHS
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.fish_names import Fish
 from ...strings.forageable_names import Forageable, Mushroom
 from ...strings.monster_names import Monster
@@ -15,7 +16,7 @@ from ...strings.region_names import Region
 from ...strings.tool_names import Tool
 
 the_mines = ContentPack(
-    "The Mines (Vanilla)",
+    ContentPackNames.the_mines,
     dependencies=(
         pelican_town_content_pack.name,
     ),

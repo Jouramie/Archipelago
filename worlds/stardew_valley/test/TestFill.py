@@ -2,7 +2,7 @@ from .assertion import WorldAssertMixin
 from .bases import SVTestBase
 from .options.presets import minimal_locations_maximal_items
 from .. import options
-from ..mods.mod_data import ModNames
+from ..mods.mod_names import Mod
 
 
 class TestMinLocationsMaxItems(WorldAssertMixin, SVTestBase):
@@ -21,7 +21,7 @@ class TestSpecificSeedForTroubleshooting(WorldAssertMixin, SVTestBase):
         options.Fishsanity: options.Fishsanity.option_all,
         options.Goal: options.Goal.option_master_angler,
         options.QuestLocations: -1,
-        options.Mods: (ModNames.sve,),
+        options.Mods: (Mod.sve,),
     }
     seed = 65453499742665118161
 

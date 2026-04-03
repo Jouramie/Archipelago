@@ -3,8 +3,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from ..content import StardewContent, content_packs
+from ..content import StardewContent
 from ..options import StardewValleyOptions, FestivalLocations
+from ..strings.content_pack_names import ContentPack
 from ..strings.crop_names import Fruit
 from ..strings.currency_names import Currency
 from ..strings.quality_names import CropQuality, FishQuality, ForageQuality
@@ -23,7 +24,7 @@ class VanillaItemSource(BundleItemSource):
 
 class IslandItemSource(BundleItemSource):
     def can_appear(self, content: StardewContent, options: StardewValleyOptions) -> bool:
-        return content_packs.ginger_island_content_pack.name in content.registered_packs
+        return ContentPack.ginger_island in content.registered_packs
 
 
 class FestivalItemSource(BundleItemSource):
@@ -39,7 +40,7 @@ class MasteryItemSource(BundleItemSource):
 
 class QiBoardItemSource(BundleItemSource):
     def can_appear(self, content: StardewContent, options: StardewValleyOptions) -> bool:
-        return content_packs.qi_board_content_pack.name in content.registered_packs
+        return ContentPack.qi_board in content.registered_packs
 
 
 class ContentItemSource(BundleItemSource):

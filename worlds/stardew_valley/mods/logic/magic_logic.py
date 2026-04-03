@@ -1,5 +1,5 @@
 from ...logic.base_logic import BaseLogicMixin, BaseLogic
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 from ...stardew_rule import StardewRule
 from ...strings.ap_names.skill_level_names import ModSkillLevel
 from ...strings.region_names import MagicRegion
@@ -15,19 +15,19 @@ class MagicLogicMixin(BaseLogicMixin):
 # TODO add logic.mods.magic for altar
 class MagicLogic(BaseLogic):
     def can_use_clear_debris_instead_of_tool_level(self, level: int) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         return self.logic.received(MagicSpell.clear_debris) & self.can_use_altar() & self.logic.received(ModSkillLevel.magic_level, level)
 
     def can_use_altar(self) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         return self.logic.region.can_reach(MagicRegion.altar) & self.logic.received_any(*all_spells)
 
     def has_any_spell(self) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         return self.can_use_altar()
@@ -44,7 +44,7 @@ class MagicLogic(BaseLogic):
         return self.logic.count(count, *support_spell_rule)
 
     def has_decent_spells(self) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         magic_resource_rule = self.can_use_altar() & self.logic.received(ModSkillLevel.magic_level, 2)
@@ -52,7 +52,7 @@ class MagicLogic(BaseLogic):
         return magic_resource_rule & magic_attack_options_rule
 
     def has_good_spells(self) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         magic_resource_rule = self.can_use_altar() & self.logic.received(ModSkillLevel.magic_level, 4)
@@ -61,7 +61,7 @@ class MagicLogic(BaseLogic):
         return magic_resource_rule & magic_attack_options_rule & magic_support_options_rule
 
     def has_great_spells(self) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         magic_resource_rule = self.can_use_altar() & self.logic.received(ModSkillLevel.magic_level, 6)
@@ -70,7 +70,7 @@ class MagicLogic(BaseLogic):
         return magic_resource_rule & magic_attack_options_rule & magic_support_options_rule
 
     def has_amazing_spells(self) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         magic_resource_rule = self.can_use_altar() & self.logic.received(ModSkillLevel.magic_level, 8)
@@ -79,7 +79,7 @@ class MagicLogic(BaseLogic):
         return magic_resource_rule & magic_attack_options_rule & magic_support_options_rule
 
     def can_blink(self) -> StardewRule:
-        if not self.content.is_enabled(ModNames.magic):
+        if not self.content.is_enabled(Mod.magic):
             return self.logic.false_
 
         return self.logic.received(MagicSpell.blink) & self.can_use_altar()

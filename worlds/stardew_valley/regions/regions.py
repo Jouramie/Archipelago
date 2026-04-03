@@ -5,8 +5,8 @@ from . import vanilla_data, mods
 from .entrance_rando import create_player_randomization_flag, connect_regions
 from .model import ConnectionData, RegionData
 from ..content import StardewContent
-from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..options import StardewValleyOptions
+from ..strings.content_pack_names import ContentPack
 
 
 class RegionFactory(Protocol):
@@ -17,7 +17,7 @@ class RegionFactory(Protocol):
 def create_regions(region_factory: RegionFactory, world_options: StardewValleyOptions, content: StardewContent) -> dict[str, Region]:
     connection_data_by_name, region_data_by_name = create_connections_and_regions(content.registered_packs)
 
-    regions_by_name: dict[str: Region] = {
+    regions_by_name: dict[str, Region] = {
         region_name: region_factory(region_name)
         for region_name in region_data_by_name
     }
@@ -42,7 +42,7 @@ def create_all_regions(active_content_packs: set[str]) -> dict[str, RegionData]:
 
 
 def create_vanilla_regions(active_content_packs: set[str]) -> dict[str, RegionData]:
-    if ginger_island_content_pack.name in active_content_packs:
+    if ContentPack.ginger_island in active_content_packs:
         return {**vanilla_data.regions_with_ginger_island_by_name}
     else:
         return {**vanilla_data.regions_without_ginger_island_by_name}
@@ -55,7 +55,7 @@ def create_all_connections(active_content_packs: set[str]) -> dict[str, Connecti
 
 
 def create_vanilla_connections(active_content_packs: set[str]) -> dict[str, ConnectionData]:
-    if ginger_island_content_pack.name in active_content_packs:
+    if ContentPack.ginger_island in active_content_packs:
         return {**vanilla_data.connections_with_ginger_island_by_name}
     else:
         return {**vanilla_data.connections_without_ginger_island_by_name}

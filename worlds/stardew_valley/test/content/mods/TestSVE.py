@@ -2,7 +2,7 @@ from .. import SVContentPackTestBase
 from ...bases import SVTestBase
 from .... import options
 from ....content import content_packs
-from ....mods.mod_data import ModNames
+from ....mods.mod_names import Mod
 from ....strings.fish_names import SVEFish
 from ....strings.villager_names import ModNPC, NPC
 
@@ -23,14 +23,14 @@ class TestVanilla(SVContentPackTestBase):
 
 
 class TestSVE(SVContentPackTestBase):
-    mods = (ModNames.sve,)
+    mods = (Mod.sve,)
 
     def test_lance_is_not_included(self):
         self.assertNotIn(ModNPC.lance, self.content.villagers)
 
     def test_wizard_is_bachelor(self):
         self.assertTrue(self.content.villagers[NPC.wizard].bachelor)
-        self.assertEqual(self.content.villagers[NPC.wizard].mod_name, ModNames.sve)
+        self.assertEqual(self.content.villagers[NPC.wizard].mod_name, Mod.sve)
 
     def test_sve_npc_are_included(self):
         self.assertIn(ModNPC.apples, self.content.villagers)
@@ -74,7 +74,7 @@ class TestSVE(SVContentPackTestBase):
 
 class TestSVEWithGingerIsland(SVContentPackTestBase):
     vanilla_packs = SVContentPackTestBase.vanilla_packs + (content_packs.ginger_island_content_pack,)
-    mods = (ModNames.sve,)
+    mods = (Mod.sve,)
 
     def test_lance_is_included(self):
         self.assertIn(ModNPC.lance, self.content.villagers)
@@ -132,7 +132,7 @@ class TestSVEWithGingerIsland(SVContentPackTestBase):
 class TestSVEWithoutGingerIslandE2E(SVTestBase):
     options = {
         options.ExcludeGingerIsland: options.ExcludeGingerIsland.option_true,
-        options.Mods: ModNames.sve
+        options.Mods: Mod.sve
     }
 
     def test_lance_is_not_in_the_pool(self):

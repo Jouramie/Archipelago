@@ -4,7 +4,7 @@ from unittest import TestCase
 from BaseClasses import MultiWorld
 from ... import item_table, location_table
 from ...content.content_packs import vanilla_content_pack_names
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 
 
 class ModAssertMixin(TestCase):
@@ -14,9 +14,9 @@ class ModAssertMixin(TestCase):
         else:
             chosen_content_packs = vanilla_content_pack_names | set(chosen_content_packs)
 
-        if ModNames.jasper in chosen_content_packs:
+        if Mod.jasper in chosen_content_packs:
             # Jasper is a weird case because it shares NPC w/ SVE...
-            chosen_content_packs |= {ModNames.sve}
+            chosen_content_packs |= {Mod.sve}
 
         for multiworld_item in multiworld.get_items():
             item = item_table[multiworld_item.name]

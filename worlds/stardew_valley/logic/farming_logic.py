@@ -3,9 +3,9 @@ from typing import Union, Tuple
 
 from Utils import cache_self1
 from .base_logic import BaseLogicMixin, BaseLogic
-from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..stardew_rule import StardewRule
 from ..strings.ap_names.ap_option_names import CustomLogicOptionName
+from ..strings.content_pack_names import ContentPack
 from ..strings.craftable_names import Bomb
 from ..strings.fertilizer_names import Fertilizer
 from ..strings.region_names import Region, LogicRegion
@@ -60,8 +60,8 @@ class FarmingLogic(BaseLogic):
     @cache_self1
     def can_plant_and_grow_item(self, seasons: Union[str, Tuple[str]]) -> StardewRule:
         if seasons == ():  # indoor farming
-            return (self.logic.region.can_reach(Region.greenhouse) & self.logic.farming.has_farming_and_watering_tools) |\
-                   (self.logic.farming.has_island_farm() & self.logic.farming.has_farming_tools_and_water)
+            return (self.logic.region.can_reach(Region.greenhouse) & self.logic.farming.has_farming_and_watering_tools) | \
+                (self.logic.farming.has_island_farm() & self.logic.farming.has_farming_tools_and_water)
 
         if isinstance(seasons, str):
             seasons = (seasons,)
@@ -69,6 +69,6 @@ class FarmingLogic(BaseLogic):
         return self.logic.or_(*(self.logic.region.can_reach(farming_region_by_season[season]) for season in seasons))
 
     def has_island_farm(self) -> StardewRule:
-        if self.content.is_enabled(ginger_island_content_pack):
+        if self.content.is_enabled(ContentPack.ginger_island):
             return self.logic.region.can_reach(Region.island_west)
         return self.logic.false_

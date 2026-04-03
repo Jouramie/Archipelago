@@ -3,7 +3,7 @@ import logging
 import Options as ap_options
 from . import options
 from .jojapocalypse_options import Jojapocalypse, JojaAreYouSure
-from ..mods.mod_data import mod_combination_is_valid, get_invalid_mod_combination
+from ..mods.mod_names import mod_combination_is_valid, get_invalid_mod_combination
 from ..options.settings import StardewSettings
 from ..strings.ap_names.ap_option_names import EatsanityOptionName, HatsanityOptionName
 

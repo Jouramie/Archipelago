@@ -1,6 +1,6 @@
 from typing import Dict
 
-from ..mod_data import ModNames
+from ..mod_names import Mod
 from ...logic.base_logic import BaseLogicMixin, BaseLogic
 from ...stardew_rule import StardewRule
 from ...strings.artisan_good_names import ModArtisanGood
@@ -27,14 +27,14 @@ class ModItemLogic(BaseLogic):
 
     def get_modded_item_rules(self) -> Dict[str, StardewRule]:
         items = dict()
-        if self.content.is_enabled(ModNames.boarding_house):
+        if self.content.is_enabled(Mod.boarding_house):
             items.update(self.get_boarding_house_item_rules())
         return items
 
     def modify_vanilla_item_rules_with_mod_additions(self, item_rule: Dict[str, StardewRule]):
-        if self.content.is_enabled(ModNames.sve):
+        if self.content.is_enabled(Mod.sve):
             item_rule.update(self.get_modified_item_rules_for_sve(item_rule))
-        if self.content.is_enabled(ModNames.deepwoods):
+        if self.content.is_enabled(Mod.deepwoods):
             item_rule.update(self.get_modified_item_rules_for_deep_woods(item_rule))
         return item_rule
 

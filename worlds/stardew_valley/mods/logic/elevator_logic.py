@@ -1,5 +1,5 @@
 from ...logic.base_logic import BaseLogicMixin, BaseLogic
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 from ...options import ElevatorProgression
 from ...stardew_rule import StardewRule, True_
 
@@ -12,6 +12,6 @@ class ModElevatorLogicMixin(BaseLogicMixin):
 
 class ModElevatorLogic(BaseLogic):
     def has_skull_cavern_elevator_to_floor(self, floor: int) -> StardewRule:
-        if self.options.elevator_progression != ElevatorProgression.option_vanilla and self.content.is_enabled(ModNames.skull_cavern_elevator):
+        if self.options.elevator_progression != ElevatorProgression.option_vanilla and self.content.is_enabled(Mod.skull_cavern_elevator):
             return self.logic.received("Progressive Skull Cavern Elevator", floor // 25)
         return True_()

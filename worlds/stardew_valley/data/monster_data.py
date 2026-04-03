@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import List, Tuple, Dict, Callable
 
 from .game_item import Source
-from ..mods.mod_data import ModNames
 from ..mods.mod_monster_locations import modded_monsters_locations
+from ..mods.mod_names import Mod
 from ..strings.monster_names import Monster, MonsterCategory
 from ..strings.performance_names import Performance
 from ..strings.region_names import Region
@@ -133,27 +133,27 @@ magma_sparker = create_monster(Monster.magma_sparker, MonsterCategory.magma_spri
 
 haunted_skull = create_monster(Monster.haunted_skull, MonsterCategory.none, quarry_mine, Performance.great)
 
-register_monster_modification(ModNames.sve, shadow_brute_dangerous, update_monster_locations)
-register_monster_modification(ModNames.sve, shadow_sniper, update_monster_locations)
-register_monster_modification(ModNames.sve, shadow_shaman_dangerous, update_monster_locations)
-register_monster_modification(ModNames.sve, mummy_dangerous, update_monster_locations)
-register_monster_modification(ModNames.sve, royal_serpent, update_monster_locations)
-register_monster_modification(ModNames.sve, skeleton_dangerous, update_monster_locations)
-register_monster_modification(ModNames.sve, skeleton_mage, update_monster_locations)
-register_monster_modification(ModNames.sve, dust_sprite_dangerous, update_monster_locations)
+register_monster_modification(Mod.sve, shadow_brute_dangerous, update_monster_locations)
+register_monster_modification(Mod.sve, shadow_sniper, update_monster_locations)
+register_monster_modification(Mod.sve, shadow_shaman_dangerous, update_monster_locations)
+register_monster_modification(Mod.sve, mummy_dangerous, update_monster_locations)
+register_monster_modification(Mod.sve, royal_serpent, update_monster_locations)
+register_monster_modification(Mod.sve, skeleton_dangerous, update_monster_locations)
+register_monster_modification(Mod.sve, skeleton_mage, update_monster_locations)
+register_monster_modification(Mod.sve, dust_sprite_dangerous, update_monster_locations)
 
-register_monster_modification(ModNames.deepwoods, shadow_brute, update_monster_locations)
-register_monster_modification(ModNames.deepwoods, cave_fly, update_monster_locations)
-register_monster_modification(ModNames.deepwoods, green_slime, update_monster_locations)
+register_monster_modification(Mod.deepwoods, shadow_brute, update_monster_locations)
+register_monster_modification(Mod.deepwoods, cave_fly, update_monster_locations)
+register_monster_modification(Mod.deepwoods, green_slime, update_monster_locations)
 
-register_monster_modification(ModNames.boarding_house, pepper_rex, update_monster_locations)
-register_monster_modification(ModNames.boarding_house, shadow_brute, update_monster_locations)
-register_monster_modification(ModNames.boarding_house, iridium_bat, update_monster_locations)
-register_monster_modification(ModNames.boarding_house, frost_bat, update_monster_locations)
-register_monster_modification(ModNames.boarding_house, cave_fly, update_monster_locations)
-register_monster_modification(ModNames.boarding_house, bat, update_monster_locations)
-register_monster_modification(ModNames.boarding_house, grub, update_monster_locations)
-register_monster_modification(ModNames.boarding_house, bug, update_monster_locations)
+register_monster_modification(Mod.boarding_house, pepper_rex, update_monster_locations)
+register_monster_modification(Mod.boarding_house, shadow_brute, update_monster_locations)
+register_monster_modification(Mod.boarding_house, iridium_bat, update_monster_locations)
+register_monster_modification(Mod.boarding_house, frost_bat, update_monster_locations)
+register_monster_modification(Mod.boarding_house, cave_fly, update_monster_locations)
+register_monster_modification(Mod.boarding_house, bat, update_monster_locations)
+register_monster_modification(Mod.boarding_house, grub, update_monster_locations)
+register_monster_modification(Mod.boarding_house, bug, update_monster_locations)
 
 
 def all_monsters_by_name_given_content_packs(mods: set[str]) -> dict[str, StardewMonster]:

@@ -8,7 +8,7 @@ from ..assertion import WorldAssertMixin, ModAssertMixin
 from ..bases import skip_long_tests, SVTestCase, solo_multiworld
 from ..options.option_names import all_option_choices
 from ... import options
-from ...mods.mod_data import ModNames, mod_combination_is_valid
+from ...mods.mod_names import Mod, mod_combination_is_valid
 from ...options.options import all_mods
 
 
@@ -19,7 +19,7 @@ class TestTroubleshootMods(WorldAssertMixin, ModAssertMixin, SVTestCase):
 
         world_options = {
             options.EntranceRandomization: options.EntranceRandomization.option_buildings,
-            options.Mods: ModNames.sve
+            options.Mods: Mod.sve
         }
 
         with self.solo_world_sub_test(world_options=world_options, seed=seed, world_caching=False) as (multiworld, _):

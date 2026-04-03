@@ -4,7 +4,7 @@ from typing import ClassVar
 from .bases import SVTestBase
 from .. import options
 from ..locations import LocationTags, location_table
-from ..mods.mod_data import ModNames
+from ..mods.mod_names import Mod
 
 
 class SVMonstersanityTestBase(SVTestBase):
@@ -71,7 +71,7 @@ class TestMonstersanityNone(SVMonstersanityTestBase):
 class TestMonstersanityNoneWithSVE(SVMonstersanityTestBase):
     options = {
         options.Monstersanity: options.Monstersanity.option_none,
-        options.Mods: ModNames.sve,
+        options.Mods: Mod.sve,
     }
     expected_progressive_generic_weapon = 6
     expected_progressive_slingshot = 2
@@ -124,7 +124,7 @@ class TestMonstersanitySplit(SVMonstersanityTestBase):
 class TestMonstersanitySplitWithSVE(SVMonstersanityTestBase):
     options = {
         options.Monstersanity: options.Monstersanity.option_split_goals,
-        options.Mods: ModNames.sve,
+        options.Mods: Mod.sve,
     }
     expected_progressive_specific_weapon = 6
     expected_progressive_slingshot = 2

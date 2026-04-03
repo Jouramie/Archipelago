@@ -1,80 +1,80 @@
 from ..game_content import ContentPack
 from ..mod_registry import register_mod_content_pack
 from ...data import villagers_data
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 
 register_mod_content_pack(ContentPack(
-    ModNames.alec,
+    Mod.alec,
     villagers=(
         villagers_data.alec,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.ayeisha,
+    Mod.ayeisha,
     villagers=(
         villagers_data.ayeisha,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.delores,
+    Mod.delores,
     villagers=(
         villagers_data.delores,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.eugene,
+    Mod.eugene,
     villagers=(
         villagers_data.eugene,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.juna,
+    Mod.juna,
     villagers=(
         villagers_data.juna,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.ginger,
+    Mod.ginger,
     villagers=(
         villagers_data.kitty,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.shiko,
+    Mod.shiko,
     villagers=(
         villagers_data.shiko,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.wellwick,
+    Mod.wellwick,
     villagers=(
         villagers_data.wellwick,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.yoba,
+    Mod.yoba,
     villagers=(
         villagers_data.yoba,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.riley,
+    Mod.riley,
     villagers=(
         villagers_data.riley,
     )
 ))
 
 register_mod_content_pack(ContentPack(
-    ModNames.lacey,
+    Mod.lacey,
     villagers=(
         villagers_data.lacey,
     )

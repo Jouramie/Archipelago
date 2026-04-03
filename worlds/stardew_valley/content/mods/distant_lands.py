@@ -4,7 +4,7 @@ from ...data import villagers_data, fish_data
 from ...data.game_item import ItemTag, Tag
 from ...data.harvest import ForagingSource, HarvestCropSource
 from ...data.requirement import QuestRequirement
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 from ...strings.crop_names import DistantLandsCrop
 from ...strings.forageable_names import DistantLandsForageable
 from ...strings.quest_names import ModQuest
@@ -21,7 +21,7 @@ class DistantLandsContentPack(ContentPack):
 
 
 register_mod_content_pack(DistantLandsContentPack(
-    ModNames.distant_lands,
+    Mod.distant_lands,
     fishes=(
         fish_data.void_minnow,
         fish_data.purple_algae,
@@ -35,8 +35,11 @@ register_mod_content_pack(DistantLandsContentPack(
         DistantLandsForageable.swamp_herb: (ForagingSource(regions=(Region.witch_swamp,)),),
         DistantLandsForageable.brown_amanita: (ForagingSource(regions=(Region.witch_swamp,)),),
         DistantLandsSeed.void_mint: (ForagingSource(regions=(Region.witch_swamp,), other_requirements=(QuestRequirement(ModQuest.CorruptedCropsTask),)),),
-        DistantLandsCrop.void_mint: (Tag(ItemTag.VEGETABLE), HarvestCropSource(seed=DistantLandsSeed.void_mint, seasons=(Season.spring, Season.summer, Season.fall)),),
-        DistantLandsSeed.vile_ancient_fruit: (ForagingSource(regions=(Region.witch_swamp,), other_requirements=(QuestRequirement(ModQuest.CorruptedCropsTask),)),),
-        DistantLandsCrop.vile_ancient_fruit: (Tag(ItemTag.FRUIT), HarvestCropSource(seed=DistantLandsSeed.vile_ancient_fruit, seasons=(Season.spring, Season.summer, Season.fall)),)
+        DistantLandsCrop.void_mint: (Tag(ItemTag.VEGETABLE),
+                                     HarvestCropSource(seed=DistantLandsSeed.void_mint, seasons=(Season.spring, Season.summer, Season.fall)),),
+        DistantLandsSeed.vile_ancient_fruit: (
+            ForagingSource(regions=(Region.witch_swamp,), other_requirements=(QuestRequirement(ModQuest.CorruptedCropsTask),)),),
+        DistantLandsCrop.vile_ancient_fruit: (Tag(ItemTag.FRUIT),
+                                              HarvestCropSource(seed=DistantLandsSeed.vile_ancient_fruit, seasons=(Season.spring, Season.summer, Season.fall)),)
     }
 ))

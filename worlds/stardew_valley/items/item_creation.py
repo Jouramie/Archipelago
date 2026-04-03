@@ -8,10 +8,8 @@ from .filters import remove_excluded
 from .item_data import StardewItemFactory, items_by_group, Group, item_table, ItemData
 from ..content.feature import friendsanity
 from ..content.game_content import StardewContent
-from ..content.vanilla.ginger_island import ginger_island_content_pack
-from ..content.vanilla.qi_board import qi_board_content_pack
 from ..data.game_item import ItemTag
-from ..mods.mod_data import ModNames
+from ..mods.mod_names import Mod
 from ..options import StardewValleyOptions, FestivalLocations, SpecialOrderLocations, SeasonRandomization, Museumsanity, \
     ElevatorProgression, BackpackProgression, ArcadeMachineLocations, Monstersanity, Goal, \
     Chefsanity, Craftsanity, BundleRandomization, EntranceRandomization, Shipsanity, Walnutsanity, Moviesanity
@@ -23,6 +21,7 @@ from ..strings.ap_names.community_upgrade_names import CommunityUpgrade, Booksel
 from ..strings.ap_names.mods.mod_items import SVEQuestItem
 from ..strings.backpack_tiers import Backpack
 from ..strings.building_names import Building
+from ..strings.content_pack_names import ContentPack
 from ..strings.currency_names import Currency
 from ..strings.tool_names import Tool
 from ..strings.wallet_item_names import Wallet
@@ -155,7 +154,7 @@ def create_backpack_items(item_factory: StardewItemFactory, options: StardewVall
     if options.backpack_progression == BackpackProgression.option_vanilla:
         return
     num_per_tier = options.backpack_size.count_per_tier()
-    backpack_tier_names = Backpack.get_purchasable_tiers(ModNames.big_backpack in content.registered_packs, StartWithoutOptionName.backpack in options.start_without)
+    backpack_tier_names = Backpack.get_purchasable_tiers(Mod.big_backpack in content.registered_packs, StartWithoutOptionName.backpack in options.start_without)
     num_backpacks = len(backpack_tier_names) * num_per_tier
 
     items.extend(item_factory(item) for item in ["Progressive Backpack"] * num_backpacks)
@@ -196,9 +195,9 @@ def create_elevators(item_factory: StardewItemFactory, options: StardewValleyOpt
         return
 
     items.extend([item_factory(item) for item in ["Progressive Mine Elevator"] * 24])
-    if ModNames.deepwoods in content.registered_packs:
+    if Mod.deepwoods in content.registered_packs:
         items.extend([item_factory(item) for item in ["Progressive Woods Obelisk Sigils"] * 10])
-    if ModNames.skull_cavern_elevator in content.registered_packs:
+    if Mod.skull_cavern_elevator in content.registered_packs:
         items.extend([item_factory(item) for item in ["Progressive Skull Cavern Elevator"] * 8])
 
 
@@ -239,9 +238,9 @@ def create_wizard_buildings(item_factory: StardewItemFactory, options: StardewVa
     items.append(item_factory("Desert Obelisk"))
     items.append(item_factory("Junimo Hut"))
     items.append(item_factory("Gold Clock", classification_pre_fill=useful_buildings_classification))
-    if content.is_enabled(ginger_island_content_pack):
+    if content.is_enabled(ContentPack.ginger_island):
         items.append(item_factory("Island Obelisk"))
-    if content.is_enabled(ModNames.deepwoods):
+    if content.is_enabled(Mod.deepwoods):
         items.append(item_factory("Woods Obelisk"))
 
 
@@ -273,12 +272,12 @@ def create_special_quest_rewards(item_factory: StardewItemFactory, options: Star
     items.append(item_factory(Wallet.magnifying_glass))
     items.append(item_factory(Wallet.magic_ink))
     items.append(item_factory(Wallet.iridium_snake_milk))
-    if ModNames.sve in content.registered_packs:
+    if Mod.sve in content.registered_packs:
         items.append(item_factory(Wallet.bears_knowledge))
     else:
         items.append(item_factory(Wallet.bears_knowledge, classification_pre_fill=ItemClassification.useful))  # Not necessary outside of SVE
     items.append(item_factory("Dark Talisman"))
-    if content.is_enabled(ginger_island_content_pack):
+    if content.is_enabled(ContentPack.ginger_island):
         items.append(item_factory("Fairy Dust Recipe"))
 
 
@@ -298,7 +297,7 @@ def create_stardrops(item_factory: StardewItemFactory, options: StardewValleyOpt
     items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Krobus Stardrop
     if content.features.fishsanity.is_enabled:
         items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Master Angler Stardrop
-    if ModNames.deepwoods in content.registered_packs:
+    if Mod.deepwoods in content.registered_packs:
         items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Petting the Unicorn
     if content.features.friendsanity.is_enabled:
         items.append(item_factory("Stardrop", classification_pre_fill=stardrops_classification))  # Spouse Stardrop
@@ -398,7 +397,7 @@ def create_festival_rewards(item_factory: StardewItemFactory, options: StardewVa
 
 def create_walnuts(item_factory: StardewItemFactory, options: StardewValleyOptions, content: StardewContent, items: List[Item]):
     walnutsanity = options.walnutsanity
-    if not content.is_enabled(ginger_island_content_pack) or walnutsanity == Walnutsanity.preset_none:
+    if not content.is_enabled(ContentPack.ginger_island) or walnutsanity == Walnutsanity.preset_none:
         return
 
     # Give baseline walnuts just to be nice
@@ -426,7 +425,7 @@ def create_walnuts(item_factory: StardewItemFactory, options: StardewValleyOptio
 
 
 def create_walnut_purchase_rewards(item_factory: StardewItemFactory, content: StardewContent, items: List[Item]):
-    if not content.is_enabled(ginger_island_content_pack):
+    if not content.is_enabled(ContentPack.ginger_island):
         return
 
     items.extend([item_factory("Boat Repair"),
@@ -455,14 +454,14 @@ def special_order_board_item_classification(item: ItemData, need_all_recipes: bo
 
 
 def create_special_order_qi_rewards(item_factory: StardewItemFactory, options: StardewValleyOptions, content: StardewContent, items: List[Item]):
-    if not content.is_enabled(ginger_island_content_pack):
+    if not content.is_enabled(ContentPack.ginger_island):
         return
     qi_gem_rewards = []
     if options.bundle_randomization >= BundleRandomization.option_remixed:
         qi_gem_rewards.append("15 Qi Gems")
         qi_gem_rewards.append("15 Qi Gems")
 
-    if content.is_enabled(qi_board_content_pack):
+    if content.is_enabled(ContentPack.qi_board):
         qi_gem_rewards.extend(["100 Qi Gems", "10 Qi Gems", "40 Qi Gems", "25 Qi Gems", "25 Qi Gems",
                                "40 Qi Gems", "20 Qi Gems", "50 Qi Gems", "40 Qi Gems", "35 Qi Gems"])
 
@@ -576,18 +575,18 @@ def create_eatsanity_enzyme_items(item_factory: StardewItemFactory, options: Sta
     # These items unlock progressively stronger ability to digest food items that give the associated buff
     # Upon receiving the enzyme, you also get a temporary buff of whatever the effect is
     # Stamina and Health items can go beyond their original max value, but the buffs cannot.
-    items.extend(item_factory(item) for item in ["Stamina Enzyme"]*10)
-    items.extend(item_factory(item) for item in ["Health Enzyme"]*10)
-    items.extend(item_factory(item) for item in ["Speed Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Luck Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Farming Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Foraging Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Fishing Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Mining Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Magnetism Enzyme"]*2)
-    items.extend(item_factory(item) for item in ["Defense Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Attack Enzyme"]*5)
-    items.extend(item_factory(item) for item in ["Max Stamina Enzyme"]*3)
+    items.extend(item_factory(item) for item in ["Stamina Enzyme"] * 10)
+    items.extend(item_factory(item) for item in ["Health Enzyme"] * 10)
+    items.extend(item_factory(item) for item in ["Speed Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Luck Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Farming Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Foraging Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Fishing Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Mining Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Magnetism Enzyme"] * 2)
+    items.extend(item_factory(item) for item in ["Defense Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Attack Enzyme"] * 5)
+    items.extend(item_factory(item) for item in ["Max Stamina Enzyme"] * 3)
     items.extend(item_factory(item) for item in ["Squid Ink Enzyme"])
     items.extend(item_factory(item) for item in ["Monster Musk Enzyme"])
     items.extend(item_factory(item) for item in ["Oil Of Garlic Enzyme"])
@@ -615,36 +614,36 @@ def create_goal_items(item_factory: StardewItemFactory, options: StardewValleyOp
 
 
 def create_archaeology_items(item_factory: StardewItemFactory, content: StardewContent, items: List[Item]):
-    if ModNames.archaeology not in content.registered_packs:
+    if Mod.archaeology not in content.registered_packs:
         return
 
     items.append(item_factory(Wallet.metal_detector))
 
 
 def create_magic_mod_spells(item_factory: StardewItemFactory, content: StardewContent, items: List[Item]):
-    if ModNames.magic not in content.registered_packs:
+    if Mod.magic not in content.registered_packs:
         return
     items.extend([item_factory(item) for item in items_by_group[Group.MAGIC_SPELL]])
 
 
 def create_deepwoods_pendants(item_factory: StardewItemFactory, content: StardewContent, items: List[Item]):
-    if ModNames.deepwoods not in content.registered_packs:
+    if Mod.deepwoods not in content.registered_packs:
         return
     items.extend([item_factory(item) for item in ["Pendant of Elders", "Pendant of Community", "Pendant of Depths"]])
 
 
 def create_sve_special_items(item_factory: StardewItemFactory, content: StardewContent, items: List[Item]):
-    if ModNames.sve not in content.registered_packs:
+    if Mod.sve not in content.registered_packs:
         return
 
-    items.extend([item_factory(item) for item in items_by_group[Group.MOD_WARP] if ModNames.sve in item.content_packs])
+    items.extend([item_factory(item) for item in items_by_group[Group.MOD_WARP] if Mod.sve in item.content_packs])
 
 
 def create_quest_rewards_sve(item_factory: StardewItemFactory, options: StardewValleyOptions, content: StardewContent, items: List[Item]):
-    if not content.is_enabled(ModNames.sve):
+    if not content.is_enabled(Mod.sve):
         return
 
-    ginger_island_included = content.is_enabled(ginger_island_content_pack)
+    ginger_island_included = content.is_enabled(ContentPack.ginger_island)
     items.extend([item_factory(item) for item in SVEQuestItem.sve_always_quest_items])
     if ginger_island_included:
         items.extend([item_factory(item) for item in SVEQuestItem.sve_always_quest_items_ginger_island])
@@ -660,7 +659,7 @@ def create_quest_rewards_sve(item_factory: StardewItemFactory, options: StardewV
 
 def weapons_count(content: StardewContent):
     weapon_count = 5
-    if ModNames.sve in content.registered_packs:
+    if Mod.sve in content.registered_packs:
         weapon_count += 1
     return weapon_count
 

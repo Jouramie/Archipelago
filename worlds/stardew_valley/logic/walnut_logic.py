@@ -1,9 +1,9 @@
 from functools import cached_property
 
 from .base_logic import BaseLogic, BaseLogicMixin
-from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..options import Walnutsanity
 from ..stardew_rule import StardewRule
+from ..strings.content_pack_names import ContentPack
 from ..strings.ap_names.ap_option_names import WalnutsanityOptionName
 from ..strings.ap_names.event_names import Event
 from ..strings.craftable_names import Furniture
@@ -22,7 +22,7 @@ class WalnutLogicMixin(BaseLogicMixin):
 class WalnutLogic(BaseLogic):
 
     def has_walnut(self, number: int) -> StardewRule:
-        if not self.content.is_enabled(ginger_island_content_pack):
+        if not self.content.is_enabled(ContentPack.ginger_island):
             return self.logic.false_
         if number <= 0:
             return self.logic.true_

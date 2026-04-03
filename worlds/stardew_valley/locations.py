@@ -9,17 +9,16 @@ from typing import Optional, Dict, Protocol, List, Iterable
 from . import data
 from .bundles.bundle_room import BundleRoom
 from .content.game_content import StardewContent
-from .content.vanilla.ginger_island import ginger_island_content_pack
-from .content.vanilla.qi_board import qi_board_content_pack
 from .data.game_item import ItemTag
 from .data.museum_data import all_museum_items
-from .mods.mod_data import ModNames
+from .mods.mod_names import Mod
 from .options import ArcadeMachineLocations, SpecialOrderLocations, Museumsanity, \
     FestivalLocations, ElevatorProgression, BackpackProgression, FarmType
 from .options import StardewValleyOptions, Craftsanity, Chefsanity, Cooksanity, Shipsanity, Monstersanity
 from .options.options import BackpackSize, Moviesanity, Eatsanity, IncludeEndgameLocations, Friendsanity, Fishsanity, SkillProgression, Cropsanity
 from .strings.ap_names.ap_option_names import WalnutsanityOptionName, SecretsanityOptionName, EatsanityOptionName, ChefsanityOptionName, StartWithoutOptionName
 from .strings.backpack_tiers import Backpack
+from .strings.content_pack_names import ContentPack
 from .strings.goal_names import Goal
 from .strings.quest_names import ModQuest, Quest
 from .strings.region_names import Region, LogicRegion
@@ -197,9 +196,9 @@ def load_location_csv() -> List[LocationData]:
             assert len(csv_content_packs) == len(content_packs)
 
             if LocationTags.GINGER_ISLAND in tags:
-                content_packs |= {ginger_island_content_pack.name}
+                content_packs |= {ContentPack.ginger_island}
             if LocationTags.SPECIAL_ORDER_QI in tags or LocationTags.REQUIRES_QI_ORDERS in tags:
-                content_packs |= {qi_board_content_pack.name}
+                content_packs |= {ContentPack.qi_board}
 
             locations.append(LocationData(location_id, location["region"], location_name, content_packs, tags))
 
@@ -371,7 +370,7 @@ def extend_special_order_locations(randomized_locations: List[LocationData], opt
         board_locations = filter_disabled_locations(options, content, locations_by_tag[LocationTags.SPECIAL_ORDER_BOARD])
         randomized_locations.extend(board_locations)
 
-    if content.is_enabled(qi_board_content_pack):
+    if content.is_enabled(ContentPack.qi_board):
         include_arcade = options.arcade_machine_locations != ArcadeMachineLocations.option_disabled
         qi_orders = [location for location in locations_by_tag[LocationTags.SPECIAL_ORDER_QI] if
                      include_arcade or LocationTags.JUNIMO_KART not in location.tags]
@@ -379,7 +378,7 @@ def extend_special_order_locations(randomized_locations: List[LocationData], opt
 
 
 def extend_walnut_purchase_locations(randomized_locations: List[LocationData], content: StardewContent):
-    if not content.is_enabled(ginger_island_content_pack):
+    if not content.is_enabled(ContentPack.ginger_island):
         return
     randomized_locations.append(location_table["Repair Ticket Machine"])
     randomized_locations.append(location_table["Repair Boat Hull"])
@@ -398,8 +397,8 @@ def extend_mandatory_locations(randomized_locations: List[LocationData], options
 def extend_situational_quest_locations(randomized_locations: List[LocationData], options: StardewValleyOptions, content: StardewContent):
     if options.quest_locations.has_no_story_quests():
         return
-    if ModNames.distant_lands in content.registered_packs:
-        if ModNames.alecto in content.registered_packs:
+    if Mod.distant_lands in content.registered_packs:
+        if Mod.alecto in content.registered_packs:
             randomized_locations.append(location_table[f"Quest: {ModQuest.WitchOrder}"])
         else:
             randomized_locations.append(location_table[f"Quest: {ModQuest.CorruptedCropsTask}"])
@@ -425,10 +424,11 @@ def extend_backpack_locations(randomized_locations: List[LocationData], options:
 
     no_start_backpack = StartWithoutOptionName.backpack in options.start_without
     if options.backpack_size == BackpackSize.option_12:
-        backpack_locations = [location for location in locations_by_tag[LocationTags.BACKPACK_TIER] if no_start_backpack or LocationTags.STARTING_TOOLS not in location.tags]
+        backpack_locations = [location for location in locations_by_tag[LocationTags.BACKPACK_TIER] if
+                              no_start_backpack or LocationTags.STARTING_TOOLS not in location.tags]
     else:
         num_per_tier = options.backpack_size.count_per_tier()
-        backpack_tier_names = Backpack.get_purchasable_tiers(ModNames.big_backpack in content.registered_packs, no_start_backpack)
+        backpack_tier_names = Backpack.get_purchasable_tiers(Mod.big_backpack in content.registered_packs, no_start_backpack)
         backpack_locations = []
         for tier in backpack_tier_names:
             for i in range(1, num_per_tier + 1):
@@ -701,7 +701,7 @@ def extend_filler_locations(randomized_locations: List[LocationData], options: S
     existing_traveling_merchant_locations = [location.name for location in randomized_locations if location.name.startswith("Traveling Merchant Sunday Item ")]
     start_num_to_add = len(existing_traveling_merchant_locations) + 1
 
-    for i in range(start_num_to_add, start_num_to_add+number_locations_to_add_per_day):
+    for i in range(start_num_to_add, start_num_to_add + number_locations_to_add_per_day):
         logger.debug(f"Player too few locations, adding Traveling Merchant Items #{i}")
         for day in days:
             location_name = f"Traveling Merchant {day} Item {i}"
@@ -799,12 +799,12 @@ def filter_farm_type(options: StardewValleyOptions, locations: Iterable[Location
 
 
 def filter_ginger_island(content: StardewContent, locations: Iterable[LocationData]) -> Iterable[LocationData]:
-    include_island = content.is_enabled(ginger_island_content_pack)
+    include_island = content.is_enabled(ContentPack.ginger_island)
     return (location for location in locations if include_island or LocationTags.GINGER_ISLAND not in location.tags)
 
 
 def filter_qi_order_locations(content: StardewContent, locations: Iterable[LocationData]) -> Iterable[LocationData]:
-    include_qi_orders = content.is_enabled(qi_board_content_pack)
+    include_qi_orders = content.is_enabled(ContentPack.qi_board)
     return (location for location in locations if include_qi_orders or LocationTags.REQUIRES_QI_ORDERS not in location.tags)
 
 

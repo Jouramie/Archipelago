@@ -1,6 +1,6 @@
 from typing import Dict, Tuple
 
-from .mod_data import ModNames
+from .mod_names import Mod
 from ..strings.monster_names import Monster
 from ..strings.region_names import SVERegion, DeepWoodsRegion, BoardingHouseRegion
 
@@ -34,7 +34,7 @@ boardinghouse_monsters_locations: Dict[str, Tuple[str, ...]] = {
 }
 
 modded_monsters_locations: Dict[str, Dict[str, Tuple[str, ...]]] = {
-    ModNames.sve: sve_monsters_locations,
-    ModNames.deepwoods: deepwoods_monsters_locations,
-    ModNames.boarding_house: boardinghouse_monsters_locations
+    Mod.sve: sve_monsters_locations,
+    Mod.deepwoods: deepwoods_monsters_locations,
+    Mod.boarding_house: boardinghouse_monsters_locations
 }

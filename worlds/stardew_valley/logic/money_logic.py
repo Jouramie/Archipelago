@@ -1,9 +1,9 @@
 from Options import DeathLink
 from Utils import cache_self1
 from .base_logic import BaseLogicMixin, BaseLogic
-from ..content.vanilla.qi_board import qi_board_content_pack
 from ..data.shop import ShopSource, HatMouseSource
 from ..stardew_rule import StardewRule, True_, HasProgressionPercent, False_, true_
+from ..strings.content_pack_names import ContentPack
 from ..strings.animal_names import Animal
 from ..strings.ap_names.ap_option_names import CustomLogicOptionName
 from ..strings.ap_names.event_names import Event
@@ -117,7 +117,7 @@ class MoneyLogic(BaseLogic):
         if currency == Currency.qi_coin:
             return self.logic.region.can_reach(Region.casino) & self.logic.time.has_lived_months(amount // 1000)
         if currency == Currency.qi_gem:
-            if self.content.is_enabled(qi_board_content_pack):
+            if self.content.is_enabled(ContentPack.qi_board):
                 return self.logic.received(Event.received_qi_gems, amount * 3)
             return self.logic.region.can_reach_all(Region.qi_walnut_room, Region.saloon) & self.can_have_earned_total(5000)
         if currency == Currency.golden_walnut:

@@ -1,6 +1,6 @@
 from typing import Dict
 
-from ..mod_data import ModNames
+from ..mod_names import Mod
 from ...logic.base_logic import BaseLogic, BaseLogicMixin
 from ...stardew_rule import StardewRule
 from ...strings.animal_product_names import AnimalProduct
@@ -39,7 +39,7 @@ class ModQuestLogic(BaseLogic):
         return quests
 
     def _get_juna_quest_rules(self):
-        if not self.content.is_enabled(ModNames.juna):
+        if not self.content.is_enabled(Mod.juna):
             return {}
 
         return {
@@ -48,7 +48,7 @@ class ModQuestLogic(BaseLogic):
         }
 
     def _get_mr_ginger_quest_rules(self):
-        if not self.content.is_enabled(ModNames.ginger):
+        if not self.content.is_enabled(Mod.ginger):
             return {}
 
         return {
@@ -56,7 +56,7 @@ class ModQuestLogic(BaseLogic):
         }
 
     def _get_ayeisha_quest_rules(self):
-        if not self.content.is_enabled(ModNames.ayeisha):
+        if not self.content.is_enabled(Mod.ayeisha):
             return {}
 
         return {
@@ -65,7 +65,7 @@ class ModQuestLogic(BaseLogic):
         }
 
     def _get_sve_quest_rules(self):
-        if not self.content.is_enabled(ModNames.sve):
+        if not self.content.is_enabled(Mod.sve):
             return {}
 
         return {
@@ -90,7 +90,7 @@ class ModQuestLogic(BaseLogic):
         return self.logic.quest.can_complete_quest(ModQuest.AuroraVineyard)
 
     def _get_distant_lands_quest_rules(self):
-        if not self.content.is_enabled(ModNames.distant_lands):
+        if not self.content.is_enabled(Mod.distant_lands):
             return {}
 
         return {
@@ -109,7 +109,7 @@ class ModQuestLogic(BaseLogic):
         }
 
     def _get_boarding_house_quest_rules(self):
-        if not self.content.is_enabled(ModNames.boarding_house):
+        if not self.content.is_enabled(Mod.boarding_house):
             return {}
 
         return {
@@ -117,7 +117,7 @@ class ModQuestLogic(BaseLogic):
         }
 
     def _get_hat_mouse_quest_rules(self):
-        if not self.content.is_enabled(ModNames.lacey):
+        if not self.content.is_enabled(Mod.lacey):
             return {}
 
         return {

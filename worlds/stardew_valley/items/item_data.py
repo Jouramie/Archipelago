@@ -8,8 +8,8 @@ from typing import Protocol
 
 from BaseClasses import ItemClassification, Item
 from .. import data
-from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..logic.logic_event import all_events
+from ..strings.content_pack_names import ContentPack
 
 ITEM_CODE_OFFSET = 717000
 
@@ -165,7 +165,7 @@ def load_item_csv():
             assert len(csv_content_packs) == len(content_packs)
 
             if Group.GINGER_ISLAND in groups:
-                content_packs |= {ginger_island_content_pack.name}
+                content_packs |= {ContentPack.ginger_island}
 
             items.append(ItemData(item_id, item_name, classification, content_packs, groups))
     return items

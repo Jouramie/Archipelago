@@ -2,7 +2,7 @@ from .base_logic import BaseLogic, BaseLogicMixin
 from ..data.craftable_data import all_crafting_recipes_by_name
 from ..data.recipe_data import all_cooking_recipes_by_name
 from ..locations import LocationTags, locations_by_tag
-from ..mods.mod_data import ModNames
+from ..mods.mod_names import Mod
 from ..options import options
 from ..stardew_rule import StardewRule
 from ..strings.ap_names.ap_option_names import SecretsanityOptionName
@@ -156,7 +156,7 @@ class GoalLogic(BaseLogic):
         else:
             other_rules.append(self.logic.has(Fruit.sweet_gem_berry) & self.logic.region.can_reach(Region.secret_woods))
 
-        if self.content.is_enabled(ModNames.deepwoods):  # Petting the Unicorn
+        if self.content.is_enabled(Mod.deepwoods):  # Petting the Unicorn
             number_of_stardrops_to_receive += 1
 
         return self.logic.received("Stardrop", number_of_stardrops_to_receive) & self.logic.and_(*other_rules, allow_empty=True)

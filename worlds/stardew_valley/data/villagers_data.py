@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple, Optional
 
-from ..mods.mod_data import ModNames
+from ..mods.mod_names import Mod
 from ..strings.food_names import Beverage
 from ..strings.generic_names import Generic
 from ..strings.metal_names import Mineral, Fossil
@@ -411,38 +411,38 @@ willy = villager(NPC.willy, False, beach + fish_shop, Season.summer, universal_l
 wizard = villager(NPC.wizard, False, wizard_tower, Season.winter, universal_loves + wizard_loves, True)
 
 # Custom NPCs
-alec = villager(ModNPC.alec, True, forest, Season.winter, universal_loves + trilobite, True, ModNames.alec)
-ayeisha = villager(ModNPC.ayeisha, False, town, Season.summer, universal_loves + ayeisha_loves, True, ModNames.ayeisha)
-delores = villager(ModNPC.delores, True, forest, Season.winter, universal_loves + delores_loves, True, ModNames.delores)
-eugene = villager(ModNPC.eugene, True, forest, Season.spring, universal_loves + eugene_loves, True, ModNames.eugene)
-jasper = villager(ModNPC.jasper, True, museum, Season.fall, universal_loves + jasper_loves, True, ModNames.jasper)
-juna = villager(ModNPC.juna, False, forest, Season.summer, universal_loves + juna_loves, True, ModNames.juna)
-kitty = villager(ModNPC.mr_ginger, False, forest, Season.summer, universal_loves + mister_ginger_loves, True, ModNames.ginger)
-shiko = villager(ModNPC.shiko, True, saloon, Season.winter, universal_loves + shiko_loves, True, ModNames.shiko)
-wellwick = villager(ModNPC.wellwick, True, wizard_tower, Season.winter, universal_loves + wellwick_loves, True, ModNames.wellwick)
-yoba = villager(ModNPC.yoba, False, secret_woods, Season.spring, universal_loves + yoba_loves, False, ModNames.yoba)
-riley = villager(ModNPC.riley, True, riley_house, Season.spring, universal_loves, True, ModNames.riley)
-zic = villager(ModNPC.goblin, False, witch_swamp, Season.fall, void_mayonnaise, False, ModNames.distant_lands)
-alecto = villager(ModNPC.alecto, False, witch_attic, Generic.any, universal_loves, False, ModNames.alecto)
-lacey = villager(ModNPC.lacey, True, forest, Season.spring, universal_loves, True, ModNames.lacey)
+alec = villager(ModNPC.alec, True, forest, Season.winter, universal_loves + trilobite, True, Mod.alec)
+ayeisha = villager(ModNPC.ayeisha, False, town, Season.summer, universal_loves + ayeisha_loves, True, Mod.ayeisha)
+delores = villager(ModNPC.delores, True, forest, Season.winter, universal_loves + delores_loves, True, Mod.delores)
+eugene = villager(ModNPC.eugene, True, forest, Season.spring, universal_loves + eugene_loves, True, Mod.eugene)
+jasper = villager(ModNPC.jasper, True, museum, Season.fall, universal_loves + jasper_loves, True, Mod.jasper)
+juna = villager(ModNPC.juna, False, forest, Season.summer, universal_loves + juna_loves, True, Mod.juna)
+kitty = villager(ModNPC.mr_ginger, False, forest, Season.summer, universal_loves + mister_ginger_loves, True, Mod.ginger)
+shiko = villager(ModNPC.shiko, True, saloon, Season.winter, universal_loves + shiko_loves, True, Mod.shiko)
+wellwick = villager(ModNPC.wellwick, True, wizard_tower, Season.winter, universal_loves + wellwick_loves, True, Mod.wellwick)
+yoba = villager(ModNPC.yoba, False, secret_woods, Season.spring, universal_loves + yoba_loves, False, Mod.yoba)
+riley = villager(ModNPC.riley, True, riley_house, Season.spring, universal_loves, True, Mod.riley)
+zic = villager(ModNPC.goblin, False, witch_swamp, Season.fall, void_mayonnaise, False, Mod.distant_lands)
+alecto = villager(ModNPC.alecto, False, witch_attic, Generic.any, universal_loves, False, Mod.alecto)
+lacey = villager(ModNPC.lacey, True, forest, Season.spring, universal_loves, True, Mod.lacey)
 
 # Boarding House Villagers
-gregory = villager(ModNPC.gregory, True, the_lost_valley, Season.fall, universal_loves, False, ModNames.boarding_house)
-sheila = villager(ModNPC.sheila, True, boarding_house, Season.spring, universal_loves, True, ModNames.boarding_house)
-joel = villager(ModNPC.joel, False, boarding_house, Season.winter, universal_loves, True, ModNames.boarding_house)
+gregory = villager(ModNPC.gregory, True, the_lost_valley, Season.fall, universal_loves, False, Mod.boarding_house)
+sheila = villager(ModNPC.sheila, True, boarding_house, Season.spring, universal_loves, True, Mod.boarding_house)
+joel = villager(ModNPC.joel, False, boarding_house, Season.winter, universal_loves, True, Mod.boarding_house)
 
 # SVE Villagers
-claire = villager(ModNPC.claire, True, town + jojamart, Season.fall, universal_loves + claire_loves, True, ModNames.sve)
-lance = villager(ModNPC.lance, True, adventurer + highlands + island, Season.spring, lance_loves, False, ModNames.sve)
-mommy = villager(ModNPC.olivia, True, olivia_house, Season.spring, universal_loves_no_rabbit_foot + olivia_loves, True, ModNames.sve)
-sophia = villager(ModNPC.sophia, True, bluemoon, Season.winter, universal_loves_no_rabbit_foot + sophia_loves, True, ModNames.sve)
-victor = villager(ModNPC.victor, True, olivia_house, Season.summer, universal_loves + victor_loves, True, ModNames.sve)
-andy = villager(ModNPC.andy, False, andy_house, Season.spring, universal_loves + andy_loves, True, ModNames.sve)
-apples = villager(ModNPC.apples, False, aurora + junimo, Generic.any, starfruit, False, ModNames.sve)
-gunther = villager(ModNPC.gunther, False, museum, Season.winter, universal_loves + gunther_loves, True, ModNames.sve)
-martin = villager(ModNPC.martin, False, town + jojamart, Season.summer, universal_loves + martin_loves, True, ModNames.sve)
-marlon = villager(ModNPC.marlon, False, adventurer, Season.winter, universal_loves + marlon_loves, False, ModNames.sve)
-morgan = villager(ModNPC.morgan, False, wizard_tower, Season.fall, universal_loves_no_rabbit_foot + morgan_loves, False, ModNames.sve)
-scarlett = villager(ModNPC.scarlett, False, bluemoon, Season.summer, universal_loves + scarlett_loves, False, ModNames.sve)
-susan = villager(ModNPC.susan, False, railroad, Season.fall, universal_loves + susan_loves, False, ModNames.sve)
-morris = villager(ModNPC.morris, False, jojamart, Season.spring, universal_loves + morris_loves, True, ModNames.sve)
+claire = villager(ModNPC.claire, True, town + jojamart, Season.fall, universal_loves + claire_loves, True, Mod.sve)
+lance = villager(ModNPC.lance, True, adventurer + highlands + island, Season.spring, lance_loves, False, Mod.sve)
+mommy = villager(ModNPC.olivia, True, olivia_house, Season.spring, universal_loves_no_rabbit_foot + olivia_loves, True, Mod.sve)
+sophia = villager(ModNPC.sophia, True, bluemoon, Season.winter, universal_loves_no_rabbit_foot + sophia_loves, True, Mod.sve)
+victor = villager(ModNPC.victor, True, olivia_house, Season.summer, universal_loves + victor_loves, True, Mod.sve)
+andy = villager(ModNPC.andy, False, andy_house, Season.spring, universal_loves + andy_loves, True, Mod.sve)
+apples = villager(ModNPC.apples, False, aurora + junimo, Generic.any, starfruit, False, Mod.sve)
+gunther = villager(ModNPC.gunther, False, museum, Season.winter, universal_loves + gunther_loves, True, Mod.sve)
+martin = villager(ModNPC.martin, False, town + jojamart, Season.summer, universal_loves + martin_loves, True, Mod.sve)
+marlon = villager(ModNPC.marlon, False, adventurer, Season.winter, universal_loves + marlon_loves, False, Mod.sve)
+morgan = villager(ModNPC.morgan, False, wizard_tower, Season.fall, universal_loves_no_rabbit_foot + morgan_loves, False, Mod.sve)
+scarlett = villager(ModNPC.scarlett, False, bluemoon, Season.summer, universal_loves + scarlett_loves, False, Mod.sve)
+susan = villager(ModNPC.susan, False, railroad, Season.fall, universal_loves + susan_loves, False, Mod.sve)
+morris = villager(ModNPC.morris, False, jojamart, Season.spring, universal_loves + morris_loves, True, Mod.sve)

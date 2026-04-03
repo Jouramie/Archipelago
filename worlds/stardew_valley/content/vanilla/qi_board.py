@@ -1,5 +1,3 @@
-from .ginger_island import ginger_island_content_pack as ginger_island_content_pack
-from .pelican_town import pelican_town as pelican_town_content_pack
 from ..game_content import ContentPack, StardewContent
 from ...data import fish_data
 from ...data.game_item import GenericSource, ItemTag, Tag
@@ -7,6 +5,7 @@ from ...data.harvest import HarvestCropSource
 from ...data.hats_data import Hats
 from ...data.requirement import DangerousMinesRequirement, CraftedItemsRequirement
 from ...data.shop import HatMouseSource, TailoringSource
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.crop_names import Fruit
 from ...strings.metal_names import MetalBar
 from ...strings.region_names import Region
@@ -19,10 +18,10 @@ class QiBoardContentPack(ContentPack):
 
 
 qi_board_content_pack = QiBoardContentPack(
-    "Qi Board (Vanilla)",
+    ContentPackNames.qi_board,
     dependencies=(
-        pelican_town_content_pack.name,
-        ginger_island_content_pack.name,
+        ContentPackNames.pelican_town,
+        ContentPackNames.ginger_island,
     ),
     harvest_sources={
         # This one is a bit special, because it's only available during the special order, but it can be found from like, everywhere.

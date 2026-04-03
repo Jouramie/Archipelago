@@ -1,4 +1,3 @@
-from .pelican_town import pelican_town as pelican_town_content_pack
 from ..game_content import ContentPack, StardewContent
 from ...data import villagers_data, fish_data
 from ...data.animal import Animal, AnimalName, OstrichIncubatorSource
@@ -15,6 +14,7 @@ from ...logic.time_logic import MAX_MONTHS
 from ...strings.animal_product_names import AnimalProduct
 from ...strings.book_names import Book
 from ...strings.building_names import Building
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.crop_names import Fruit, Vegetable
 from ...strings.currency_names import Currency
 from ...strings.fish_names import Fish
@@ -42,9 +42,9 @@ class GingerIslandContentPack(ContentPack):
 
 
 ginger_island_content_pack = GingerIslandContentPack(
-    "Ginger Island (Vanilla)",
+    ContentPackNames.ginger_island,
     weak_dependencies=(
-        pelican_town_content_pack.name,
+        ContentPackNames.pelican_town,
     ),
     harvest_sources={
         # Foraging

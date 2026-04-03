@@ -9,6 +9,7 @@ from ...data.shop import HatMouseSource, TailoringSource
 from ...data.skill import Skill
 from ...strings.animal_product_names import AnimalProduct
 from ...strings.artisan_good_names import ArtisanGood
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.craftable_names import WildSeeds, Edible, Consumable, Lighting
 from ...strings.crop_names import Fruit, Vegetable
 from ...strings.fish_names import Fish, WaterChest
@@ -103,7 +104,7 @@ class BaseGameContentPack(ContentPack):
 
 
 base_game = BaseGameContentPack(
-    "Base game (Vanilla)",
+    ContentPackNames.base_game,
     harvest_sources={
         # Fruit tree
         Fruit.apple: (HarvestFruitTreeSource(sapling=Sapling.apple, seasons=(Season.fall,)),),

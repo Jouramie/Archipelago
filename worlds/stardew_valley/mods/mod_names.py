@@ -1,7 +1,7 @@
 from typing import Iterable
 
 
-class ModNames:
+class Mod:
     vanilla = None
     deepwoods = "DeepWoods"
     tractor = "Tractor Mod"

@@ -1,6 +1,6 @@
 from .base_logic import BaseLogic, BaseLogicMixin
-from ..content.vanilla.ginger_island import ginger_island_content_pack
 from ..stardew_rule import StardewRule
+from ..strings.content_pack_names import ContentPack
 from ..strings.ap_names.ap_option_names import SecretsanityOptionName
 from ..strings.craftable_names import Consumable
 from ..strings.forageable_names import Forageable
@@ -40,6 +40,6 @@ class SpecialItemsLogic(BaseLogic):
 
     def has_advanced_tv_remote(self) -> StardewRule:
         george_rule = self.logic.relationship.has_hearts(NPC.george, 10)
-        if ginger_island_content_pack.name in self.content.registered_packs:
+        if ContentPack.ginger_island in self.content.registered_packs:
             return george_rule
         return self.logic.quest.can_complete_quest(Quest.the_pirates_wife) & george_rule

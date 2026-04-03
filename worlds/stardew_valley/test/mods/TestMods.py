@@ -4,7 +4,7 @@ from ..bases import SVTestCase, SVTestBase, solo_multiworld
 from ..options.presets import allsanity_mods_7_x_x
 from ... import options
 from ...items import Group
-from ...mods.mod_data import invalid_mod_combinations
+from ...mods.mod_names import invalid_mod_combinations
 from ...options.options import all_mods
 
 

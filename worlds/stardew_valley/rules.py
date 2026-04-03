@@ -9,8 +9,6 @@ from . import locations
 from .bundles.bundle_room import BundleRoom
 from .content import StardewContent
 from .content.feature import friendsanity
-from .content.vanilla.ginger_island import ginger_island_content_pack
-from .content.vanilla.qi_board import qi_board_content_pack
 from .data.craftable_data import all_crafting_recipes_by_name
 from .data.game_item import ItemTag
 from .data.harvest import HarvestCropSource, HarvestFruitTreeSource
@@ -23,7 +21,7 @@ from .locations import LocationTags
 from .logic.logic import StardewLogic
 from .logic.time_logic import MAX_MONTHS
 from .logic.tool_logic import tool_upgrade_prices
-from .mods.mod_data import ModNames
+from .mods.mod_names import Mod
 from .options import SpecialOrderLocations, Museumsanity, BackpackProgression, Shipsanity, \
     Monstersanity, Chefsanity, Craftsanity, ArcadeMachineLocations, Cooksanity, StardewValleyOptions, Walnutsanity
 from .options.options import FarmType, Moviesanity, Eatsanity, Friendsanity, ExcludeGingerIsland, \
@@ -41,6 +39,7 @@ from .strings.backpack_tiers import Backpack
 from .strings.building_names import Building, WizardBuilding
 from .strings.bundle_names import CCRoom
 from .strings.calendar_names import Weekday
+from .strings.content_pack_names import ContentPack
 from .strings.craftable_names import Bomb, Furniture, Consumable, Craftable
 from .strings.crop_names import Fruit, Vegetable
 from .strings.currency_names import Currency
@@ -93,12 +92,12 @@ class StardewRuleCollector:
             raise ex
 
     def set_island_entrance_rule(self, entrance_name: str, rule: StardewRule) -> None:
-        if not self.content.is_enabled(ginger_island_content_pack):
+        if not self.content.is_enabled(ContentPack.ginger_island):
             return
         self.set_entrance_rule(entrance_name, rule)
 
     def set_many_island_entrances_rules(self, entrance_rules: dict[str, StardewRule]) -> None:
-        if not self.content.is_enabled(ginger_island_content_pack):
+        if not self.content.is_enabled(ContentPack.ginger_island):
             return
         for entrance, rule in entrance_rules.items():
             self.set_entrance_rule(entrance, rule)
@@ -249,7 +248,8 @@ def set_entrance_rules(logic: StardewLogic, rule_collector: StardewRuleCollector
     rule_collector.set_entrance_rule(Entrance.mountain_to_outside_adventure_guild, logic.received("Landslide Removed"))
     rule_collector.set_entrance_rule(Entrance.enter_quarry,
                                      (logic.received("Bridge Repair") | logic.mod.magic.can_blink()) & logic.tool.has_tool(Tool.pickaxe))
-    rule_collector.set_entrance_rule(Entrance.enter_secret_woods, logic.tool.has_tool(Tool.axe, ToolMaterial.iron) | logic.mod.magic.can_blink() | logic.ability.can_chair_skip())
+    rule_collector.set_entrance_rule(Entrance.enter_secret_woods,
+                                     logic.tool.has_tool(Tool.axe, ToolMaterial.iron) | logic.mod.magic.can_blink() | logic.ability.can_chair_skip())
     rule_collector.set_entrance_rule(Entrance.town_to_community_center, logic.received("Community Center Key"))
     rule_collector.set_entrance_rule(Entrance.forest_to_wizard_tower, logic.received("Wizard Invitation"))
     rule_collector.set_entrance_rule(Entrance.forest_to_sewer, logic.wallet.has_rusty_key())
@@ -284,7 +284,7 @@ def set_entrance_rules(logic: StardewLogic, rule_collector: StardewRuleCollector
 
     set_bedroom_entrance_rules(logic, rule_collector, content)
     set_festival_entrance_rules(logic, rule_collector)
-    
+
     # I can't remember why this was here, but clearly we do not need kitchen rules for island cooking....
     # rule_collector.set_island_entrance_rule(LogicEntrance.island_cooking, logic.cooking.can_cook_in_kitchen)
     rule_collector.set_entrance_rule(LogicEntrance.farmhouse_cooking, logic.cooking.can_cook_in_kitchen)
@@ -341,7 +341,7 @@ def set_raccoon_rules(logic: StardewLogic, rule_collector: StardewRuleCollector,
 
 
 def set_dangerous_mine_rules(logic, rule_collector: StardewRuleCollector, content: StardewContent):
-    if not content.is_enabled(ginger_island_content_pack):
+    if not content.is_enabled(ContentPack.ginger_island):
         return
     dangerous_mine_rule = logic.mine.has_mine_elevator_to_floor(120) & logic.region.can_reach(Region.qi_walnut_room)
     rule_collector.set_entrance_rule(Entrance.dig_to_dangerous_mines_20, dangerous_mine_rule)
@@ -370,9 +370,9 @@ def set_bedroom_entrance_rules(logic, rule_collector: StardewRuleCollector, cont
     rule_collector.set_entrance_rule(Entrance.enter_sunroom, logic.relationship.has_hearts(NPC.caroline, 2))
     rule_collector.set_entrance_rule(Entrance.enter_wizard_basement, logic.relationship.has_hearts(NPC.wizard, 4))
     rule_collector.set_entrance_rule(Entrance.enter_lewis_bedroom, logic.relationship.has_hearts(NPC.lewis, 2))
-    if content.is_enabled(ModNames.alec):
+    if content.is_enabled(Mod.alec):
         rule_collector.set_entrance_rule(AlecEntrance.petshop_to_bedroom, (logic.relationship.has_hearts(ModNPC.alec, 2) | logic.mod.magic.can_blink()))
-    if content.is_enabled(ModNames.lacey):
+    if content.is_enabled(Mod.lacey):
         rule_collector.set_entrance_rule(LaceyEntrance.forest_to_hat_house, logic.relationship.has_hearts(ModNPC.lacey, 2))
 
 
@@ -458,7 +458,7 @@ def set_festival_entrance_rules(logic, rule_collector: StardewRuleCollector):
 
 def set_ginger_island_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, world_options: StardewValleyOptions, content: StardewContent):
     set_island_entrances_rules(logic, rule_collector, content)
-    if not content.is_enabled(ginger_island_content_pack):
+    if not content.is_enabled(ContentPack.ginger_island):
         return
 
     set_boat_repair_rules(logic, rule_collector)
@@ -638,7 +638,7 @@ def set_special_order_rules(all_location_names: Set[str], logic: StardewLogic, r
                 order_rule = board_rule & logic.registry.special_order_rules[board_order.name]
                 rule_collector.set_location_rule(board_order.name, order_rule)
 
-    if content.is_enabled(qi_board_content_pack):
+    if content.is_enabled(ContentPack.qi_board):
         qi_rule = logic.region.can_reach(Region.qi_walnut_room) & logic.time.has_lived_months(8)
         for qi_order in locations.locations_by_tag[LocationTags.SPECIAL_ORDER_QI]:
             if qi_order.name in all_location_names:
@@ -766,7 +766,7 @@ def set_backpack_rules(logic: StardewLogic, rule_collector: StardewRuleCollector
 
     num_per_tier = world_options.backpack_size.count_per_tier()
     start_without_backpack = bool(StartWithoutOptionName.backpack in world_options.start_without)
-    backpack_tier_names = Backpack.get_purchasable_tiers(content.is_enabled(ModNames.big_backpack), start_without_backpack)
+    backpack_tier_names = Backpack.get_purchasable_tiers(content.is_enabled(Mod.big_backpack), start_without_backpack)
     previous_backpacks = 0
     for tier in backpack_tier_names:
         for i in range(1, num_per_tier + 1):
@@ -1011,7 +1011,8 @@ def set_secrets_rules(logic: StardewLogic, rule_collector: StardewRuleCollector,
         rule_collector.set_location_rule("Secret: Lucky Purple Bobber", logic.fishing.can_use_tackle(SpecialItem.lucky_purple_shorts))
         rule_collector.set_location_rule("Secret: Something For Santa", logic.season.has(Season.winter) & logic.has_any(AnimalProduct.any_milk, Meal.cookie))
         cc_rewards = ["Bridge Repair", "Greenhouse", "Glittering Boulder Removed", "Minecarts Repair", Transportation.bus_repair, "Friendship Bonus (2 <3)"]
-        rule_collector.set_location_rule("Secret: Jungle Junimo", logic.action.can_speak_junimo() & logic.and_(*[logic.received(reward) for reward in cc_rewards]))
+        rule_collector.set_location_rule("Secret: Jungle Junimo",
+                                         logic.action.can_speak_junimo() & logic.and_(*[logic.received(reward) for reward in cc_rewards]))
         rule_collector.set_location_rule("Secret: ??HMTGF??", logic.has(Fish.super_cucumber))
         rule_collector.set_location_rule("Secret: ??Pinky Lemon??", logic.has(ArtisanGood.duck_mayonnaise))
         rule_collector.set_location_rule("Secret: ??Foroguemon??", logic.has(Meal.strange_bun) & logic.relationship.has_hearts(NPC.vincent, 2))
@@ -1028,7 +1029,7 @@ def set_secrets_rules(logic: StardewLogic, rule_collector: StardewRuleCollector,
         rule_collector.set_location_rule("Secret: A gift of lovely perfume", logic.gifts.can_gift_to(NPC.krobus, Consumable.monster_musk))
         rule_collector.set_location_rule("Secret: Where exactly does this juice come from?", logic.gifts.can_gift_to(NPC.dwarf, AnimalProduct.cow_milk))
         rule_collector.set_location_rule("Secret: Thank the Devs", logic.received("Stardrop") & logic.money.can_spend_at(Region.wizard_basement, 500))
-        if content.is_enabled(ginger_island_content_pack) and content.is_enabled(qi_board_content_pack):
+        if content.is_enabled(ContentPack.ginger_island) and content.is_enabled(ContentPack.qi_board):
             rule_collector.set_location_rule("Secret: Obtain my precious fruit whenever you like",
                                              logic.special_order.can_complete_special_order(SpecialOrder.qis_crop) &
                                              logic.tool.has_tool(Tool.axe))
@@ -1036,7 +1037,7 @@ def set_secrets_rules(logic: StardewLogic, rule_collector: StardewRuleCollector,
     if SecretsanityOptionName.fishing in world_options.secretsanity:
         if world_options.farm_type == FarmType.option_beach:
             rule_collector.set_location_rule("Fishing Secret: 'Boat'", logic.fishing.can_fish_at(Region.farm))
-        if content.is_enabled(ginger_island_content_pack):
+        if content.is_enabled(ContentPack.ginger_island):
             rule_collector.set_location_rule("Fishing Secret: Foliage Print", logic.fishing.can_fish_with_cast_distance(Region.island_north, 5))
             rule_collector.set_location_rule("Fishing Secret: Frog Hat", logic.fishing.can_fish_at(Region.gourmand_frog_cave))
             rule_collector.set_location_rule("Fishing Secret: Gourmand Statue", logic.fishing.can_fish_at(Region.pirate_cove))
@@ -1178,7 +1179,8 @@ def set_endgame_locations_rules(logic: StardewLogic, rule_collector: StardewRule
             rule_collector.set_location_rule("Purchase Key To The Town", logic.money.can_trade_at(Region.qi_walnut_room, Currency.qi_gem, 20))
             rule_collector.set_location_rule("Purchase Mini-Shipping Bin", logic.money.can_trade_at(Region.qi_walnut_room, Currency.qi_gem, 60))
             rule_collector.set_location_rule("Purchase Exotic Double Bed", logic.money.can_trade_at(Region.qi_walnut_room, Currency.qi_gem, 50))
-            rule_collector.set_location_rule("Purchase Golden Egg", logic.received(AnimalProduct.golden_egg) & logic.money.can_trade_at(Region.qi_walnut_room, Currency.qi_gem, 100))
+            rule_collector.set_location_rule("Purchase Golden Egg",
+                                             logic.received(AnimalProduct.golden_egg) & logic.money.can_trade_at(Region.qi_walnut_room, Currency.qi_gem, 100))
 
 
 def set_friendsanity_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, content: StardewContent):
@@ -1201,7 +1203,7 @@ def set_friendsanity_rules(logic: StardewLogic, rule_collector: StardewRuleColle
 
 
 def set_deepwoods_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, content: StardewContent):
-    if not content.is_enabled(ModNames.deepwoods):
+    if not content.is_enabled(Mod.deepwoods):
         return
 
     rule_collector.set_location_rule("Breaking Up Deep Woods Gingerbread House", logic.tool.has_tool(Tool.axe, ToolMaterial.gold))
@@ -1213,7 +1215,7 @@ def set_deepwoods_rules(logic: StardewLogic, rule_collector: StardewRuleCollecto
 
 
 def set_magic_spell_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, content: StardewContent):
-    if not content.is_enabled(ModNames.magic):
+    if not content.is_enabled(Mod.magic):
         return
 
     rule_collector.set_location_rule("Analyze: Clear Debris", logic.tool.has_tool(Tool.axe) | logic.tool.has_tool(Tool.pickaxe))
@@ -1255,7 +1257,7 @@ def set_magic_spell_rules(logic: StardewLogic, rule_collector: StardewRuleCollec
 
 
 def set_sve_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, content: StardewContent):
-    if not content.is_enabled(ModNames.sve):
+    if not content.is_enabled(Mod.sve):
         return
 
     rule_collector.set_entrance_rule(SVEEntrance.forest_to_lost_woods, logic.bundle.can_complete_community_center)
@@ -1287,7 +1289,7 @@ def set_sve_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, con
 
 
 def set_sve_ginger_island_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, content: StardewContent):
-    if not content.is_enabled(ginger_island_content_pack):
+    if not content.is_enabled(ContentPack.ginger_island):
         return
     rule_collector.set_entrance_rule(SVEEntrance.summit_to_highlands, logic.mod.sve.has_marlon_boat())
     rule_collector.set_entrance_rule(SVEEntrance.wizard_to_fable_reef, logic.received(SVEQuestItem.fable_reef_portal))
@@ -1297,6 +1299,6 @@ def set_sve_ginger_island_rules(logic: StardewLogic, rule_collector: StardewRule
 
 
 def set_boarding_house_rules(logic: StardewLogic, rule_collector: StardewRuleCollector, content: StardewContent):
-    if not content.is_enabled(ModNames.boarding_house):
+    if not content.is_enabled(Mod.boarding_house):
         return
     rule_collector.set_entrance_rule(BoardingHouseEntrance.the_lost_valley_to_lost_valley_ruins, logic.tool.has_tool(Tool.axe, ToolMaterial.iron))

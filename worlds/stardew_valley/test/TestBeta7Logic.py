@@ -1,5 +1,5 @@
 from worlds.stardew_valley import BackpackProgression, ToolProgression, SeasonRandomization
-from worlds.stardew_valley.mods.mod_data import ModNames
+from worlds.stardew_valley.mods.mod_names import Mod
 from worlds.stardew_valley.options import BackpackSize, Mods, QuestLocations, SkillProgression, Secretsanity, Museumsanity, Booksanity, Hatsanity, Cropsanity, \
     StartWithout
 from worlds.stardew_valley.strings.ap_names.ap_option_names import SecretsanityOptionName, StartWithoutOptionName
@@ -13,7 +13,7 @@ class TestAvailableBackpacksSize1(SVTestBase):
         BackpackProgression: BackpackProgression.option_progressive,
         BackpackSize: 1,
         StartWithout: frozenset({StartWithoutOptionName.backpack}),
-        Mods: frozenset({ModNames.big_backpack}),
+        Mods: frozenset({Mod.big_backpack}),
     }
 
     def test_can_purchase_correct_number_of_backpacks(self):
@@ -47,7 +47,7 @@ class TestAvailableBackpacksSize4(SVTestBase):
         BackpackProgression: BackpackProgression.option_progressive,
         BackpackSize: 4,
         StartWithout: frozenset({StartWithoutOptionName.backpack}),
-        Mods: frozenset({ModNames.big_backpack}),
+        Mods: frozenset({Mod.big_backpack}),
     }
 
     def test_can_purchase_correct_number_of_backpacks(self):
@@ -242,7 +242,8 @@ class TestSecretFishingRequiresFishingLevelsForDistance(SVTestBase):
 
     def test_iridium_krobus_requires_level_15(self):
         iridium_krobus_location = "Fishing Secret: Iridium Krobus"
-        items_required = ["Progressive Sword", "Progressive Pickaxe", "Progressive Footwear", "Combat Level", "Progressive House", "Landslide Removed", "Progressive Mine Elevator",
+        items_required = ["Progressive Sword", "Progressive Pickaxe", "Progressive Footwear", "Combat Level", "Progressive House", "Landslide Removed",
+                          "Progressive Mine Elevator",
                           "Mining Level", "Progressive Watering Can", "Progressive Hoe", "Progressive Fishing Rod", "50 Qi Gems", "Shipping Bin"] * 10
         self.remove_one_by_name("Spring")
         items_required.extend(["Summer", "Fall", "Winter"])

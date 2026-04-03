@@ -5,7 +5,7 @@ from ...data.game_item import ItemTag, Tag
 from ...data.harvest import ArtifactSpotSource
 from ...data.requirement import SkillRequirement
 from ...data.skill import Skill
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 from ...strings.ap_names.mods.mod_items import ModBooks
 from ...strings.craftable_names import ModMachine
 from ...strings.fish_names import ModTrash
@@ -33,7 +33,7 @@ class ArchaeologyContentPack(ContentPack):
 
 
 register_mod_content_pack(ArchaeologyContentPack(
-    ModNames.archaeology,
+    Mod.archaeology,
     skills=(Skill(name=ModSkill.archaeology, has_mastery=False),),
     harvest_sources={
         ModBooks.digging_like_worms: (

@@ -1,5 +1,5 @@
 from ..bases import SVTestBase
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 from ...options import Mods, BackpackProgression, BackpackSize
 
 
@@ -7,7 +7,7 @@ class TestBiggerBackpackVanilla(SVTestBase):
     options = {
         BackpackProgression.internal_name: BackpackProgression.option_vanilla,
         BackpackSize.internal_name: BackpackSize.option_12,
-        Mods.internal_name: ModNames.big_backpack
+        Mods.internal_name: Mod.big_backpack
     }
 
     def test_no_backpack(self):
@@ -26,7 +26,7 @@ class TestBiggerBackpackProgressive(SVTestBase):
     options = {
         BackpackProgression.internal_name: BackpackProgression.option_progressive,
         BackpackSize.internal_name: BackpackSize.option_12,
-        Mods.internal_name: ModNames.big_backpack,
+        Mods.internal_name: Mod.big_backpack,
     }
 
     def test_backpack(self):
@@ -45,7 +45,7 @@ class TestBiggerBackpackEarlyProgressive(TestBiggerBackpackProgressive):
     options = {
         BackpackProgression.internal_name: BackpackProgression.option_early_progressive,
         BackpackSize.internal_name: BackpackSize.option_12,
-        Mods.internal_name: ModNames.big_backpack
+        Mods.internal_name: Mod.big_backpack
     }
 
     def test_backpack(self):
@@ -58,7 +58,7 @@ class TestBiggerBackpackEarlyProgressive(TestBiggerBackpackProgressive):
 class TestBiggerBackpackSplit1(SVTestBase):
     options = {BackpackProgression.internal_name: BackpackProgression.option_progressive,
                BackpackSize.internal_name: BackpackSize.option_1,
-               Mods.internal_name: ModNames.big_backpack}
+               Mods.internal_name: Mod.big_backpack}
 
     def test_backpack(self):
         with self.subTest(check="has items"):
@@ -79,7 +79,7 @@ class TestBiggerBackpackSplit1(SVTestBase):
 class TestBackpackSplit2(SVTestBase):
     options = {BackpackProgression.internal_name: BackpackProgression.option_progressive,
                BackpackSize.internal_name: BackpackSize.option_2,
-               Mods.internal_name: ModNames.big_backpack}
+               Mods.internal_name: Mod.big_backpack}
 
     def test_backpack(self):
         with self.subTest(check="has items"):
@@ -104,7 +104,7 @@ class TestBackpackSplit2(SVTestBase):
 class TestBackpackSplit4(SVTestBase):
     options = {BackpackProgression.internal_name: BackpackProgression.option_progressive,
                BackpackSize.internal_name: BackpackSize.option_4,
-               Mods.internal_name: ModNames.big_backpack}
+               Mods.internal_name: Mod.big_backpack}
 
     def test_backpack(self):
         with self.subTest(check="has items"):
@@ -129,7 +129,7 @@ class TestBackpackSplit4(SVTestBase):
 class TestBackpackSplit6(SVTestBase):
     options = {BackpackProgression.internal_name: BackpackProgression.option_progressive,
                BackpackSize.internal_name: BackpackSize.option_6,
-               Mods.internal_name: ModNames.big_backpack}
+               Mods.internal_name: Mod.big_backpack}
 
     def test_backpack(self):
         with self.subTest(check="has items"):

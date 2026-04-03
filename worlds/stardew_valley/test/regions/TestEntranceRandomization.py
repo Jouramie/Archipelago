@@ -6,7 +6,7 @@ from BaseClasses import get_seed, MultiWorld, Entrance
 from ..assertion import WorldAssertMixin
 from ..bases import SVTestCase, solo_multiworld, setup_solo_multiworld
 from ... import options
-from ...mods.mod_data import ModNames
+from ...mods.mod_names import Mod
 from ...options import EntranceRandomization, ExcludeGingerIsland, SkillProgression
 from ...options.options import all_mods
 from ...regions.entrance_rando import create_entrance_rando_target, prepare_mod_data, connect_regions
@@ -65,9 +65,9 @@ class TestCanGenerateEachModWithEntranceRandomizationBuildings(WorldAssertMixin,
     Not all ER settings are tested, because 'buildings' is, essentially, a superset of all others
     """
     mods = all_mods.difference([
-        ModNames.ginger, ModNames.distant_lands, ModNames.skull_cavern_elevator, ModNames.wellwick, ModNames.magic,
-        ModNames.binning_skill, ModNames.big_backpack, ModNames.luck_skill, ModNames.tractor, ModNames.shiko, ModNames.archaeology,
-        ModNames.delores, ModNames.socializing_skill, ModNames.cooking_skill
+        Mod.ginger, Mod.distant_lands, Mod.skull_cavern_elevator, Mod.wellwick, Mod.magic,
+        Mod.binning_skill, Mod.big_backpack, Mod.luck_skill, Mod.tractor, Mod.shiko, Mod.archaeology,
+        Mod.delores, Mod.socializing_skill, Mod.cooking_skill
     ])
 
     def test_given_mod_when_generate_then_basic_checks(self) -> None:

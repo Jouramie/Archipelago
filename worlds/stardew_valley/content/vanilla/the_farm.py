@@ -6,11 +6,12 @@ from ...data.harvest import FruitBatsSource, MushroomCaveSource
 from ...data.shop import ShopSource
 from ...strings.animal_product_names import AnimalProduct
 from ...strings.building_names import Building
+from ...strings.content_pack_names import ContentPack as ContentPackNames
 from ...strings.forageable_names import Forageable, Mushroom
 from ...strings.region_names import Region
 
 the_farm = ContentPack(
-    "The Farm (Vanilla)",
+    ContentPackNames.the_farm,
     dependencies=(
         pelican_town_content_pack.name,
     ),

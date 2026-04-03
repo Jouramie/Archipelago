@@ -1,4 +1,4 @@
-from .mod_data import ModNames
+from .mod_names import Mod
 from ..content.mods.sve import SVE_GINGER_ISLAND_PACK
 from ..regions.model import RegionData, ConnectionData, MergeFlag, RandomizationFlag, ModRegionsData
 from ..strings.entrance_names import Entrance, DeepWoodsEntrance, EugeneEntrance, LaceyEntrance, BoardingHouseEntrance, \
@@ -356,25 +356,25 @@ boarding_house_entrances = [
 ]
 
 vanilla_connections_to_remove_by_content_pack: dict[str, tuple[str, ...]] = {
-    ModNames.sve: (
+    Mod.sve: (
         Entrance.mountain_to_the_mines,
         Entrance.mountain_to_adventurer_guild,
     )
 }
 
 region_data_by_content_pack = {
-    ModNames.deepwoods: ModRegionsData(ModNames.deepwoods, deep_woods_regions, deep_woods_entrances),
-    ModNames.eugene: ModRegionsData(ModNames.eugene, eugene_regions, eugene_entrances),
-    ModNames.jasper: ModRegionsData(ModNames.jasper, jasper_regions, jasper_entrances),
-    ModNames.alec: ModRegionsData(ModNames.alec, alec_regions, alec_entrances),
-    ModNames.yoba: ModRegionsData(ModNames.yoba, yoba_regions, yoba_entrances),
-    ModNames.juna: ModRegionsData(ModNames.juna, juna_regions, juna_entrances),
-    ModNames.magic: ModRegionsData(ModNames.magic, magic_regions, magic_entrances),
-    ModNames.ayeisha: ModRegionsData(ModNames.ayeisha, ayeisha_regions, ayeisha_entrances),
-    ModNames.riley: ModRegionsData(ModNames.riley, riley_regions, riley_entrances),
-    ModNames.sve: ModRegionsData(ModNames.sve, sve_main_land_regions, sve_main_land_connections),
+    Mod.deepwoods: ModRegionsData(Mod.deepwoods, deep_woods_regions, deep_woods_entrances),
+    Mod.eugene: ModRegionsData(Mod.eugene, eugene_regions, eugene_entrances),
+    Mod.jasper: ModRegionsData(Mod.jasper, jasper_regions, jasper_entrances),
+    Mod.alec: ModRegionsData(Mod.alec, alec_regions, alec_entrances),
+    Mod.yoba: ModRegionsData(Mod.yoba, yoba_regions, yoba_entrances),
+    Mod.juna: ModRegionsData(Mod.juna, juna_regions, juna_entrances),
+    Mod.magic: ModRegionsData(Mod.magic, magic_regions, magic_entrances),
+    Mod.ayeisha: ModRegionsData(Mod.ayeisha, ayeisha_regions, ayeisha_entrances),
+    Mod.riley: ModRegionsData(Mod.riley, riley_regions, riley_entrances),
+    Mod.sve: ModRegionsData(Mod.sve, sve_main_land_regions, sve_main_land_connections),
     SVE_GINGER_ISLAND_PACK: ModRegionsData(SVE_GINGER_ISLAND_PACK, sve_ginger_island_regions, sve_ginger_island_connections),
-    ModNames.alecto: ModRegionsData(ModNames.alecto, alecto_regions, alecto_entrances),
-    ModNames.lacey: ModRegionsData(ModNames.lacey, lacey_regions, lacey_entrances),
-    ModNames.boarding_house: ModRegionsData(ModNames.boarding_house, boarding_house_regions, boarding_house_entrances),
+    Mod.alecto: ModRegionsData(Mod.alecto, alecto_regions, alecto_entrances),
+    Mod.lacey: ModRegionsData(Mod.lacey, lacey_regions, lacey_entrances),
+    Mod.boarding_house: ModRegionsData(Mod.boarding_house, boarding_house_regions, boarding_house_entrances),
 }
