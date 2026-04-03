@@ -19,17 +19,15 @@ from .items import item_table, ItemData, Group, items_by_group, create_items, ge
     setup_early_items
 from .items.item_data import FILLER_GROUPS
 from .locations import location_table, create_locations, LocationData, locations_by_tag
-from .logic.combat_logic import valid_weapons
 from .options import StardewValleyOptions, SeasonRandomization, Goal, BundleRandomization, EnabledFillerBuffs, \
-    NumberOfMovementBuffs, BuildingProgression, EntranceRandomization, ToolProgression, BackpackProgression, TrapDistribution, BundlePrice, \
-    BundleWhitelist, BundleBlacklist, BundlePerRoom, FarmType
+    NumberOfMovementBuffs, EntranceRandomization, BackpackProgression, TrapDistribution, \
+    BundleWhitelist, BundleBlacklist, BundlePerRoom
 from .options.forced_options import force_change_options_if_incompatible, force_change_options_if_banned
 from .options.jojapocalypse_options import JojaAreYouSure
 from .options.option_groups import sv_option_groups
 from .options.presets import sv_options_presets
 from .options.settings import StardewSettings
 from .options.worlds_group import apply_most_restrictive_options
-from .rules import set_rules
 from .strings.ap_names.ap_option_names import StartWithoutOptionName
 from .strings.ap_names.ap_weapon_names import APWeapon
 from .strings.ap_names.event_names import Event
@@ -452,6 +450,7 @@ class StardewValleyWorld(World):
         item.events_to_collect[Event.received_progression_item] = 1
 
     def set_rules(self):
+        from .rules import set_rules
         set_rules(self)
 
     def connect_entrances(self) -> None:
