@@ -11,7 +11,6 @@ from BaseClasses import Region, Location, Item, Tutorial, ItemClassification, Mu
 from Options import PerGameCommonOptions
 from worlds.AutoWorld import World, WebWorld
 from worlds.LauncherComponents import components, Component, icon_paths, Type
-from .bundles.bundles import get_all_bundles, get_trash_bear_requests
 from .content import create_content
 from .content.feature.special_order_locations import get_qi_gem_amount
 from .content.feature.walnutsanity import get_walnut_amount
@@ -197,6 +196,7 @@ class StardewValleyWorld(World):
         self.content = create_content(self.options)
 
     def create_regions(self):
+        from .bundles.bundles import get_all_bundles, get_trash_bear_requests
         from .logic.logic import StardewLogic
         from .regions import create_regions
 

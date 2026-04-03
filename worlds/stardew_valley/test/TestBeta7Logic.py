@@ -1,9 +1,8 @@
-from worlds.stardew_valley import BackpackProgression, ToolProgression, SeasonRandomization
-from worlds.stardew_valley.mods.mod_names import Mod
-from worlds.stardew_valley.options import BackpackSize, Mods, QuestLocations, SkillProgression, Secretsanity, Museumsanity, Booksanity, Hatsanity, Cropsanity, \
-    StartWithout
-from worlds.stardew_valley.strings.ap_names.ap_option_names import SecretsanityOptionName, StartWithoutOptionName
-from worlds.stardew_valley.test.bases import SVTestBase
+from .bases import SVTestBase
+from ..mods.mod_names import Mod
+from ..options import BackpackProgression, ToolProgression, SeasonRandomization, BackpackSize, Mods, QuestLocations, SkillProgression, Secretsanity, \
+    Museumsanity, Booksanity, Hatsanity, Cropsanity, StartWithout
+from ..strings.ap_names.ap_option_names import SecretsanityOptionName, StartWithoutOptionName
 
 
 class TestAvailableBackpacksSize1(SVTestBase):
