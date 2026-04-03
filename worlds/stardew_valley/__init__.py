@@ -29,7 +29,6 @@ from .options.option_groups import sv_option_groups
 from .options.presets import sv_options_presets
 from .options.settings import StardewSettings
 from .options.worlds_group import apply_most_restrictive_options
-from .regions import create_regions, prepare_mod_data
 from .rules import set_rules
 from .strings.ap_names.ap_option_names import StartWithoutOptionName
 from .strings.ap_names.ap_weapon_names import APWeapon
@@ -201,6 +200,7 @@ class StardewValleyWorld(World):
 
     def create_regions(self):
         from .logic.logic import StardewLogic
+        from .regions import create_regions
 
         def create_region(name: str) -> Region:
             return Region(name, self.player, self.multiworld)
@@ -455,6 +455,8 @@ class StardewValleyWorld(World):
         set_rules(self)
 
     def connect_entrances(self) -> None:
+        from .regions import prepare_mod_data
+
         no_target_groups = {0: [0]}
         placement = entrance_rando.randomize_entrances(self, coupled=True, target_group_lookup=no_target_groups)
         self.randomized_entrances = prepare_mod_data(placement)
