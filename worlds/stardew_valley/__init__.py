@@ -11,7 +11,6 @@ from BaseClasses import Region, Location, Item, Tutorial, ItemClassification, Mu
 from Options import PerGameCommonOptions
 from worlds.AutoWorld import World, WebWorld
 from worlds.LauncherComponents import components, Component, icon_paths, Type
-from .content import create_content
 from .content.feature.special_order_locations import get_qi_gem_amount
 from .content.feature.walnutsanity import get_walnut_amount
 from .items import item_table, ItemData, Group, items_by_group, create_items, generate_filler_choice_pool, \
@@ -149,6 +148,7 @@ class StardewValleyWorld(World):
 
     @classmethod
     def create_group(cls, multiworld: MultiWorld, new_player_id: int, players: set[int]) -> World:
+        from .content import create_content
         world_group = super().create_group(multiworld, new_player_id, players)
 
         group_options = typing.cast(StardewValleyOptions, world_group.options)
@@ -191,6 +191,7 @@ class StardewValleyWorld(World):
         return seed
 
     def generate_early(self):
+        from .content import create_content
         force_change_options_if_banned(self.options, self.settings, self.player, self.player_name)
         force_change_options_if_incompatible(self.options, self.player, self.player_name)
         self.content = create_content(self.options)
