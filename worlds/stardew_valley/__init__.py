@@ -7,7 +7,7 @@ from random import Random
 from typing import Dict, List, Any, ClassVar, TextIO, Optional
 
 import entrance_rando
-from BaseClasses import Region, Location, Item, Tutorial, ItemClassification, MultiWorld, CollectionState
+from BaseClasses import Region, Location, Item, Tutorial, ItemClassification, MultiWorld, CollectionState, LogicResources
 from Options import PerGameCommonOptions
 from worlds.AutoWorld import World, WebWorld
 from worlds.LauncherComponents import components, Component, icon_paths, Type
@@ -33,7 +33,7 @@ from .options.settings import StardewSettings
 from .options.worlds_group import apply_most_restrictive_options
 from .regions import create_regions, prepare_mod_data
 from .rules import set_rules
-from .stardew_rule import True_, StardewRule, HasProgressionPercent
+from .stardew_rule import True_, StardewRule, HasProgressionPercent, true_
 from .strings.ap_names.ap_option_names import StartWithoutOptionName
 from .strings.ap_names.ap_weapon_names import APWeapon
 from .strings.ap_names.event_names import Event
@@ -54,12 +54,13 @@ class StardewLocation(Location):
 
 class StardewItem(Item):
     game: str = STARDEW_VALLEY
-    events_to_collect: Counter[str]
+    progress_to_collect: Counter[str]
+    resources_to_collect: dict[str, LogicResources] | None = None
 
     @wraps(Item.__init__)
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.events_to_collect = Counter()
+        self.progress_to_collect = Counter()
 
 
 class StardewWebWorld(WebWorld):
@@ -270,7 +271,6 @@ class StardewValleyWorld(World):
                 self.multiworld.push_precollected(self.create_item(item_name))
                 precollected_count += 1
 
-
     def precollect_start_without_items(self):
         if StartWithoutOptionName.landslide not in self.options.start_without:
             self.multiworld.push_precollected(self.create_item("Landslide Removed"))
@@ -328,13 +328,18 @@ class StardewValleyWorld(World):
                 self.multiworld.push_precollected(self.create_item("Progressive Backpack"))
 
     def setup_logic_events(self):
-        def register_event(name: str, region: str, rule: StardewRule, location_name: str | None = None) -> None:
+        def register_event(name: str, region: str, rule: StardewRule, location_name: str | None = None,
+                           resources_to_collect: dict[str, LogicResources] | None = None) -> None:
             if location_name is None:
                 location_name = name
             event_location = LocationData(None, region, location_name)
-            self.create_event_location(event_location, rule, name)
+            self.create_event_location(event_location, rule, name, resources_to_collect)
 
         self.logic.setup_events(register_event)
+
+        register_event(Event.sleep_in_farmhouse, "Farmhouse", true_, resources_to_collect={
+            "Farmhouse": Counter(time_available=20)
+        })
 
     def setup_victory(self):
         if self.options.goal == Goal.option_community_center:
@@ -428,23 +433,25 @@ class StardewValleyWorld(World):
 
         if stardew_item.advancement:
             # Progress is only counted for pre-fill progression items, so we don't count filler items later converted to progression post-fill.
-            stardew_item.events_to_collect[Event.received_progression_item] = 1
+            stardew_item.progress_to_collect[Event.received_progression_item] = 1
 
         if (walnut_amount := get_walnut_amount(stardew_item.name)) > 0:
-            stardew_item.events_to_collect[Event.received_walnuts] = walnut_amount
+            stardew_item.progress_to_collect[Event.received_walnuts] = walnut_amount
 
         if (qi_gem_amount := get_qi_gem_amount(stardew_item.name)) > 0:
-            stardew_item.events_to_collect[Event.received_qi_gems] = qi_gem_amount
+            stardew_item.progress_to_collect[Event.received_qi_gems] = qi_gem_amount
 
         if classification_post_fill is not None:
             self.classifications_to_override_post_fill.append((stardew_item, classification_post_fill))
 
         return stardew_item
 
-    def create_event_location(self, location_data: LocationData, rule: StardewRule, item: str):
+    def create_event_location(self, location_data: LocationData, rule: StardewRule, item: str,
+                              resources_to_collect: dict[str, LogicResources] | None = None) -> None:
         region = self.multiworld.get_region(location_data.region, self.player)
         item = typing.cast(StardewItem, region.add_event(location_data.name, item, rule, StardewLocation, StardewItem))
-        item.events_to_collect[Event.received_progression_item] = 1
+        item.progress_to_collect[Event.received_progression_item] = 1
+        item.resources_to_collect = resources_to_collect
 
     def set_rules(self):
         set_rules(self)
@@ -531,7 +538,7 @@ class StardewValleyWorld(World):
             return False
 
         player_state = state.prog_items[self.player]
-        player_state.update(item.events_to_collect)
+        player_state.update(item.progress_to_collect)
 
         self.update_received_progression_percent(player_state)
 
@@ -546,7 +553,7 @@ class StardewValleyWorld(World):
             return False
 
         player_state = state.prog_items[self.player]
-        player_state.subtract(item.events_to_collect)
+        player_state.subtract(item.progress_to_collect)
 
         self.update_received_progression_percent(player_state)
 

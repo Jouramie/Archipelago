@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections
+import dataclasses
 import functools
 import logging
 import random
@@ -12,7 +13,6 @@ from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, M
 from enum import IntEnum, IntFlag
 from typing import (AbstractSet, Any, ClassVar, Dict, List, Literal, NamedTuple,
                     Optional, Protocol, Tuple, Union, TYPE_CHECKING, overload)
-import dataclasses
 
 from typing_extensions import NotRequired, TypedDict
 
@@ -40,6 +40,7 @@ class Group(TypedDict):
 
 class ThreadBarrierProxy:
     """Passes through getattr while passthrough is True"""
+
     def __init__(self, obj: object) -> None:
         self.passthrough = True
         self.obj = obj
@@ -116,9 +117,9 @@ class MultiWorld():
         location_cache: Dict[int, Dict[str, Location]]
 
         def __init__(self, players: int):
-            self.region_cache = {player: {} for player in range(1, players+1)}
-            self.entrance_cache = {player: {} for player in range(1, players+1)}
-            self.location_cache = {player: {} for player in range(1, players+1)}
+            self.region_cache = {player: {} for player in range(1, players + 1)}
+            self.entrance_cache = {player: {} for player in range(1, players + 1)}
+            self.location_cache = {player: {} for player in range(1, players + 1)}
 
         def __iadd__(self, other: Iterable[Region]):
             self.extend(other)
@@ -173,6 +174,7 @@ class MultiWorld():
         for player in range(1, players + 1):
             def set_player_attr(attr: str, val) -> None:
                 self.__dict__.setdefault(attr, {})[player] = val
+
             set_player_attr('plando_item_blocks', [])
             set_player_attr('game', "Archipelago")
             set_player_attr('completion_condition', lambda state: True)
@@ -350,8 +352,8 @@ class MultiWorld():
                 count = common_item_count.get(item.player, {}).get(item.name, 0)
                 if count:
                     loc = Location(group_id, f"Item Link: {item.name} -> {self.player_name[item.player]} {count}",
-                        None, region)
-                    loc.access_rule = lambda state, item_name = item.name, group_id_ = group_id, count_ = count: \
+                                   None, region)
+                    loc.access_rule = lambda state, item_name=item.name, group_id_=group_id, count_=count: \
                         state.has(item_name, group_id_, count_)
 
                     locations.append(loc)
@@ -372,7 +374,7 @@ class MultiWorld():
                         item_player = player
                     if group["replacement_items"][player]:
                         items_to_add.append(AutoWorld.call_single(self, "create_item", item_player,
-                            group["replacement_items"][player]))
+                                                                  group["replacement_items"][player]))
                     else:
                         items_to_add.append(AutoWorld.call_single(self, "create_filler", item_player))
                 self.random.shuffle(items_to_add)
@@ -717,10 +719,13 @@ class MultiWorld():
 
 
 PathValue = Tuple[str, Optional["PathValue"]]
+LogicResources = Counter[str]  # TODO yeah not sure of the naming here
 
 
 class CollectionState():
     prog_items: Dict[int, Counter[str]]
+    resources: dict[int, dict[str, LogicResources]]
+    """Per player/region resources"""
     multiworld: MultiWorld
     reachable_regions: Dict[int, Set[Region]]
     blocked_connections: Dict[int, Set[Entrance]]
@@ -787,6 +792,37 @@ class CollectionState():
                 queue.extend(new_region.exits)
                 self.path[new_region] = (new_region.name, self.path.get(connection, None))
                 self.multiworld.worlds[player].reached_region(self, new_region)
+
+                # Retry connections if the new region can unblock them
+                entrances = self.multiworld.indirect_connections.get(new_region)
+                if entrances is not None:
+                    relevant_entrances = entrances.intersection(blocked_connections)
+                    relevant_entrances.difference_update(queue)
+                    queue.extend(relevant_entrances)
+
+    def _update_reachable_regions_explicit_indirect_conditions_resource_logic(self, player: int, queue: deque[Entrance]) -> None:
+        unsure_resource_update_queue = deque()  # Not sure if those entrances can be traversed
+
+        reachable_regions = self.reachable_regions[player]
+        blocked_connections = self.blocked_connections[player]
+        # run BFS on all connections, and keep track of those blocked by missing items
+        while queue:
+            connection = queue.popleft()
+            new_region = connection.connected_region
+            if new_region in reachable_regions:
+                blocked_connections.remove(connection)
+                unsure_resource_update_queue.append(connection)
+            elif connection.can_reach(self):
+                if self.allow_partial_entrances and not new_region:
+                    continue
+                assert new_region, f"tried to search through an Entrance \"{connection}\" with no connected Region"
+                reachable_regions.add(new_region)
+                blocked_connections.remove(connection)
+                blocked_connections.update(new_region.exits)
+                queue.extend(new_region.exits)
+                self.path[new_region] = (new_region.name, self.path.get(connection, None))
+                self.multiworld.worlds[player].reached_region(self, new_region)
+                connection.propagate_resources(self)
 
                 # Retry connections if the new region can unblock them
                 entrances = self.multiworld.indirect_connections.get(new_region)
@@ -942,12 +978,14 @@ class CollectionState():
     @overload
     def sweep_for_advancements(self, locations: Optional[Iterable[Location]] = None, *,
                                yield_each_sweep: Literal[True],
-                               checked_locations: Optional[Set[Location]] = None) -> Iterator[None]: ...
+                               checked_locations: Optional[Set[Location]] = None) -> Iterator[None]:
+        ...
 
     @overload
     def sweep_for_advancements(self, locations: Optional[Iterable[Location]] = None,
                                yield_each_sweep: Literal[False] = False,
-                               checked_locations: Optional[Set[Location]] = None) -> None: ...
+                               checked_locations: Optional[Set[Location]] = None) -> None:
+        ...
 
     def sweep_for_advancements(self, locations: Optional[Iterable[Location]] = None, yield_each_sweep: bool = False,
                                checked_locations: Optional[Set[Location]] = None) -> Optional[Iterator[None]]:
@@ -1174,6 +1212,16 @@ class CollectionState():
         else:
             self.prog_items[player][item] = count
 
+    def add_resources(self, resources_per_region: dict[str, LogicResources], player: int) -> None:
+        """
+        Adds multiple resources to multiple regions.
+
+        :param resources_per_region: The resources to add for each region.
+        :param player: The player the resources are for.
+        """
+        for region, resources in resources_per_region.items():
+            self.resources[player][region] |= resources
+
 
 CollectionRule = Callable[[CollectionState], bool]
 DEFAULT_COLLECTION_RULE: CollectionRule = staticmethod(lambda state: True)
@@ -1186,6 +1234,7 @@ class EntranceType(IntEnum):
 
 class Entrance:
     access_rule: CollectionRule = DEFAULT_COLLECTION_RULE
+    resource_cost: LogicResources = LogicResources()  # FIXME this should be immutable
     hide_path: bool = False
     player: int
     name: str
@@ -1241,6 +1290,16 @@ class Entrance:
         # same as the forward entrance. In uncoupled they are ok.
         return self.randomization_type == other.randomization_type and (not er_state.coupled or self.name != other.name)
 
+    def would_propagate_resources(self, collection_state: CollectionState) -> bool:
+        return not (self._resources_value(collection_state) < collection_state.resources[self.player][self.connected_region.name])
+
+    def propagate_resources(self, collection_state: CollectionState) -> None:
+        collection_state.resources[self.player][self.connected_region.name] |= self._resources_value(collection_state)
+
+    def _resources_value(self, collection_state: CollectionState) -> LogicResources:
+        # FIXME test adding caching and staling when the parent resource value changes
+        return collection_state.resources[self.player][self.parent_region.name] - self.resource_cost
+
     def __repr__(self):
         multiworld = self.parent_region.multiworld if self.parent_region else None
         return multiworld.get_name_string_for_object(self) if multiworld else f'{self.name} (Player {self.player})'
@@ -1254,6 +1313,7 @@ class Region:
     entrances: List[Entrance]
     exits: List[Entrance]
     locations: List[Location]
+    initial_resources: LogicResources = LogicResources()  # FIXME unnecessary, this can completely be replaced by adding an item in start inv that will add resources
     entrance_type: ClassVar[type[Entrance]] = Entrance
 
     class Register(MutableSequence):
@@ -1286,7 +1346,7 @@ class Region:
         def __delitem__(self, index: int) -> None:
             location: Location = self._list[index]
             del self._list[index]
-            del(self.region_manager.location_cache[location.player][location.name])
+            del (self.region_manager.location_cache[location.player][location.name])
 
         def insert(self, index: int, value: Location) -> None:
             assert value.name not in self.region_manager.location_cache[value.player], \
@@ -1298,7 +1358,7 @@ class Region:
         def __delitem__(self, index: int) -> None:
             entrance: Entrance = self._list[index]
             del self._list[index]
-            del(self.region_manager.entrance_cache[entrance.player][entrance.name])
+            del (self.region_manager.entrance_cache[entrance.player][entrance.name])
 
         def insert(self, index: int, value: Entrance) -> None:
             assert value.name not in self.region_manager.entrance_cache[value.player], \
@@ -1369,13 +1429,13 @@ class Region:
             self.locations.append(location_type(self.player, location, address, self))
 
     def add_event(
-        self,
-        location_name: str,
-        item_name: str | None = None,
-        rule: CollectionRule | Rule[Any] | None = None,
-        location_type: type[Location] | None = None,
-        item_type: type[Item] | None = None,
-        show_in_spoiler: bool = True,
+            self,
+            location_name: str,
+            item_name: str | None = None,
+            rule: CollectionRule | Rule[Any] | None = None,
+            location_type: type[Location] | None = None,
+            item_type: type[Item] | None = None,
+            show_in_spoiler: bool = True,
     ) -> Item:
         """
         Adds an event location/item pair to the region.
@@ -1496,13 +1556,13 @@ class Location:
 
     def can_fill(self, state: CollectionState, item: Item, check_access: bool = True) -> bool:
         return ((
-            self.always_allow(state, item)
-            and item.name not in state.multiworld.worlds[item.player].options.non_local_items
-        ) or (
-            (self.progress_type != LocationProgressType.EXCLUDED or not (item.advancement or item.useful))
-            and self.item_rule(item)
-            and (not check_access or self.can_reach(state))
-        ))
+                        self.always_allow(state, item)
+                        and item.name not in state.multiworld.worlds[item.player].options.non_local_items
+                ) or (
+                        (self.progress_type != LocationProgressType.EXCLUDED or not (item.advancement or item.useful))
+                        and self.item_rule(item)
+                        and (not check_access or self.can_reach(state))
+                ))
 
     def can_reach(self, state: CollectionState) -> bool:
         # Region.can_reach is just a cache lookup, so placing it first for faster abort on average

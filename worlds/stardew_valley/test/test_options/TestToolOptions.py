@@ -42,4 +42,4 @@ class TestToolProgression(SVTestBase):
                                                    (None, None))
 
         self.assertEqual(post_fill_classification, ItemClassification.progression_skip_balancing)
-        self.assertEqual(Counter(), trash_can.events_to_collect)
+        self.assertEqual(Counter(), trash_can.progress_to_collect)

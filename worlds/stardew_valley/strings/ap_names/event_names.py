@@ -14,3 +14,6 @@ class Event:
     received_progressive_weapon = event("Received Progressive Weapon")
     received_progression_item = event("Received Progression Item")
     received_progression_percent = event("Received Progression Percent")
+
+    sleep_in_farmhouse = event("Sleep in Farmhouse")
+    sleep_in_island_farmhouse = event("Sleep in Island Farmhouse")
