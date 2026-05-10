@@ -83,10 +83,10 @@ TRACKER_PACK_CONFIG = {
     "map_page_maps": "maps/maps.json",
     "map_page_locations": [
         "locations/AutumnHills.json", "locations/BambooCreek.json", "locations/Catacombs.json", "locations/CloudRuins.json",
-        "locations/CorruptedFuture.json", "locations/ElementalSkylands.json", "locations/ForlornTemple.json", "locations/GlacialPeak.json",
-        "locations/HowlingGrotto.json", "locations/MusicBox.json", "locations/NinjaVillage.json", "locations/QuillshroomMarsh.json",
-        "locations/RiviereTurquoise.json", "locations/SearingCrags.json", "locations/SunkenShrine.json", "locations/TheShop.json",
-        "locations/TowerOfTime.json", "locations/Underworld.json"
+        "locations/CorruptedFuture.json", "locations/DarkCave.json", "locations/ElementalSkylands.json", "locations/ForlornTemple.json",
+        "locations/GlacialPeak.json", "locations/HowlingGrotto.json", "locations/MusicBox.json", "locations/NinjaVillage.json",
+        "locations/QuillshroomMarsh.json", "locations/RiviereTurquoise.json", "locations/SearingCrags.json", "locations/SunkenShrine.json",
+        "locations/TheShop.json", "locations/TowerOfTime.json", "locations/Underworld.json"
     ],
     "map_page_setting_key": "Slot:{player}:CurrentRegion",
     "map_page_index": handle_auto_tabbing,
