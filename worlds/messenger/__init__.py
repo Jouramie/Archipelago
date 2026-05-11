@@ -20,7 +20,7 @@ from .shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS, shu
 from .subclasses import MessengerItem, MessengerRegion, MessengerShopLocation
 from .transitions import disconnect_entrances, shuffle_transitions
 from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACKER_PACK_CONFIG, \
-    GLITCHED_ITEM, add_glitched_rules, disconnect_deferred_exits, connect_visited_entrances
+    GLITCHED_ITEM, add_glitched_rules, disconnect_deferred_exits, connect_visited_entrances, unlock_portals
 
 components.append(
     Component(
@@ -91,7 +91,10 @@ class MessengerWorld(World):
 
     tracker_world: ClassVar = TRACKER_PACK_CONFIG
     glitches_item_name: ClassVar[str] = GLITCHED_ITEM
-    found_entrances_datastorage_key: ClassVar[str] = "Slot:{player}:VisitedEntrances"
+    found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = (
+        "Slot:{player}:VisitedEntrances",
+        "Slot:{player}:UnlockedPortals"
+    )
 
     base_offset = 0xADD_000
     item_name_to_id = {item: item_id
@@ -359,8 +362,12 @@ class MessengerWorld(World):
 
             # Need to reset the entrance cache here, because the entrance names are changed for the tracker.
             self.multiworld.regions.entrance_cache[self.player] = {
-                entrance.name: entrance
-                for entrance in self.multiworld.regions.entrance_cache[self.player].values()
+                e.name: e
+                for e in self.multiworld.regions.entrance_cache[self.player].values()
+            }
+            self.multiworld.regions.location_cache[self.player] = {
+                l.name: l
+                for l in self.multiworld.regions.location_cache[self.player].values()
             }
 
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
@@ -534,9 +541,21 @@ class MessengerWorld(World):
         with open(out_path, "wb") as f:
             f.write(output)
 
-    def reconnect_found_entrances(self, _: str, visited_exits: list[str] | None) -> None:
-        if getattr(self.multiworld, "enforce_deferred_connections", "off") == "off" or not visited_exits:
+    def reconnect_found_entrances(self, storage_key: str, storage_value: list[str] | None) -> None:
+        if getattr(self.multiworld, "enforce_deferred_connections", "off") == "off":
             return
 
-        connect_visited_entrances(self.deferred_connections, lambda region_name: self.multiworld.get_region(region_name, self.player),
-                                  lambda entrance_name: self.multiworld.get_entrance(entrance_name, self.player), visited_exits)
+        if storage_key.endswith("VisitedEntrances"):
+            if not storage_value:
+                return
+            connect_visited_entrances(self.deferred_connections,
+                                      storage_value,
+                                      lambda region_name: self.multiworld.get_region(region_name, self.player),
+                                      lambda entrance_name: self.multiworld.get_entrance(entrance_name, self.player))
+
+        if storage_key.endswith("UnlockedPortals"):
+            if storage_value is None:
+                storage_value = []
+            unlock_portals(set(self.starting_portals + storage_value),
+                           lambda location_name: self.multiworld.get_location(location_name, self.player))
+            self.multiworld.state.sweep_for_advancements()

@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterable
 from itertools import chain
 from typing import TYPE_CHECKING, Callable
 
@@ -231,12 +232,13 @@ def disconnect_deferred_exits(transitions: list[PlandoConnection], get_region: C
         unlock_region = get_region(portal + " - Portal")
         unlock_event: Location = next(e for e in unlock_region.locations if e.name == f"{portal} Portal")
         unlock_event.name = portal + " - Portal unlock"
+        unlock_event.access_rule = lambda x: False
 
     return deferred_connections
 
 
-def connect_visited_entrances(connections_map: dict[str, str], get_region: Callable[[str], Region], get_entrance: Callable[[str], Entrance],
-                              visited_exits: list[str], decoupled: bool = False) -> None:
+def connect_visited_entrances(connections_map: dict[str, str], visited_exits: list[str], get_region: Callable[[str], Region],
+                              get_entrance: Callable[[str], Entrance], decoupled: bool = False) -> None:
     def connect_exit_to_destination(visited_exit: str) -> Region:
         transition = get_entrance(visited_exit)
         _destination = get_region(connections_map[visited_exit])
@@ -252,3 +254,11 @@ def connect_visited_entrances(connections_map: dict[str, str], get_region: Calla
         except KeyError:
             logger.warning(f"Unable to find region/entrance for visited exit {e}, skipping connection.")
             continue
+
+
+def unlock_portals(unlocked_portals: Iterable[str], get_location: Callable[[str], Location]) -> None:
+    for p in unlocked_portals:
+        event_name = p.replace(" Portal", " - Portal unlock")
+        unlock_event = get_location(event_name)
+        # This assumes the events have no requirements in itself. If an item is required, it's handled by the region.
+        unlock_event.access_rule = lambda x: True

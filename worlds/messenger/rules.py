@@ -253,7 +253,7 @@ class MessengerRules:
             # bamboo creek
             "Bamboo Creek - Claustro":
                 lambda state: self.has_wingsuit(state) and (self.has_dart(state) or self.can_dboost(state)),
-            "Above Entrance Mega Shard":
+            "Above Entrance Mega Shard":  # This needs 0 requirements, just reset to the menu and you can get it with full health
                 lambda state: self.has_dart(state) or self.can_dboost(state),
             "Bamboo Creek Seal - Spike Ball Pits":
                 self.has_wingsuit,
