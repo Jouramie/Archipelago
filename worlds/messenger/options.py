@@ -72,7 +72,7 @@ class ShuffleSkylandsGenerators(Toggle):
     """
     Whether the elemental skylands generators should be locations.
 
-    With this setting, all four Progressive Generator Shutdown are required to open the door in the Fire Generator room.
+    With this setting, all four Progressive Generator Shutdown are required to open the final door in the Fire Generator room.
     """
     display_name = "Shuffle Elemental Skylands Generators"
 
