@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
-from BaseClasses import CollectionState
 from Options import PlandoConnection
+from rule_builder.rules import Has
 
 from .connections import RANDOMIZED_CONNECTIONS
 from .options import ShuffleTransitions
@@ -109,27 +109,16 @@ class MessengerGlitchedRules(MessengerRules):
         super().__init__(world)
 
         hard_logic = MessengerHardRules(world)
+        has_glitched = Has(GLITCHED_ITEM)
 
         for connection in hard_logic.connection_rules.keys():
             hard_rule = hard_logic.connection_rules[connection]
             normal_rule = self.connection_rules[connection]
             if normal_rule != hard_rule:
-
-                def glitch_aware_rule(
-                    state: CollectionState, glitched_rule=normal_rule, previous_rule=hard_rule
-                ) -> bool:
-                    return (state.has(GLITCHED_ITEM, world.player) and glitched_rule(state)) or previous_rule(state)
-
-                self.connection_rules[connection] = glitch_aware_rule
+                self.connection_rules[connection] = (has_glitched & hard_rule) | normal_rule
 
         for location in hard_logic.location_rules.keys():
             hard_rule = hard_logic.location_rules[location]
             normal_rule = self.location_rules[location]
             if normal_rule != hard_rule:
-
-                def glitch_aware_rule(
-                    state: CollectionState, glitched_rule=normal_rule, previous_rule=hard_rule
-                ) -> bool:
-                    return (state.has(GLITCHED_ITEM, world.player) and glitched_rule(state)) or previous_rule(state)
-
-                self.location_rules[location] = glitch_aware_rule
+                self.location_rules[location] = (has_glitched & hard_rule) | normal_rule
