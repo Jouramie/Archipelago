@@ -5,7 +5,6 @@ from ..subclasses import MessengerLocation
 class LocationsTest(MessengerTestBase):
     options = {
         "shuffle_shards": "true",
-        "shuffle_skylands_generators": "true",
     }
 
     @property

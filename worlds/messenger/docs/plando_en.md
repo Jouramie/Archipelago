@@ -41,8 +41,7 @@ portal shuffle is set to `checkpoints`, you may not have multiple portals lead t
 `Spike Wave` may not both be used since they are both in Quillshroom Marsh. If the option is set to `anywhere`, then all
 exits are valid.
 
-All valid connections for portal shuffle can be found by scrolling through
-the [portals module](https://github.com/ArchipelagoMW/Archipelago/blob/main/worlds/messenger/portals.py#L12).
+All valid connections for portal shuffle can be found by scrolling through the [portals module](https://github.com/ArchipelagoMW/Archipelago/blob/main/worlds/messenger/portals.py#L12).
 The entrance and exit should be written exactly as they appear within that file, except for when the **exit** point is a
 portal. In that case, it should have "Portal" included.
 
@@ -78,8 +77,7 @@ Each transition connection is plandoed by specifying its attributes:
   transition will return you to where you entered it from. "entrance" and "exit" are treated the same, with them both
   making this transition only one-way.
 
-Valid connections can be found in the [
-`RANDOMIZED_CONNECTIONS` dictionary](https://github.com/ArchipelagoMW/Archipelago/blob/main/worlds/messenger/connections.py#L640).
+Valid connections can be found in the [`RANDOMIZED_CONNECTIONS` dictionary](https://github.com/ArchipelagoMW/Archipelago/blob/main/worlds/messenger/connections.py#L640).
 The keys (left) are entrances, and values (right) are exits. Whether you want the connection to go both ways or not,
 both sides must either be two-way or one-way; E.g. connecting Artificer (Corrupted Future Portal) to one of the
 Quillshroom Marsh entrances is not a valid pairing. A pairing can be determined to be two-way if both the entrance and

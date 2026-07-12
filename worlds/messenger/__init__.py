@@ -1,5 +1,5 @@
 import logging
-from typing import Any, ClassVar, TextIO, cast
+from typing import Any, ClassVar, TextIO
 
 from BaseClasses import CollectionState, Entrance, EntranceType, Item, ItemClassification, MultiWorld, Tutorial, \
     PlandoOptions
@@ -209,7 +209,7 @@ class MessengerWorld(World):
                            for reg_name in sub_region]
 
         for region in complex_regions:
-            parent_name = cast(str, region.parent)
+            parent_name = region.parent
             region_name = region.name.removeprefix(f"{parent_name} - ")
             connection_data: list[str] = CONNECTIONS[parent_name][region_name]
             for exit_region in connection_data:

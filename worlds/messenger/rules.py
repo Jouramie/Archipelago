@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from BaseClasses import CollectionState, CollectionRule, Region
 from worlds.generic.Rules import add_rule, allow_self_locking_items
@@ -198,7 +198,7 @@ class MessengerRules:
             # Riviere Turquoise
             "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) or (
-                            self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
+                        self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
             "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) and self.can_dboost(state),
             "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
@@ -227,7 +227,7 @@ class MessengerRules:
                 self.world.get_region("Howling Grotto - Emerald Golem Shop")
             ],
             "Glacial Peak - Left exit": [
-                cast(Region, self.world.get_location("Quillshroom Marsh - Queen of Quills").parent_region)
+                self.world.get_location("Quillshroom Marsh - Queen of Quills").parent_region
             ],
         }
 
@@ -502,7 +502,7 @@ class MessengerHardRules(MessengerRules):
 
     def can_dboost(self, state: CollectionState) -> bool:
         return state.has("Second Wind", self.player)  # who really needs meditation
-    
+
     def can_destroy_projectiles(self, state: CollectionState) -> bool:
         return super().can_destroy_projectiles(state) or self.has_windmill(state)
 
