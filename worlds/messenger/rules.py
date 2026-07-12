@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from BaseClasses import CollectionState, CollectionRule, Region
 from worlds.generic.Rules import add_rule, allow_self_locking_items
@@ -127,7 +127,7 @@ class MessengerRules:
             # Glacial Peak
             "Glacial Peak - Portal -> Glacial Peak - Tower Entrance Shop":
                 self.has_vertical,
-            "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
+            "Glacial Peak - Left exit":
                 lambda state: state.has("Magic Firefly", self.player)
                               and state.multiworld.get_location("Quillshroom Marsh - Queen of Quills", self.player)
                               .can_reach(state),
@@ -226,8 +226,8 @@ class MessengerRules:
             "Howling Grotto - Breezy Crushers Checkpoint -> Howling Grotto - Crushing Pits Shop": [
                 self.world.get_region("Howling Grotto - Emerald Golem Shop")
             ],
-            "Glacial Peak - Left -> Elemental Skylands - Air Shmup": [
-                self.world.get_location("Quillshroom Marsh - Queen of Quills").parent_region
+            "Glacial Peak - Left exit": [
+                cast(Region, self.world.get_location("Quillshroom Marsh - Queen of Quills").parent_region)
             ],
         }
 
@@ -425,7 +425,7 @@ class MessengerHardRules(MessengerRules):
                 "Searing Crags - Before Final Climb Shop -> Searing Crags - Colossuses Shop":
                     self.true,
                 # Glacial Peak
-                "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
+                "Glacial Peak - Left exit":
                     lambda state: self.has_windmill(state) or
                                   (state.has("Magic Firefly", self.player) and
                                    state.multiworld.get_location(
