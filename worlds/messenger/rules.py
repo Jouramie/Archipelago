@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
-from BaseClasses import CollectionState, CollectionRule, Region
+from BaseClasses import CollectionRule, CollectionState, Region
 from worlds.generic.Rules import add_rule, allow_self_locking_items
+
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
 
@@ -30,6 +31,7 @@ class MessengerRules:
         self.required_seals = world.required_seals
 
         # dict of connection names and requirements to traverse the exit
+        # fmt: off
         self.connection_rules = {
             # from ToTHQ
             "Artificer's Portal":
@@ -212,6 +214,10 @@ class MessengerRules:
                 lambda state: self.has_wingsuit(state) and self.has_progressive_generator_shutdown(state),
             "Elemental Skylands - Fire Generator Shop -> Elemental Skylands - Fire Intro Shop":
                 self.false,
+            "Elemental Skylands - Fire Intro Shop -> Elemental Skylands - Fire Generator Shop":
+                (lambda state: self.has_progressive_generator_shutdown(state, count=4))
+                if bool(world.options.shuffle_skylands_generators)
+                else self.true,
             # Sunken Shrine
             "Sunken Shrine - Portal -> Sunken Shrine - Sun Path Shop":
                 self.has_tabi,
@@ -224,6 +230,7 @@ class MessengerRules:
             "Sunken Shrine - Tabi Gauntlet Shop -> Sunken Shrine - Sun Path Shop":
                 lambda state: self.can_dboost(state) or self.has_dart(state),
         }
+        # fmt: on
 
         # dict of connection names and the regions checked in the requirements to traverse the exit
         self.indirect_conditions = {

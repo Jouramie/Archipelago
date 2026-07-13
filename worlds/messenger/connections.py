@@ -642,7 +642,7 @@ CONNECTIONS: dict[str, dict[str, list[str]]] = {
     },
 }
 
-# @formatter:off
+# fmt:off
 RANDOMIZED_CONNECTIONS: dict[str, str] = {
     "Ninja Village - Right":            "Autumn Hills - Left",
     "Autumn Hills - Left":              "Ninja Village - Right",
@@ -682,7 +682,7 @@ RANDOMIZED_CONNECTIONS: dict[str, str] = {
     "Dark Cave - Left":                 "Riviere Turquoise - Right",
     "Sunken Shrine - Left":             "Howling Grotto - Bottom",
 }
-# @formatter:on
+# fmt:on
 
 TRANSITIONS: list[str] = [
     "Ninja Village - Right",
