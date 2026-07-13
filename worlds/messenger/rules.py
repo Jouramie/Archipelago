@@ -2,6 +2,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, TypeAlias
 
 from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, HasAll, HasAny, Rule, True_
+from Utils import cache_self1
 from worlds.generic.Rules import allow_self_locking_items
 
 from .constants import NOTES, PHOBEKINS
@@ -207,10 +208,18 @@ class MessengerRules:
                 self.has_wingsuit,
             "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
                 self.has_wingsuit,
+            "Elemental Skylands - Air Generator Shop -> Elemental Skylands - Air Intro Shop":
+                self.has_wingsuit & self.has_progressive_generator_shutdown(),
             "Elemental Skylands - Earth Intro Shop -> Elemental Skylands - Earth Generator Shop":
                 self.has_dart,
             "Elemental Skylands - Water Generator Shop -> Elemental Skylands - Water Intro Shop":
                 self.can_destroy_projectiles,
+            "Elemental Skylands - Fire Intro Shop -> Elemental Skylands - Fire Generator Shop":
+                self.has_progressive_generator_shutdown(4)
+                if bool(world.options.shuffle_skylands_generators)
+                else self.true,
+            "Elemental Skylands - Fire Generator Shop -> Elemental Skylands - Fire Intro Shop":
+                self.false,
             # Sunken Shrine
             "Sunken Shrine - Portal -> Sunken Shrine - Sun Path Shop":
                 self.has_tabi,
@@ -359,6 +368,10 @@ class MessengerRules:
     def is_aerobatic(self) -> MessengerRule:
         return self.has_wingsuit & Has("Aerobatics Warrior")
 
+    @cache_self1
+    def has_progressive_generator_shutdown(self, count: int = 1) -> MessengerRule:
+        return Has("Progressive Generator Shutdown", count)
+
     @cached_property
     def true(self) -> MessengerRule:
         """I know this is stupid, but it's easier to read in the dicts."""
@@ -446,8 +459,12 @@ class MessengerHardRules(MessengerRules):
                 # Elemental Skylands
                 "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
                     self.true,
+                "Elemental Skylands - Air Generator Shop -> Elemental Skylands - Air Intro Shop":
+                    self.has_progressive_generator_shutdown(),
                 "Elemental Skylands - Earth Intro Shop -> Elemental Skylands - Earth Generator Shop":
                     self.has_dart | self.can_dboost | self.has_windmill,
+                "Elemental Skylands - Fire Generator Shop -> Elemental Skylands - Fire Intro Shop":
+                    self.has_progressive_generator_shutdown(4),
                 # Riviere Turquoise
                 "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                     self.true,
