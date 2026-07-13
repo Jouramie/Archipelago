@@ -1,8 +1,9 @@
 from functools import cached_property
 from typing import TYPE_CHECKING, TypeAlias
 
-from rule_builder.rules import Rule, False_, True_, CanReachLocation, Has, HasAny, HasAll, CanReachRegion
+from rule_builder.rules import CanReachLocation, CanReachRegion, False_, Has, HasAll, HasAny, Rule, True_
 from worlds.generic.Rules import allow_self_locking_items
+
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
 
@@ -32,6 +33,7 @@ class MessengerRules:
         self.required_seals = world.required_seals
 
         # dict of connection names and requirements to traverse the exit
+        # fmt: off
         self.connection_rules = {
             # from ToTHQ
             "Artificer's Portal":
@@ -216,7 +218,9 @@ class MessengerRules:
             "Sunken Shrine - Tabi Gauntlet Shop -> Sunken Shrine - Sun Path Shop":
                 self.can_dboost | self.has_dart,
         }
+        # fmt: on
 
+        # fmt: off
         self.location_rules = {
             # hq
             "Money Wrench": self.can_shop,
@@ -313,6 +317,7 @@ class MessengerRules:
             "Water Mega Shard":
                 self.has_dart,
         }
+        # fmt: on
 
         if self.required_seals:
             self.connection_rules["Shrink Down"] = self.has_enough_seals
@@ -388,6 +393,7 @@ class MessengerHardRules(MessengerRules):
     def __init__(self, world: "MessengerWorld") -> None:
         super().__init__(world)
 
+        # fmt: off
         self.connection_rules.update(
             {
                 # Autumn Hills
@@ -444,7 +450,9 @@ class MessengerHardRules(MessengerRules):
                     self.can_double_dboost,
             }
         )
+        # fmt: on
 
+        # fmt: off
         self.location_rules.update(
             {
                 "Autumn Hills Seal - Spike Ball Darts":
@@ -491,6 +499,7 @@ class MessengerHardRules(MessengerRules):
                     self.has_dart | self.can_dboost | self.has_windmill,
             }
         )
+        # fmt: on
 
     @cached_property
     def has_windmill(self) -> MessengerRule:
