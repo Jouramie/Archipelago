@@ -131,7 +131,7 @@ class MessengerRules:
                 lambda state: state.has("Magic Firefly", self.player)
                               and state.multiworld.get_location("Quillshroom Marsh - Queen of Quills", self.player)
                               .can_reach(state),
-            "Glacial Peak - Tower Entrance Shop -> Glacial Peak - Top":
+            "Glacial Peak - Top exit":
                 lambda state: state.has("Ruxxtin's Amulet", self.player),
             "Glacial Peak - Projectile Spike Pit Checkpoint -> Glacial Peak - Left":
                 lambda state: self.has_dart(state) or (self.can_dboost(state) and self.has_wingsuit(state)),
