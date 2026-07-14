@@ -299,8 +299,7 @@ class MessengerWorld(World):
                 self.multiworld.plando_options |= PlandoOptions.connections
                 self.options.portal_plando.value = reverse_portal_exits_into_portal_plando(slot_data["portal_exits"])
                 self.options.plando_connections.value = reverse_transitions_into_plando_connections(slot_data["transitions"])
-                # Both directions will be in plando, they need to be connected independently.
-                self.options.shuffle_transitions.value = ShuffleTransitions.option_decoupled
+
 
         add_closed_portal_reqs(self)
         # i need portal shuffle to happen after rules exist so i can validate it

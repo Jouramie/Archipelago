@@ -38,6 +38,11 @@ def connect_plando(world: "MessengerWorld", plando_connections: TransitionPlando
     for plando_connection in plando_connections:
         plando_entrance = world.get_entrance(plando_connection.entrance)
         destination = world.get_region(plando_connection.exit)
+
+        if plando_entrance.connected_region == destination:
+            # The connection was already made bidirectional, skipping.
+            continue
+
         remove_dangling_entrance(destination)
         plando_entrance.connect(destination)
 
