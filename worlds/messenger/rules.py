@@ -128,9 +128,9 @@ class MessengerRules:
             # Glacial Peak
             "Glacial Peak - Portal -> Glacial Peak - Tower Entrance Shop":
                 self.has_vertical,
-            "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
+            "Glacial Peak - Left exit":
                 Has("Magic Firefly") & CanReachLocation("Quillshroom Marsh - Queen of Quills"),
-            "Glacial Peak - Top -> Cloud Ruins - Left":
+            "Glacial Peak - Top exit":
                 Has("Ruxxtin's Amulet"),
             "Glacial Peak - Projectile Spike Pit Checkpoint -> Glacial Peak - Left":
                 self.has_dart | (self.can_dboost & self.has_wingsuit),
@@ -433,7 +433,7 @@ class MessengerHardRules(MessengerRules):
                 "Searing Crags - Before Final Climb Shop -> Searing Crags - Colossuses Shop":
                     self.true,
                 # Glacial Peak
-                "Glacial Peak - Left -> Elemental Skylands - Air Shmup":
+                "Glacial Peak - Left exit":
                     self.has_windmill
                     | (Has("Magic Firefly")
                        & CanReachLocation("Quillshroom Marsh - Queen of Quills")
