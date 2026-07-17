@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
-from BaseClasses import CollectionState, CollectionRule, Region
+from BaseClasses import CollectionRule, CollectionState, Region
 from worlds.generic.Rules import add_rule, allow_self_locking_items
+
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
 
@@ -198,7 +199,7 @@ class MessengerRules:
             # Riviere Turquoise
             "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) or (
-                            self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
+                        self.has_wingsuit(state) and self.can_destroy_projectiles(state)),
             "Riviere Turquoise - Launch of Faith Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                 lambda state: self.has_dart(state) and self.can_dboost(state),
             "Riviere Turquoise - Flower Flight Checkpoint -> Riviere Turquoise - Waterfall Shop":
@@ -467,10 +468,6 @@ class MessengerHardRules(MessengerRules):
                     lambda state: self.has_vertical(state) or self.can_dboost(state),
                 "Glacial Peak Seal - Projectile Spike Pit":
                     lambda state: self.can_dboost(state) or self.can_destroy_projectiles(state),
-                "Glacial Peak Seal - Glacial Air Swag":
-                    lambda state: self.has_windmill(state) or self.has_vertical(state),
-                "Glacial Peak Mega Shard":
-                    lambda state: self.has_windmill(state) or self.has_vertical(state),
                 "Cloud Ruins Seal - Ghost Pit":
                     self.true,
                 "Cloud Ruins Seal - Toothbrush Alley":
@@ -502,7 +499,7 @@ class MessengerHardRules(MessengerRules):
 
     def can_dboost(self, state: CollectionState) -> bool:
         return state.has("Second Wind", self.player)  # who really needs meditation
-    
+
     def can_destroy_projectiles(self, state: CollectionState) -> bool:
         return super().can_destroy_projectiles(state) or self.has_windmill(state)
 
