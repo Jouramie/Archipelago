@@ -321,7 +321,7 @@ class MessengerRules:
             "Riviere Turquoise Seal - Bounces and Balls":
                 self.can_dboost,
             "Riviere Turquoise Seal - Launch of Faith":
-                lambda state: self.has_vertical(state),
+                self.has_vertical,
             # elemental skylands
             "Elemental Skylands Seal - Air":
                 self.has_wingsuit,
