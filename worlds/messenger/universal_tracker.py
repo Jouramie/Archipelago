@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionState
+from BaseClasses import CollectionState
 from Options import PlandoConnection
 
 from .connections import RANDOMIZED_CONNECTIONS
