@@ -329,6 +329,8 @@ class MessengerRules:
                 lambda state: state.has("Currents Master", self.player),
             "Elemental Skylands Seal - Fire":
                 lambda state: self.can_destroy_projectiles(state) and self.is_aerobatic(state),
+            "Earth Mega Shard":
+                self.has_dart,
         }
         # fmt: on
 
