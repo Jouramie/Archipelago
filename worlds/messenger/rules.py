@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
-from BaseClasses import CollectionState, CollectionRule, Region
+from BaseClasses import CollectionRule, CollectionState, Region
 from worlds.generic.Rules import add_rule, allow_self_locking_items
+
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
 
@@ -467,10 +468,6 @@ class MessengerHardRules(MessengerRules):
                     lambda state: self.has_vertical(state) or self.can_dboost(state),
                 "Glacial Peak Seal - Projectile Spike Pit":
                     lambda state: self.can_dboost(state) or self.can_destroy_projectiles(state),
-                "Glacial Peak Seal - Glacial Air Swag":
-                    lambda state: self.has_windmill(state) or self.has_vertical(state),
-                "Glacial Peak Mega Shard":
-                    lambda state: self.has_windmill(state) or self.has_vertical(state),
                 "Cloud Ruins Seal - Ghost Pit":
                     self.true,
                 "Cloud Ruins Seal - Toothbrush Alley":

@@ -1,26 +1,49 @@
 import logging
 from typing import Any, ClassVar, TextIO
 
-from BaseClasses import CollectionState, Entrance, EntranceType, Item, ItemClassification, MultiWorld, Tutorial, \
-    PlandoOptions
+from BaseClasses import (
+    CollectionState,
+    Entrance,
+    EntranceType,
+    Item,
+    ItemClassification,
+    MultiWorld,
+    PlandoOptions,
+    Tutorial,
+)
 from Options import Accessibility
-from Utils import output_path
 from settings import FilePath, Group
+from Utils import output_path
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, icon_paths
+
 from .client_setup import launch_game
 from .connections import CONNECTIONS, RANDOMIZED_CONNECTIONS, TRANSITIONS
-from .constants import ALL_ITEMS, ALWAYS_LOCATIONS, BOSS_LOCATIONS, FILLER, NOTES, PHOBEKINS, PROG_ITEMS, TRAPS, \
-    USEFUL_ITEMS
-from .options import AvailablePortals, Goal, Logic, MessengerOptions, NotesNeeded, option_groups, ShuffleTransitions
-from .portals import PORTALS, add_closed_portal_reqs, disconnect_portals, shuffle_portals, validate_portals
-from .regions import LEVELS, MEGA_SHARDS, LOCATIONS, REGION_CONNECTIONS
-from .rules import MessengerHardRules, MessengerOOBRules, MessengerRules
+from .constants import (
+    ALL_ITEMS,
+    ALWAYS_LOCATIONS,
+    BOSS_LOCATIONS,
+    FILLER,
+    NOTES,
+    PHOBEKINS,
+    PROG_ITEMS,
+    TRAPS,
+    USEFUL_ITEMS,
+)
+from .options import Goal, Logic, MessengerOptions, NotesNeeded, ShuffleTransitions, option_groups
+from .portals import add_closed_portal_reqs, disconnect_portals, shuffle_portals, validate_portals
+from .regions import LEVELS, MEGA_SHARDS, REGION_CONNECTIONS
+from .rules import MessengerHardRules, MessengerRules
 from .shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS, shuffle_shop_prices
-from .subclasses import MessengerItem, MessengerRegion, MessengerShopLocation
+from .subclasses import MessengerItem, MessengerRegion
 from .transitions import disconnect_entrances, shuffle_transitions
-from .universal_tracker import reverse_portal_exits_into_portal_plando, reverse_transitions_into_plando_connections, TRACKER_PACK_CONFIG, GLITCHED_ITEM, \
-    add_glitched_rules
+from .universal_tracker import (
+    GLITCHED_ITEM,
+    TRACKER_PACK_CONFIG,
+    MessengerGlitchedRules,
+    reverse_portal_exits_into_portal_plando,
+    reverse_transitions_into_plando_connections,
+)
 
 components.append(
     Component(
@@ -166,6 +189,14 @@ class MessengerWorld(World):
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
         return slot_data
 
+    @property
+    def is_ut(self) -> bool:
+        return bool(getattr(self.multiworld, "re_gen_passthrough", False))
+
+    @property
+    def ut_slot_data(self) -> dict[str, Any]:
+        return self.multiworld.re_gen_passthrough.get(self.game)
+
     def generate_early(self) -> None:
         if self.options.goal == Goal.option_power_seal_hunt:
             self.total_seals = self.options.total_seals.value
@@ -203,9 +234,8 @@ class MessengerWorld(World):
         self.spoiler_portal_mapping = {}
         self.transitions = []
 
-        if hasattr(self.multiworld, "re_gen_passthrough"):
-            slot_data = self.multiworld.re_gen_passthrough.get(self.game)
-            if slot_data:
+        if self.is_ut:
+            if slot_data := self.ut_slot_data:
                 self.starting_portals = slot_data["starting_portals"]
 
     def create_regions(self) -> None:
@@ -288,10 +318,12 @@ class MessengerWorld(World):
     def set_rules(self) -> None:
         logic = self.options.logic_level
         if logic == Logic.option_normal:
-            MessengerRules(self).set_messenger_rules()
+            if self.is_ut:
+                messenger_rules = MessengerGlitchedRules(self)
+            else:
+                messenger_rules = MessengerRules(self)
 
-            if hasattr(self.multiworld, "re_gen_passthrough"):
-                add_glitched_rules(self, MessengerHardRules(self))
+            messenger_rules.set_messenger_rules()
 
         elif logic == Logic.option_hard:
             MessengerHardRules(self).set_messenger_rules()
@@ -305,9 +337,8 @@ class MessengerWorld(World):
             disconnect_entrances(self)
             keep_entrance_logic = False
 
-        if hasattr(self.multiworld, "re_gen_passthrough"):
-            slot_data = self.multiworld.re_gen_passthrough.get(self.game)
-            if slot_data:
+        if self.is_ut:
+            if slot_data := self.ut_slot_data:
                 self.multiworld.plando_options |= PlandoOptions.connections
                 if slot_data["portal_exits"]:
                     self.options.portal_plando.value = reverse_portal_exits_into_portal_plando(slot_data["portal_exits"])

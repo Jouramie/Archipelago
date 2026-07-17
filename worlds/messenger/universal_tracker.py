@@ -2,9 +2,10 @@ from typing import TYPE_CHECKING
 
 from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionState
 from Options import PlandoConnection
+
 from .connections import RANDOMIZED_CONNECTIONS
-from .portals import REGION_ORDER, SHOP_POINTS, CHECKPOINTS
-from .rules import MessengerHardRules
+from .portals import CHECKPOINTS, REGION_ORDER, SHOP_POINTS
+from .rules import MessengerHardRules, MessengerRules
 from .transitions import TRANSITIONS
 
 if TYPE_CHECKING:
@@ -101,34 +102,32 @@ def reverse_transitions_into_plando_connections(transitions: list[list[int]]) ->
     return plando_connections
 
 
-def add_glitched_rules(world: "MessengerWorld", hard_logic: MessengerHardRules) -> None:
-    multiworld = world.multiworld
+class MessengerGlitchedRules(MessengerRules):
+    def __init__(self, world: "MessengerWorld") -> None:
+        super().__init__(world)
 
-    for entrance in multiworld.get_entrances(world.player):
+        hard_logic = MessengerHardRules(world)
 
-        try:
-            rule = hard_logic.connection_rules[entrance.name]
-        except KeyError:
-            rule = DEFAULT_COLLECTION_RULE
+        for connection in hard_logic.connection_rules.keys():
+            hard_rule = hard_logic.connection_rules[connection]
+            normal_rule = self.connection_rules[connection]
+            if normal_rule != hard_rule:
 
-        if entrance.access_rule == rule:
-            continue
+                def glitch_aware_rule(
+                    state: CollectionState, glitched_rule=normal_rule, previous_rule=hard_rule
+                ) -> bool:
+                    return (state.has(GLITCHED_ITEM, world.player) and glitched_rule(state)) or previous_rule(state)
 
-        def glitch_aware_rule(state: CollectionState, glitched_rule=rule, previous_rule=entrance.access_rule) -> bool:
-            return (state.has(GLITCHED_ITEM, world.player) and glitched_rule(state)) or previous_rule(state)
+                self.connection_rules[connection] = glitch_aware_rule
 
-        entrance.access_rule = glitch_aware_rule
+        for location in hard_logic.location_rules.keys():
+            hard_rule = hard_logic.location_rules[location]
+            normal_rule = self.location_rules[location]
+            if normal_rule != hard_rule:
 
-    for loc in multiworld.get_locations(world.player):
-        try:
-            rule = hard_logic.location_rules[loc.name]
-        except KeyError:
-            rule = DEFAULT_COLLECTION_RULE
+                def glitch_aware_rule(
+                    state: CollectionState, glitched_rule=normal_rule, previous_rule=hard_rule
+                ) -> bool:
+                    return (state.has(GLITCHED_ITEM, world.player) and glitched_rule(state)) or previous_rule(state)
 
-        if loc.access_rule == rule:
-            continue
-
-        def glitch_aware_rule(state: CollectionState, glitched_rule=rule, previous_rule=loc.access_rule) -> bool:
-            return (state.has(GLITCHED_ITEM, world.player) and glitched_rule(state)) or previous_rule(state)
-
-        loc.access_rule = glitch_aware_rule
+                self.location_rules[location] = glitch_aware_rule
