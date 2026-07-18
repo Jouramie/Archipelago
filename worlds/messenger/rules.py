@@ -447,7 +447,7 @@ class MessengerHardRules(MessengerRules):
                 "Elemental Skylands - Air Intro Shop -> Elemental Skylands - Air Generator Shop":
                     self.true,
                 "Elemental Skylands - Earth Intro Shop -> Elemental Skylands - Earth Generator Shop":
-                    self.true,
+                    lambda state: self.has_dart(state) or self.can_dboost(state) or self.has_windmill(state),
                 # Riviere Turquoise
                 "Riviere Turquoise - Waterfall Shop -> Riviere Turquoise - Flower Flight Checkpoint":
                     self.true,
@@ -492,16 +492,11 @@ class MessengerHardRules(MessengerRules):
                     self.true,
                 "Riviere Turquoise Seal - Launch of Faith":
                     lambda state: self.can_dboost(state) or self.has_vertical(state),
-                "Elemental Skylands - Key of Symbiosis":
-                    lambda state: self.has_dart(state) or self.can_dboost(state) or self.has_windmill(state),
                 "Elemental Skylands Seal - Water":
-                    lambda state: self.has_dart(state) or self.can_dboost(state) or self.has_windmill(state),
+                    self.true,
                 "Elemental Skylands Seal - Fire":
-                    lambda state: (self.has_dart(state) or self.can_dboost(state) or self.has_windmill(state))
-                                  and self.can_destroy_projectiles(state),
+                    self.can_destroy_projectiles,
                 "Earth Mega Shard":
-                    lambda state: self.has_dart(state) or self.can_dboost(state) or self.has_windmill(state),
-                "Water Mega Shard":
                     lambda state: self.has_dart(state) or self.can_dboost(state) or self.has_windmill(state),
             }
         )
