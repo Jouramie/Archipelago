@@ -269,7 +269,7 @@ class MessengerRules:
             "Howling Grotto Seal - Windy Saws and Balls":
                 self.has_wingsuit,
             "Howling Grotto Seal - Crushing Pits":
-                lambda state: self.has_wingsuit(state) and self.has_dart(state),
+                self.has_dart,
             "Howling Grotto - Emerald Golem":
                 self.has_wingsuit,
             # searing crags
