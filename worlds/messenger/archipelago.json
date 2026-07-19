@@ -1,4 +1,7 @@
 {
   "game": "The Messenger",
-  "authors": ["alwaysintreble"]
+  "authors": [
+    "alwaysintreble"
+  ],
+  "world_version": "0.16.0"
 }
