@@ -6,6 +6,7 @@ from worlds.generic.Rules import allow_self_locking_items
 
 from .constants import NOTES, PHOBEKINS
 from .options import MessengerAccessibility
+from .subclasses import MessengerShopLocation
 
 if TYPE_CHECKING:
     from . import MessengerWorld
@@ -383,6 +384,10 @@ class MessengerRules:
         for loc in self.world.get_locations():
             if loc.name in self.location_rules:
                 self.world.set_rule(loc, self.location_rules[loc.name])
+
+            if isinstance(loc, MessengerShopLocation):
+                rule = Has("Shards", min(loc.cost, self.world.total_shards))
+                self.world.set_rule(loc, rule)
 
         self.world.set_completion_rule(Has("Do the Thing!"))
         if self.world.options.accessibility:  # not locations accessibility
