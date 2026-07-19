@@ -12,11 +12,10 @@ from BaseClasses import (
     Tutorial,
 )
 from Options import Accessibility
-from settings import FilePath, Group
 from Utils import output_path
+from settings import FilePath, Group
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, icon_paths
-
 from .client_setup import launch_game
 from .connections import CONNECTIONS, RANDOMIZED_CONNECTIONS, TRANSITIONS
 from .constants import (
@@ -51,6 +50,7 @@ from .universal_tracker import (
     connect_visited_entrances,
     disconnect_deferred_exits,
     reverse_portal_exits_into_portal_plando,
+    reverse_shop_prices,
     reverse_transitions_into_plando_connections,
     unlock_portals,
 )
@@ -231,7 +231,11 @@ class MessengerWorld(World):
         if self.options.early_meditation:
             self.multiworld.early_items[self.player]["Meditation"] = 1
 
-        self.shop_prices, self.figurine_prices = shuffle_shop_prices(self)
+        if not self.is_ut:
+            self.shop_prices, self.figurine_prices = shuffle_shop_prices(self)
+        else:
+            if slot_data := self.ut_slot_data:
+                self.shop_prices, self.figurine_prices = reverse_shop_prices(slot_data["shop"], slot_data["figures"])
 
         starting_portals = ["Autumn Hills", "Howling Grotto", "Glacial Peak", "Riviere Turquoise", "Sunken Shrine",
                             "Searing Crags"]
@@ -342,6 +346,10 @@ class MessengerWorld(World):
         filler = [self.create_filler() for _ in range(remaining_fill)]
 
         self.multiworld.itempool += filler
+
+        if self.is_ut:
+            if slot_data := self.ut_slot_data:
+                self.total_shards = slot_data["max_price"]
 
     def set_rules(self) -> None:
         logic = self.options.logic_level

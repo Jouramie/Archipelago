@@ -1,9 +1,10 @@
 import unittest
-from typing import cast, Any
+from typing import Any, cast
 
-from test.general import setup_multiworld, gen_steps
+from test.general import gen_steps, setup_multiworld
 from . import MessengerTestBase
-from .. import MessengerWorld
+from .. import FIGURINES, MessengerWorld
+from ..shop import SHOP_ITEMS
 from ...AutoWorld import call_all
 
 
@@ -40,9 +41,19 @@ class UniversalTrackerTestBase(MessengerTestBase):
 
 
 class DefaultUniversalTrackerTest(UniversalTrackerTestBase):
-
-    def test_can_recreate_world(self) -> None:
+    def test_starting_portals_are_reapplied(self) -> None:
         self.assertListEqual(self.slot_data["starting_portals"], self.world.starting_portals)
+
+    def test_price_shop_are_reversed(self) -> None:
+        self.assertDictEqual(
+            self.slot_data["shop"],
+            {SHOP_ITEMS[item].internal_name: price for item, price in self.world.shop_prices.items()},
+        )
+        self.assertDictEqual(
+            self.slot_data["figures"],
+            {FIGURINES[item].internal_name: price for item, price in self.world.figurine_prices.items()},
+        )
+        self.assertEqual(self.slot_data["max_price"], self.world.total_shards)
 
 
 class ShufflePortalsShopsUniversalTrackerTest(UniversalTrackerTestBase):
