@@ -12,10 +12,11 @@ from BaseClasses import (
     Tutorial,
 )
 from Options import Accessibility
-from Utils import output_path
 from settings import FilePath, Group
+from Utils import output_path
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, icon_paths
+
 from .client_setup import launch_game
 from .connections import CONNECTIONS, RANDOMIZED_CONNECTIONS, TRANSITIONS
 from .constants import (
@@ -601,7 +602,7 @@ class MessengerWorld(World):
         if getattr(self.multiworld, "enforce_deferred_connections", "off") == "off":
             return
 
-        if storage_key.endswith("VisitedEntrances") and self.transitions:
+        if storage_key.endswith("VisitedEntrances") and (self.transitions or self.portal_mapping):
             logger.info(
                 f"Reconnecting visited entrances for player {self.player_name} with storage value {storage_value}"
             )
