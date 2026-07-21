@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from collections.abc import Callable, Collection, Iterable
 from typing import TYPE_CHECKING
 
@@ -158,15 +159,17 @@ class MessengerGlitchedRules(MessengerRules):
 
 
 def disconnect_deferred_exits(
-    transition_shuffled: bool,
-    portal_shuffled: bool,
+    should_disconnect_level_exits: bool,
+    should_disconnect_portal_exists: bool,
     starting_portals: Collection[str],
     get_entrance: Callable[[str], Entrance],
     get_location: Callable[[str], Location],
-) -> dict[str, str]:
+) -> tuple[dict[str, str], dict[str, list[str]], dict[str, list[str]]]:
     """Disconnect the exits, but save their destinations in a map to reconnect when it is visited."""
 
     deferred_connections = {}
+    connections_to_hide = defaultdict(list)
+    events_to_hide = defaultdict(list)
 
     def disconnect_exit(transition: Entrance, tracker_name_override: str | None) -> None:
         if tracker_name_override is not None:
@@ -176,7 +179,7 @@ def disconnect_deferred_exits(
         transition.connected_region.entrances.remove(transition)
         transition.connected_region = None
 
-    if transition_shuffled:
+    if should_disconnect_level_exits:
         for exit_name in RANDOMIZED_CONNECTIONS.keys():
             exit_ = get_entrance(exit_name)
 
@@ -186,25 +189,58 @@ def disconnect_deferred_exits(
                 name_override = None
 
             disconnect_exit(exit_, name_override)
+    else:
+        connections_to_hide |= hide_all_level_exits()
 
     for portal in PORTALS:
         actual_exit = get_entrance(f"ToTHQ {portal} Portal")
-        if portal_shuffled:
-            disconnect_exit(actual_exit, "HQ - " + portal + " Portal")
+        tracker_exit_name = f"HQ - {portal} Portal"
+        if should_disconnect_portal_exists:
+            disconnect_exit(actual_exit, tracker_exit_name)
+        else:
+            connections_to_hide["Overworld"].append(tracker_exit_name)
 
         event_name = f"{portal} Portal"
         unlock_event = get_location(event_name)
 
         hq = actual_exit.parent_region
+        tracker_event_name = f"{portal} - Portal unlock"
         if event_name in starting_portals:
             unlock_event.parent_region.locations.remove(unlock_event)
             hq.locations.append(unlock_event)
             unlock_event.parent_region = hq
+            events_to_hide[portal].append(tracker_event_name)
 
-        unlock_event.name = portal + " - Portal unlock"
+        unlock_event.name = tracker_event_name
         unlock_event.access_rule = lambda _: False
 
-    return deferred_connections
+    return deferred_connections, connections_to_hide, events_to_hide
+
+
+def hide_all_entrances_and_events() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    connections_to_hide: dict[str, list[str]] = hide_all_level_exits()
+    events_to_hide: dict[str, list[str]] = defaultdict(list)
+
+    for portal in PORTALS:
+        connections_to_hide[portal].append(f"HQ - {portal} Portal")
+        events_to_hide[portal].append(f"{portal} - Portal unlock")
+
+    return connections_to_hide, events_to_hide
+
+
+def hide_all_level_exits() -> dict[str, list[str]]:
+    exits_by_map = defaultdict(list)
+
+    for e in RANDOMIZED_CONNECTIONS:
+        try:
+            map_name = e[: e.index(" - ")]
+        except ValueError:
+            map_name = "Overworld"
+        exits_by_map[map_name].append(e)
+
+    exits_by_map["Overworld"] += exits_by_map["Dark Cave"]
+
+    return exits_by_map
 
 
 def connect_visited_entrances(

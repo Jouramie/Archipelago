@@ -50,11 +50,15 @@ from .universal_tracker import (
     MessengerGlitchedRules,
     connect_visited_entrances,
     disconnect_deferred_exits,
+    hide_all_entrances_and_events,
     reverse_portal_exits_into_portal_plando,
     reverse_shop_prices,
     reverse_transitions_into_plando_connections,
     unlock_portals,
 )
+
+__all__ = ("MessengerWorld",)
+
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +129,7 @@ class MessengerWorld(World):
     settings_key = "messenger_settings"
     settings: ClassVar[MessengerSettings]
 
-    tracker_world: ClassVar = TRACKER_PACK_CONFIG
+    tracker_world: ClassVar[dict[str, Any]] = TRACKER_PACK_CONFIG
     glitches_item_name: ClassVar[str] = GLITCHED_ITEM
     found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = (
         "Slot:{player}:VisitedEntrances",
@@ -207,6 +211,8 @@ class MessengerWorld(World):
     filler: dict[str, int]
 
     deferred_connections: dict[str, str]
+    ut_map_page_hidden_entrances: dict[str, list[str]]
+    ut_map_page_hidden_events: dict[str, list[str]]
 
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any]:
@@ -215,6 +221,10 @@ class MessengerWorld(World):
     @property
     def is_ut(self) -> bool:
         return bool(getattr(self.multiworld, "re_gen_passthrough", False))
+
+    @property
+    def is_deferred_connections_enabled(self) -> bool:
+        return getattr(self.multiworld, "enforce_deferred_connections", "off") != "off"
 
     @property
     def ut_slot_data(self) -> dict[str, Any]:
@@ -402,22 +412,30 @@ class MessengerWorld(World):
             shuffle_transitions(self)
 
     def generate_basic(self) -> None:
-        if self.is_ut and (getattr(self.multiworld, "enforce_deferred_connections", "off") != "off"):
-            self.deferred_connections = disconnect_deferred_exits(
-                bool(self.transitions),
-                bool(self.portal_mapping),
-                self.starting_portals,
-                self.get_entrance,
-                self.get_location,
-            )
+        if self.is_ut:
+            if self.is_deferred_connections_enabled:
+                should_disconnect_exits = bool(self.transitions)
+                should_disconnect_portals = bool(self.portal_mapping)
 
-            # Need to reset the entrance cache here, because the entrance names are changed for the tracker.
-            self.multiworld.regions.entrance_cache[self.player] = {
-                e.name: e for e in self.multiworld.regions.entrance_cache[self.player].values()
-            }
-            self.multiworld.regions.location_cache[self.player] = {
-                l.name: l for l in self.multiworld.regions.location_cache[self.player].values()
-            }
+                self.deferred_connections, self.ut_map_page_hidden_entrances, self.ut_map_page_hidden_events = (
+                    disconnect_deferred_exits(
+                        should_disconnect_exits,
+                        should_disconnect_portals,
+                        self.starting_portals,
+                        self.get_entrance,
+                        self.get_location,
+                    )
+                )
+
+                # Need to reset the entrance cache here, because the entrance names are changed for the tracker.
+                self.multiworld.regions.entrance_cache[self.player] = {
+                    e.name: e for e in self.multiworld.regions.entrance_cache[self.player].values()
+                }
+                self.multiworld.regions.location_cache[self.player] = {
+                    l.name: l for l in self.multiworld.regions.location_cache[self.player].values()
+                }
+            else:
+                self.ut_map_page_hidden_entrances, self.ut_map_page_hidden_events = hide_all_entrances_and_events()
 
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         if self.options.available_portals < 6:
@@ -599,13 +617,11 @@ class MessengerWorld(World):
             f.write(output)
 
     def reconnect_found_entrances(self, storage_key: str, storage_value: list[str] | None) -> None:
-        if getattr(self.multiworld, "enforce_deferred_connections", "off") == "off":
+        if not self.is_deferred_connections_enabled:
             return
 
         if storage_key.endswith("VisitedEntrances") and (self.transitions or self.portal_mapping):
-            logger.info(
-                f"Reconnecting visited entrances for player {self.player_name} with storage value {storage_value}"
-            )
+            logger.info(f"Reconnecting visited entrances with storage value {storage_value}")
 
             if not storage_value:
                 return
@@ -619,7 +635,7 @@ class MessengerWorld(World):
             )
 
         if storage_key.endswith("UnlockedPortals"):
-            logger.info(f"Unlocking portals for player {self.player_name} with storage value {storage_value}")
+            logger.info(f"Unlocking portals with storage value {storage_value}")
 
             if storage_value is None:
                 storage_value = []
