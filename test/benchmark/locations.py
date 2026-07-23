@@ -56,7 +56,7 @@ def run_locations_benchmark(freeze_gc: bool = True) -> None:
             return t.dif
 
         def main(self):
-            for game in sorted(AutoWorld.AutoWorldRegister.world_types):
+            for game in ["The Messenger"]:
                 summary_data: typing.Dict[str, collections.Counter[str]] = {
                     "empty_state": collections.Counter(),
                     "all_state": collections.Counter(),

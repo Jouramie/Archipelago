@@ -4,6 +4,7 @@ from typing import Any, ClassVar, TextIO
 from BaseClasses import CollectionState, Entrance, EntranceType, Item, ItemClassification, MultiWorld, Tutorial, \
     PlandoOptions
 from Options import Accessibility
+from rule_builder.optimise_rules import OptimisedRuleBuilderWorldMixin
 from Utils import output_path
 from settings import FilePath, Group
 from worlds.AutoWorld import WebWorld, World
@@ -71,7 +72,7 @@ class MessengerWeb(WebWorld):
     option_groups = option_groups
 
 
-class MessengerWorld(World):
+class MessengerWorld(OptimisedRuleBuilderWorldMixin, World):
     """
     As a demon army besieges his village, a young ninja ventures through a cursed world, to deliver a scroll paramount
     to his clan’s survival. What begins as a classic action platformer soon unravels into an expansive time-traveling
