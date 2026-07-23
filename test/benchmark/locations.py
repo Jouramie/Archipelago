@@ -8,16 +8,16 @@ def run_locations_benchmark(freeze_gc: bool = True) -> None:
         than running all iterations for the location rule being benchmarked.
     """
     import argparse
-    import logging
-    import gc
     import collections
-    import typing
+    import gc
+    import logging
     import sys
+    import typing
 
     from time_it import TimeIt
 
+    from BaseClasses import CollectionState, Location, MultiWorld
     from Utils import init_logging
-    from BaseClasses import MultiWorld, CollectionState, Location
     from worlds import AutoWorld
     from worlds.AutoWorld import call_all
 
@@ -56,7 +56,7 @@ def run_locations_benchmark(freeze_gc: bool = True) -> None:
             return t.dif
 
         def main(self):
-            for game in ["The Messenger"]:
+            for game in sorted(AutoWorld.AutoWorldRegister.world_types):
                 summary_data: typing.Dict[str, collections.Counter[str]] = {
                     "empty_state": collections.Counter(),
                     "all_state": collections.Counter(),

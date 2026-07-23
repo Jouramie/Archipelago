@@ -8,7 +8,7 @@ overhead from the method-resolution-order lookup and method-binding steps when c
 from collections.abc import Callable
 from typing import Any, TypeAlias
 
-from BaseClasses import CollectionRule, CollectionState, Entrance, Location
+from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionRule, CollectionState, Entrance, Location
 from rule_builder.rules import (
     And,
     CanReachEntrance,
@@ -20,10 +20,10 @@ from rule_builder.rules import (
     HasAllCounts,
     HasAny,
     HasAnyCount,
+    HasFromList,
     HasFromListUnique,
     HasGroup,
     HasGroupUnique,
-    HasFromList,
     Or,
     Rule,
     True_,
@@ -33,10 +33,7 @@ from worlds.AutoWorld import World
 
 RuleMemodict: TypeAlias = dict[int, tuple[CollectionRule, CollectionRule]]
 OptimiseFunc: TypeAlias = "Callable[[OptimisedRuleBuilderWorldMixin, Rule.Resolved, RuleMemodict], CollectionRule]"
-
-
-def always_true(state: CollectionState):
-    return True
+always_true = DEFAULT_COLLECTION_RULE
 
 
 def always_false(state: CollectionState):
@@ -48,13 +45,11 @@ class OptimisedRuleBuilderWorldMixin(World):
     Just define your world as `class MyWorld(OptimisedRuleBuilderWorldMixin, World)` and enjoy the speeed.
     """
 
-    # TODO set that to true in tests if world is subclassed of this
     debug_rule_builder: bool = False
     """Tells if rules should be optimised or not. Optimising will cut out everything that help understanding the rules,
     but will make the rules run much faster. Set to true if you need, for instance, to use the `explain` methods."""
     resolved_to_optimise: dict[type[Rule.Resolved], OptimiseFunc]
     """You can add custom rules to this if you have any custom rules that can be optimised."""
-    # FIXME this will never get cleaned and that's an issue... Maybe can add a test for all world for that
     _memodict: RuleMemodict
     """Cache for quick access of the rules already optimised."""
 
@@ -81,7 +76,7 @@ class OptimisedRuleBuilderWorldMixin(World):
             CanReachEntrance.Resolved: optimise_can_reach_entrance,
         }
 
-    def clean_up_optimisation_cache(self):
+    def cleanup_optimisation_cache(self):
         """YOU must call this method at the end of the world `set_rules`."""
         # We can't just override `set_rules`. It would be overridden again by world implementation.
         del self._memodict
