@@ -7,6 +7,7 @@ overhead from the method-resolution-order lookup and method-binding steps when c
 
 from collections.abc import Callable
 from typing import Any, TypeAlias
+from unittest import case
 
 from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionRule, CollectionState, Entrance, Location
 from rule_builder.rules import (
@@ -33,7 +34,7 @@ from worlds.AutoWorld import World
 
 RuleMemodict: TypeAlias = dict[int, tuple[CollectionRule, CollectionRule]]
 OptimiseFunc: TypeAlias = "Callable[[OptimisedRuleBuilderWorldMixin, Rule.Resolved, RuleMemodict], CollectionRule]"
-always_true = DEFAULT_COLLECTION_RULE
+always_true = DEFAULT_COLLECTION_RULE.__func__
 
 
 def always_false(state: CollectionState):
@@ -443,40 +444,31 @@ def optimise_rule(world: OptimisedRuleBuilderWorldMixin, rule: CollectionRule | 
         optimised = rule._evaluate
     # The original rule is also stored to ensure that it is not garbage collected for the lifetime of the memodict,
     # ensuring that the id() key remains valid.
-    memodict[id(optimised)] = optimised, rule
+    memodict[id(rule)] = optimised, rule
     return optimised
 
 
 def optimise_and_children(children: list[CollectionRule]) -> CollectionRule:
-    if len(children) == 0:
-        return always_true
-
-    # ~68% of the duration of a loop.
-    if len(children) == 1:
-        return children[0]
-
-    # ~72% of the duration of a loop.
-    if len(children) == 2:
-        return lambda state, a=children[0], b=children[1]: a(state) and b(state)
-
-    # ~90% of the duration of a loop from here on.
-    if len(children) == 3:
-        return lambda state, a=children[0], b=children[1], c=children[2]: a(state) and b(state) and c(state)
-
-    if len(children) == 4:
-        return lambda state, a=children[0], b=children[1], c=children[2], d=children[3]: (
-            a(state) and b(state) and c(state) and d(state)
-        )
-
-    if len(children) == 5:
-        return lambda state, a=children[0], b=children[1], c=children[2], d=children[3], e=children[4]: (
-            a(state) and b(state) and c(state) and d(state) and e(state)
-        )
-
-    if len(children) == 6:
-        return lambda state, a=children[0], b=children[1], c=children[2], d=children[3], e=children[4], f=children[5]: (
-            a(state) and b(state) and c(state) and d(state) and e(state) and f(state)
-        )
+    match children:
+        case []:
+            return always_true
+        case [single_child]:
+            # ~68% of the duration of a loop.
+            return single_child
+        case [a, b]:
+            # ~72% of the duration of a loop.
+            return lambda state, a=a, b=b: a(state) and b(state)
+        case [a, b, c]:
+            # ~90% of the duration of a loop from here on.
+            return lambda state, a=a, b=b, c=c: a(state) and b(state) and c(state)
+        case [a, b, c, d]:
+            return lambda state, a=a, b=b, c=c, d=d: a(state) and b(state) and c(state) and d(state)
+        case [a, b, c, d, e]:
+            return lambda state, a=a, b=b, c=c, d=d, e=e: a(state) and b(state) and c(state) and d(state) and e(state)
+        case [a, b, c, d, e, f]:
+            return lambda state, a=a, b=b, c=c, d=d, e=e, f=f: (
+                a(state) and b(state) and c(state) and d(state) and e(state) and f(state)
+            )
 
     def loop_rule(state, rules=tuple(children)):
         for rule in rules:
@@ -488,35 +480,26 @@ def optimise_and_children(children: list[CollectionRule]) -> CollectionRule:
 
 
 def optimise_or_children(children: list[CollectionRule]) -> CollectionRule:
-    if len(children) == 0:
-        return always_false
-
-    # ~68% of the duration of a loop.
-    if len(children) == 1:
-        return children[0]
-
-    # ~72% of the duration of a loop.
-    if len(children) == 2:
-        return lambda state, a=children[0], b=children[1]: a(state) or b(state)
-
-    # ~90% of the duration of a loop from here on.
-    if len(children) == 3:
-        return lambda state, a=children[0], b=children[1], c=children[2]: a(state) or b(state) or c(state)
-
-    if len(children) == 4:
-        return lambda state, a=children[0], b=children[1], c=children[2], d=children[3]: (
-            a(state) or b(state) or c(state) or d(state)
-        )
-
-    if len(children) == 5:
-        return lambda state, a=children[0], b=children[1], c=children[2], d=children[3], e=children[4]: (
-            a(state) or b(state) or c(state) or d(state) or e(state)
-        )
-
-    if len(children) == 6:
-        return lambda state, a=children[0], b=children[1], c=children[2], d=children[3], e=children[4], f=children[5]: (
-            a(state) or b(state) or c(state) or d(state) or e(state) or f(state)
-        )
+    match children:
+        case []:
+            return always_false
+        case [single_child]:
+            # ~68% of the duration of a loop.
+            return single_child
+        case [a, b]:
+            # ~72% of the duration of a loop.
+            return lambda state, a=a, b=b: a(state) or b(state)
+        case [a, b, c]:
+            # ~90% of the duration of a loop from here on.
+            return lambda state, a=a, b=b, c=c: a(state) or b(state) or c(state)
+        case [a, b, c, d]:
+            return lambda state, a=a, b=b, c=c, d=d: a(state) or b(state) or c(state) or d(state)
+        case [a, b, c, d, e]:
+            return lambda state, a=a, b=b, c=c, d=d, e=e: a(state) or b(state) or c(state) or d(state) or e(state)
+        case [a, b, c, d, e, f]:
+            return lambda state, a=a, b=b, c=c, d=d, e=e, f=f: (
+                a(state) or b(state) or c(state) or d(state) or e(state) or f(state)
+            )
 
     def loop_rule(state, rules=tuple(children)):
         for rule in rules:
