@@ -6,10 +6,9 @@ overhead from the method-resolution-order lookup and method-binding steps when c
 """
 
 from collections.abc import Callable
-from typing import Any, TypeAlias
-from unittest import case
+from typing import TypeAlias
 
-from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionRule, CollectionState, Entrance, Location
+from BaseClasses import DEFAULT_COLLECTION_RULE, CollectionRule, CollectionState
 from rule_builder.rules import (
     And,
     CanReachEntrance,
@@ -43,7 +42,8 @@ def always_false(state: CollectionState):
 
 class OptimisedRuleBuilderWorldMixin(World):
     """A World subclass that provides helpers for interacting with the rule builder.
-    Just define your world as `class MyWorld(OptimisedRuleBuilderWorldMixin, World)` and enjoy the speeed.
+    Just define your world as `class MyWorld(OptimisedRuleBuilderWorldMixin, World)` or
+    `class MyWorld(OptimisedRuleBuilderWorldMixin, CachedRuleBuilderWorld)` and enjoy the speeed.
     """
 
     debug_rule_builder: bool = False
@@ -51,12 +51,9 @@ class OptimisedRuleBuilderWorldMixin(World):
     but will make the rules run much faster. Set to true if you need, for instance, to use the `explain` methods."""
     resolved_to_optimise: dict[type[Rule.Resolved], OptimiseFunc]
     """You can add custom rules to this if you have any custom rules that can be optimised."""
-    _memodict: RuleMemodict
-    """Cache for quick access of the rules already optimised."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._memodict = {}
         self.resolved_to_optimise = {
             True_.Resolved: optimise_true,
             False_.Resolved: optimise_false,
@@ -77,24 +74,24 @@ class OptimisedRuleBuilderWorldMixin(World):
             CanReachEntrance.Resolved: optimise_can_reach_entrance,
         }
 
-    def cleanup_optimisation_cache(self):
-        """YOU must call this method at the end of the world `set_rules`."""
-        # We can't just override `set_rules`. It would be overridden again by world implementation.
-        del self._memodict
+    def register_rule_builder_dependencies(self):
+        # Called automatically in AutoWorld after `set_rules`
+        if hasattr(super(), "register_rule_builder_dependencies"):
+            super().register_rule_builder_dependencies()
 
-    def set_rule(self, spot: Location | Entrance, rule: CollectionRule | Rule[Any]) -> None:
-        # We need to call super first so indirect conditions and dependencies are evaluated. Optimise after that.
-        super().set_rule(spot, rule)
-        if not self.debug_rule_builder:
-            optimised = optimise_rule(self, spot.access_rule, self._memodict)
-            spot.access_rule = optimised
+        if self.debug_rule_builder:
+            return
 
-    def set_completion_rule(self, rule: CollectionRule | Rule[Any]) -> None:
-        super().set_completion_rule(rule)
-        if not self.debug_rule_builder:
-            completion_condition = self.multiworld.completion_condition[self.player]
-            optimised = optimise_rule(self, completion_condition, self._memodict)
-            self.multiworld.completion_condition[self.player] = optimised
+        memodict: RuleMemodict = {}
+
+        for entrance in self.get_entrances():
+            entrance.access_rule = optimise_rule(self, entrance.access_rule, memodict)
+        for location in self.get_locations():
+            location.access_rule = optimise_rule(self, location.access_rule, memodict)
+
+        completion_condition = self.multiworld.completion_condition[self.player]
+        optimised = optimise_rule(self, completion_condition, memodict)
+        self.multiworld.completion_condition[self.player] = optimised
 
 
 def optimise_true(
